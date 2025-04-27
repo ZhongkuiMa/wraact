@@ -21,12 +21,8 @@ pip install pycddlib==2.1.8.post1 numpy==2.2.4 numba==0.61.2
 
 # 📚 Quick Learning Function Hull
 
-This tutorial introduces the concept of the **function hull** and the algorithm to calculate
-the function hull of an activation function.
-The function hull, represented by a set of **linear constraints**, provides **sound constraints**
+This tutorial introduces the concept of the **function hull** and the algorithm to calculate the function hull of an activation function. The function hull, represented by a set of **linear constraints**, provides **sound constraints**
 for neural network verification.
-
-
 
 ## ✨ Two Representations of Polytope
 
@@ -58,20 +54,13 @@ where:
 All constraints are stored together as:
 
 $$
-\boldsymbol{C} = [\boldsymbol{b}, \boldsymbol{A}] =
-\begin{bmatrix}
-b_1 & a_{11} & a_{12} & \cdots & a_{1d} \\\\
-b_2 & a_{21} & a_{22} & \cdots & a_{2d} \\\\
-\vdots & \vdots & \vdots & \ddots & \vdots \\\\
-b_m & a_{m1} & a_{m2} & \cdots & a_{md}
-\end{bmatrix}
+\boldsymbol{C} = [\boldsymbol{b}, \boldsymbol{A}] = \begin{bmatrix} b_1 & a_{11} & a_{12} & \cdots & a_{1d} \\\\ b_2 & a_{21} & a_{22} & \cdots & a_{2d} \\\\ \vdots & \vdots & \vdots & \ddots & \vdots \\\\ b_m & a_{m1} & a_{m2} & \cdots & a_{md} \end{bmatrix}
 $$
 
-Shape: **$(m, d+1)$**.  
+Shape: **$(m, d+1)$**.
+
 - First column: bias terms $b$.
 - Remaining columns: variable coefficients.
-
-
 
 ### 🧩 Vertices Representation (V-representation)
 
@@ -80,13 +69,7 @@ Shape: **$(m, d+1)$**.
 Vertices are stored as:
 
 $$
-\boldsymbol{V} =
-\begin{bmatrix}
-1 & v_{11} & v_{12} & \cdots & v_{1d} \\\\
-1 & v_{21} & v_{22} & \cdots & v_{2d} \\\\
-\vdots & \vdots & \vdots & \ddots & \vdots \\\\
-1 & v_{n1} & v_{n2} & \cdots & v_{nd}
-\end{bmatrix}
+\boldsymbol{V} = \begin{bmatrix} 1 & v_{11} & v_{12} & \cdots & v_{1d} \\\\ 1 & v_{21} & v_{22} & \cdots & v_{2d} \\\\ \vdots & \vdots & \vdots & \ddots & \vdots \\\\ 1 & v_{n1} & v_{n2} & \cdots & v_{nd} \end{bmatrix}
 $$
 
 Shape: **$(n, d+1)$**.
@@ -97,8 +80,6 @@ Shape: **$(n, d+1)$**.
 > 🔗 **Reference**:  
 > We use the same format as [pycddlib](https://pycddlib.readthedocs.io/).
 
-
-
 ## 🚀 Activation Function Taxonomy
 
 Activation functions are **non-linear functions** applied to neuron outputs.  
@@ -107,54 +88,48 @@ We classify them by:
 1. **Input dimension**: Unary vs Multi-variable.
 2. **Shape**: ReLU-like vs S-shaped.
 
-
-
 ### 1️⃣ Unary and Multi-Variable Activation Functions
 
-- **Unary Activation Functions**:  
-  - Form: $f: \mathbb{R} \rightarrow \mathbb{R}$ (scalar to scalar).
-  - Examples: ReLU, LeakyReLU, ELU, SiLU, Sigmoid, Tanh.
-  - Function hull calculated for **multiple neurons**.
-  
-  $$
-  \mathcal{M} \supseteq \{(\boldsymbol{x}, f(\boldsymbol{x})) \mid \boldsymbol{x} \in \mathcal{X}\}.
-  $$
-  
-- **Multi-Variable Activation Functions**:  
-  - Form: $f: \mathbb{R}^n \rightarrow \mathbb{R}$ (vector to scalar).
-  - Examples: MaxPool.
-  - Function hull calculated for **a single neuron**.
-  
-  $$
-  \mathcal{M} \supseteq \{(\boldsymbol{x}, f(\boldsymbol{x})) \mid \boldsymbol{x} \in \mathcal{X}\}.
-  $$
+- **Unary Activation Functions**:
+    - Form: $f: \mathbb{R} \rightarrow \mathbb{R}$ (scalar to scalar).
+    - Examples: ReLU, LeakyReLU, ELU, SiLU, Sigmoid, Tanh.
+    - Function hull calculated for **multiple neurons**.
+
+$$
+\mathcal{M} \supseteq \{(\boldsymbol{x}, f(\boldsymbol{x})) \mid \boldsymbol{x} \in \mathcal{X}\}.
+$$
+
+- **Multi-Variable Activation Functions**:
+    - Form: $f: \mathbb{R}^n \rightarrow \mathbb{R}$ (vector to scalar).
+    - Examples: MaxPool.
+    - Function hull calculated for **a single neuron**.
+
+$$
+\mathcal{M} \supseteq \{(\boldsymbol{x}, f(\boldsymbol{x})) \mid \boldsymbol{x} \in \mathcal{X}\}.
+$$
 
 > 💬 **Note**:  
 > Strictly speaking, we are computing **function hull over-approximations**, but we simply call them **function hulls**.
 
-
-
 ### 2️⃣ ReLU-like and S-shaped Activation Functions
 
 - **ReLU-like Activation Functions**:
-  - Examples: ReLU, LeakyReLU, ELU.
-  - Construct a **DLP (double linear piece)** upper bound.
-  - Behave like:
-    - In negative region: almost constant (e.g., 0).
-    - In positive region: close to identity ($y = x$).
+    - Examples: ReLU, LeakyReLU, ELU.
+    - Construct a **DLP (double linear piece)** upper bound.
+    - Behave like:
+        - In negative region: almost constant (e.g., 0).
+        - In positive region: close to identity ($y = x$).
 
 - **S-shaped Activation Functions**:
-  - Examples: Sigmoid, Tanh.
-  - Construct **two DLPs** (upper and lower bounds).
-  - Behave like:
-    - Negative region: close to constant (e.g., 0).
-    - Positive region: close to constant (e.g., 1).
-    - Monotonically increasing or decreasing.
+    - Examples: Sigmoid, Tanh.
+    - Construct **two DLPs** (upper and lower bounds).
+    - Behave like:
+        - Negative region: close to constant (e.g., 0).
+        - Positive region: close to constant (e.g., 1).
+        - Monotonically increasing or decreasing.
 
 > 💡 **Tip**:  
 > No strict mathematical definition for "ReLU-like" or "S-shaped"; it's based on behavior.
-
-
 
 ## 🧠 What is Function Hull?
 
@@ -162,34 +137,24 @@ The **Function Hull** is a **polytope** in the input-output space that **enclose
 
 We only consider **bounded convex polytopes** and focus on their **H-representation**.
 
-
-
 ## 🛠️ Algorithm Overview
 
 The goal is to construct a polytope that **wraps** the graph of the activation function.
-
-
 
 ### 📥 Input
 
 - $\boldsymbol{C} \in \mathbb{R}^{m \times (n+1)}$: Input polytope constraints.
 - $\boldsymbol{l}, \boldsymbol{u} \in \mathbb{R}^n$: (Optional) Lower and upper bounds of input variables.
 
-
-
 ### 📤 Output
 
 - Constraints defining the **function hull** of the activation function.
-
-
 
 ### ⚙️ Core Computation Steps
 
 - Extend output dimension one by one.
 - Construct convex/concave **piece-wise linear bounds**.
 - Use **DLP (double linear piece)** functions where needed.
-
-
 
 #### Details:
 
