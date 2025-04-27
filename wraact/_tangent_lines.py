@@ -2,8 +2,8 @@ __docformat__ = "restructuredtext"
 __all__ = [
     "get_parallel_tangent_line_sigmoid_np",
     "get_parallel_tangent_line_tanh_np",
-    "get_parallel_tangent_line_sigmoid_np",
-    "get_parallel_tangent_line_tanh_np",
+    "get_second_tangent_line_sigmoid_np",
+    "get_second_tangent_line_tanh_np",
 ]
 
 

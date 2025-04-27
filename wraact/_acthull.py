@@ -379,7 +379,7 @@ class ActHull(ABC):
                 # This happens when there is an unexpected error.
                 self._record_and_raise_exception(e, c, v, l, u)
 
-        return v, dtype_cdd # type: ignore
+        return v, dtype_cdd  # type: ignore
 
     def _cal_constrs_with_exception(
         self,
@@ -405,7 +405,6 @@ class ActHull(ABC):
             # Maybe a bug caused by float number and the fractional number will be used.
             output_constrs, dtype_cdd = self.cal_constrs(c, v, l, u, dtype_cdd)
 
-
         except Exception:  # noqa
             try:
                 output_constrs, dtype_cdd = self.cal_constrs(c, v, l, u, "fraction")
@@ -415,7 +414,7 @@ class ActHull(ABC):
                 # For debugging, we check and record the error.
                 self._record_and_raise_exception(e, c, v, l, u)
 
-        return output_constrs, dtype_cdd # type: ignore
+        return output_constrs, dtype_cdd  # noqa
 
     @abstractmethod
     def cal_constrs(
