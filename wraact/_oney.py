@@ -38,6 +38,7 @@ class ActHullWithOneY(ActHull, ABC):
     """
 
     __slots__ = ActHull.__slots__ + ["_n_output_constrs"]
+    _n_output_constrs: int
 
     def __init__(
         self,

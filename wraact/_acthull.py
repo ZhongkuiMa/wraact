@@ -94,6 +94,11 @@ class ActHull(ABC):
         "_dtype_cdd",
     ]
 
+    _add_sn_constrs: bool
+    _add_mn_constrs: bool
+    _use_double_orders: bool
+    _dtype_cdd: Literal["float", "fraction"]
+
     def __init__(
         self,
         if_cal_single_neuron_constrs: bool = False,
@@ -185,11 +190,9 @@ class ActHull(ABC):
             c = np.vstack((c, c_u))
         c = np.ascontiguousarray(c)
 
-        if self._add_sn_constrs and not self._add_mn_constrs:
-            return self._cal_hull_with_sn_constrs(l, u)
-
-        elif self._add_mn_constrs:
+        if self._add_mn_constrs:
             return self._cal_hull_with_mn_constrs(c, l, u)
+        return self._cal_hull_with_sn_constrs(l, u)
 
     @staticmethod
     def _build_input_bounds_constraints(s: ndarray, is_lower: bool = True) -> ndarray:
@@ -351,7 +354,7 @@ class ActHull(ABC):
         l: ndarray | None = None,  # (d-1,)
         u: ndarray | None = None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
-    ) -> tuple[ndarray, Literal["float", "fraction"]] | None:  # (m, d)
+    ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (m, d)
         if _DEBUG:
             # When debugging, we directly calculate the vertices and check the
             # correctness without exception handling to see the error message.
@@ -364,7 +367,7 @@ class ActHull(ABC):
             # Maybe a bug caused by float number and the fractional number will be used.
             v, dtype_cdd = self.cal_vertices(c, dtype_cdd)
             self._check_vertices(v)
-            return v, dtype_cdd
+
         except Exception:  # noqa
             try:
                 # Change to use the fractional number to calculate the vertices.
@@ -372,10 +375,11 @@ class ActHull(ABC):
                 v, dtype_cdd = self.cal_vertices(c, dtype_cdd)  # type: ignore
                 self._check_vertices(v)
 
-                return v, dtype_cdd
             except Exception as e:
                 # This happens when there is an unexpected error.
                 self._record_and_raise_exception(e, c, v, l, u)
+
+        return v, dtype_cdd # type: ignore
 
     def _cal_constrs_with_exception(
         self,
@@ -400,17 +404,18 @@ class ActHull(ABC):
         try:
             # Maybe a bug caused by float number and the fractional number will be used.
             output_constrs, dtype_cdd = self.cal_constrs(c, v, l, u, dtype_cdd)
-            return output_constrs, dtype_cdd
+
 
         except Exception:  # noqa
             try:
                 output_constrs, dtype_cdd = self.cal_constrs(c, v, l, u, "fraction")
-                return output_constrs, dtype_cdd
 
             except Exception as e:
                 # Normally, there should not be any error.
                 # For debugging, we check and record the error.
                 self._record_and_raise_exception(e, c, v, l, u)
+
+        return output_constrs, dtype_cdd # type: ignore
 
     @abstractmethod
     def cal_constrs(
@@ -558,7 +563,6 @@ class ActHull(ABC):
 
     @staticmethod
     def _check_vertices(v: ndarray):  # (m, d)
-
         if len(v) == 0:
             raise RuntimeError(
                 "Zero vertices. The input polytope is infeasible. "
@@ -733,7 +737,6 @@ class ReLULikeHull(ActHull, ABC):
         u: ndarray | None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, 2*d-1)
-
         d = c.shape[1] - 1
         c = np.array(c, dtype=np.float64)
         l = np.array(l, dtype=np.float64)
@@ -1422,7 +1425,6 @@ class SShapeHull(ActHull, ABC):
         :return: The auxiliary lines, auxiliary point, and the single-neuron
             constraints.
         """
-
         if np.allclose(xli, xui):
             # Handle the degenerate case
             c1 = np.zeros((1, idx + dim + 2), dtype=np.float64)
@@ -1490,7 +1492,6 @@ class SShapeHull(ActHull, ABC):
         :return: The auxiliary lines, auxiliary point, and the single-neuron
             constraints.
         """
-
         f = cls._f
         blu2, klu2, su = cls._get_parallel_tangent_line(klui, get_big=False)
         kp1, kli = (yli - f(su)) / (xli - su), kli
@@ -1646,7 +1647,6 @@ class SShapeHull(ActHull, ABC):
         :return: The auxiliary lines, auxiliary point, and the single-neuron
             constraints.
         """
-
         f = cls._f
         blul, klul, su = cls._get_parallel_tangent_line(klui, get_big=False)
         bluu, kluu, sl = cls._get_parallel_tangent_line(klui, get_big=True)

@@ -61,14 +61,14 @@ def delu_np(x: ndarray | float) -> ndarray | float:
 
 
 def leakyrelu_np(
-    x: ndarray | float, negative_slope: ndarray | float
+    x: ndarray | float, negative_slope: ndarray | float = 0.01
 ) -> ndarray | float:
 
     return np.where(x > 0, x, negative_slope * x)
 
 
 def dleakyrelu_np(
-    x: ndarray | float, negative_slope: ndarray | float
+    x: ndarray | float, negative_slope: ndarray | float = 0.01
 ) -> ndarray | float:
     return np.where(x > 0, 1.0, negative_slope)
 
