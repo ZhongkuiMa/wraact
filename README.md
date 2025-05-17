@@ -1,19 +1,32 @@
-# WraAct: Wrapping Activation Functions
+# WraAct: Precise Activation Function Approximation for Neural Network Verification
 
-WraAct is a tool to construct the convex hull of various activation functions.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![NumPy 2.2](https://img.shields.io/badge/NumPy-2.2-green.svg)](https://numpy.org/)
+[![Numba 0.61](https://img.shields.io/badge/Numba-0.61-orange.svg)](https://numba.pydata.org/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-## 🛠️ Installation
+**WraAct** constructs tight convex hull approximations of activation functions for sound and efficient neural network verification.
 
-You need to use 🐍 Python 3.10+ (We are using Python 3.12).  
-You need the following dependencies to run **wraact**: 📦
+> Wrap complex activation functions with precise linear constraints to enable scalable formal verification
 
-- 📦 pycddlib (2.1.8.post1): A library for computing convex hulls and polyhedra. We use it to compute the vertices of the polytope.
-- 🧮 numpy (2.2.4): A library for numerical computations in Python. We use it to handle arrays and matrices.
-- ⚡ numba (0.61.2): A library for just-in-time compilation of Python code. We use it to speed up some computations.
+## ✨ Key Features
 
-You can install the dependencies using pip:
+- 🔍 **Precise Approximations** - Generates mathematically sound convex hull constraints for various activation functions
+- 🚀 **Performance Optimized** - Uses Numba JIT compilation for fast constraint generation
+- 🧮 **Multiple Activation Types** - Supports ReLU, Sigmoid, Tanh, LeakyReLU, ELU, and many more
+- 🔄 **V-H Representation** - Efficiently converts between vertex and halfspace representations with pycddlib
+- 🌐 **Multi-Dimensional Support** - Handles both unary and multi-variable activation functions
+
+## 🔧 Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/ZhongkuiMa/rover_alpha.git
+cd rover_alpha/wraact
+
+# Install dependencies
 pip install pycddlib==2.1.8.post1 numpy==2.2.4 numba==0.61.2
 ```
 
