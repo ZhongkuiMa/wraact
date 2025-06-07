@@ -7,6 +7,8 @@ from numpy import ndarray
 from ._relulike import ReLULikeHullWithOneY
 from ..acthull import ReLUHull
 
+_TOL = 1e-4
+
 
 class ReLUHullWithOneY(ReLULikeHullWithOneY, ReLUHull):
     """

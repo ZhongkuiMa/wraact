@@ -118,7 +118,7 @@ class ELUHull(ReLULikeHull):
         bp2 = yl - kp2 * l
 
         # Estimate the angle of the two linear pieces to avoid large coefficients.
-        if abs((kp1 - kp2) / (1 - kp1 * kp2)) < MIN_DLP_ANGLE:
+        if abs((kp1 - kp2) / (1 - kp1 * kp2)) < _MIN_DLP_ANGLE:
             k = (yu - yl) / (u - l)
             b = yu - k * u
             aux_lines = np.asarray(
