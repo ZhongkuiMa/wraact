@@ -1,4 +1,4 @@
-# WraAct: Precise Activation Function Approximation for Neural Network Verification
+# WraAct: Precise Activation Function Over-Approximation for Neural Network Verification
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -9,7 +9,12 @@
 
 **WraAct** constructs tight convex hull approximations of activation functions for sound and efficient neural network verification.
 
-> Wrap complex activation functions with precise linear constraints to enable scalable formal verification
+> 📖 **See also**:  
+> This repo is based on the following papers and provides implementations for the algorithms described therein. **This is a regularly maintained and updated repo for the algorithm part.**
+>
+> [ReLU Hull Approximation](https://dl.acm.org/doi/pdf/10.1145/3632917) (POPL'24) (Ma et al., 2024).
+>
+> [Convex Hull Approximation for Activation Functions]() (OOPSLA'25) (Ma et al., 2025)
 
 ## ✨ Key Features
 
@@ -209,13 +214,6 @@ or
 $$
 b_i + \boldsymbol{A}_i \boldsymbol{x} \leq \beta_i (y - \boldsymbol{B}_j \boldsymbol{x})
 $$
-
-
-
-> 📖 **See also**:  
-> More theoretical details in the paper:  
-> [ReLU Hull Approximation](https://dl.acm.org/doi/pdf/10.1145/3632917) (Ma et al., 2024).
-
 
 ---
 
