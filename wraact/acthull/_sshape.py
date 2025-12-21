@@ -272,8 +272,8 @@ class SShapeHull(ActHull, ABC):
         if xui > 0:
             x = np.asarray([xli, su, xui], dtype=np.float64)
             b, k, _ = cls._get_second_tangent_line(x, get_big=True)
-            blui, bp2, bui = b
-            klui, kp2, kui = k
+            blui, bp2, bui = b  # type: ignore[misc]
+            klui, kp2, kui = k  # type: ignore[misc]
         else:
             kp2, klui, kui = (yui - f(su)) / (xui - su), klui, kui
             bp2, blui, bui = yui - kp2 * xui, yli - klui * xli, yui - kui * xui
@@ -284,7 +284,7 @@ class SShapeHull(ActHull, ABC):
         aux_lines_l[:, -1] = -1.0
         aux_point_l = None
 
-        aux_lines_u, aux_point_u = cls._construct_upper_aux_lines_and_points(
+        aux_lines_u, aux_point_u = cls._construct_upper_aux_lines_and_points(  # type: ignore[arg-type]
             dim, idx, xli, yli, klui, su, kp1, kp2, bp1, bp2
         )
 
@@ -346,13 +346,13 @@ class SShapeHull(ActHull, ABC):
         if xli < 0:
             x = np.asarray([xui, sl, xli], dtype=np.float64)
             b, k, _ = cls._get_second_tangent_line(x, get_big=False)
-            blui, bp2, bli = b
-            klui, kp2, kli = k
+            blui, bp2, bli = b  # type: ignore[misc]
+            klui, kp2, kli = k  # type: ignore[misc]
         else:
             kp2, klui, kli = (yli - f(sl)) / (xli - sl), klui, kli
             bp2, blui, bli = yli - kp2 * xli, yui - klui * xui, yli - kli * xli
 
-        aux_lines_l, aux_point_l = cls._construct_lower_aux_lines_and_points(
+        aux_lines_l, aux_point_l = cls._construct_lower_aux_lines_and_points(  # type: ignore[arg-type]
             dim, idx, xui, yui, klui, sl, kp1, kp2, bp1, bp2
         )
 
@@ -418,20 +418,20 @@ class SShapeHull(ActHull, ABC):
 
         x_temp = np.asarray([xli, su], dtype=np.float64)
         b_temp, k_temp, _ = cls._get_second_tangent_line(x_temp, get_big=True)
-        btu, bp2u = b_temp
-        ktu, kp2u = k_temp
+        btu, bp2u = b_temp  # type: ignore[misc]
+        ktu, kp2u = k_temp  # type: ignore[misc]
         x_temp = np.asarray([xui, sl], dtype=np.float64)
         b_temp, k_temp, _ = cls._get_second_tangent_line(x_temp, get_big=False)
-        btl, bp2l = b_temp
-        ktl, kp2l = k_temp
+        btl, bp2l = b_temp  # type: ignore[misc]
+        ktl, kp2l = k_temp  # type: ignore[misc]
 
         kp1u, kp1l = (yli - f(su)) / (xli - su), (yui - f(sl)) / (xui - sl)
         bp1u, bp1l = yli - kp1u * xli, yui - kp1l * xui
 
-        aux_lines_l, aux_point_l = cls._construct_lower_aux_lines_and_points(
+        aux_lines_l, aux_point_l = cls._construct_lower_aux_lines_and_points(  # type: ignore[arg-type]
             dim, idx, xui, yui, klui, sl, kp1l, kp2l, bp1l, bp2l
         )
-        aux_lines_u, aux_point_u = cls._construct_upper_aux_lines_and_points(
+        aux_lines_u, aux_point_u = cls._construct_upper_aux_lines_and_points(  # type: ignore[arg-type]
             dim, idx, xli, yli, klui, su, kp1u, kp2u, bp1u, bp2u
         )
 
