@@ -1,21 +1,18 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["LeakyReLUHull"]
 
 import numpy as np
 from numpy import ndarray
 
-from ._relulike import ReLULikeHull
-from .._functions import *
+from wraact.wraact._functions import dleakyrelu_np, leakyrelu_np
+from wraact.wraact.acthull._relulike import ReLULikeHull
 
 _LEAKY_RELU_ALPHA = 0.01
 _MIN_BOUNDS_RANGE = 0.05
 
 
 class LeakyReLUHull(ReLULikeHull):
-    """
-    This is to calculate the function hull for the leaky rectified linear unit
-    (LeakyReLU) activation function.
-    """
+    """This is to calculate the function hull for the leaky rectified linear unit (LeakyReLU) activation function."""
 
     _lower_constraints: dict[int, ndarray] = {}
 
@@ -27,6 +24,7 @@ class LeakyReLUHull(ReLULikeHull):
     ) -> ndarray:  # (3*d, 2*d+1)
         """
         Calculate the single-neuron constraints of the function hull for LeakyReLU.
+
         This is similar to the ReLU.
         We use *triangle relaxation* to calculate the single-neuron constraints of
         LeakyReLU.
@@ -83,15 +81,11 @@ class LeakyReLUHull(ReLULikeHull):
         return c
 
     @classmethod
-    def _construct_dlp(
-        cls, idx: int, dim: int, l: float, u: float
-    ) -> tuple[ndarray, float | None]:
+    def _construct_dlp(cls, idx: int, dim: int, l: float, u: float) -> tuple[ndarray, float | None]:
         temp1, temp2 = [0.0] * idx, [0.0] * (dim - 1)
 
         if l >= 0:
-            aux_lines = np.asarray(
-                [[0.0] + temp1 + [1.0] + temp2 + [-1.0]], dtype=np.float64
-            )
+            aux_lines = np.asarray([[0.0] + temp1 + [1.0] + temp2 + [-1.0]], dtype=np.float64)
             return aux_lines, None
 
         if u <= 0:
@@ -103,9 +97,7 @@ class LeakyReLUHull(ReLULikeHull):
         if u - l < _MIN_BOUNDS_RANGE:
             k = (u - l) / (u - l)
             b = u - k * u
-            aux_lines = np.asarray(
-                [[b] + temp1 + [k] + temp2 + [-1.0]], dtype=np.float64
-            )
+            aux_lines = np.asarray([[b] + temp1 + [k] + temp2 + [-1.0]], dtype=np.float64)
             return aux_lines, None
 
         kp1 = _LEAKY_RELU_ALPHA

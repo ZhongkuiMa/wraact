@@ -1,4 +1,4 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["cal_mn_constrs_with_one_y_dlp"]
 
 import numpy as np
@@ -14,8 +14,7 @@ def cal_mn_constrs_with_one_y_dlp(
     is_convex: bool = True,
 ) -> tuple[ndarray, ndarray]:  # (n, d+1) | (n+1, d+1) , (m, d+1)
     """
-    Calculate the multi-neuron constraints for one specified input dimension of the
-    function hull for the DLP (double linear pieces) function.
+    Calculate the multi-neuron constraints for one specified input dimension of the function hull for the DLP (double linear pieces) function.
 
     :param idx: The index of the input dimension.
     :param c: The constraints of input polytope.
@@ -63,9 +62,7 @@ def cal_mn_constrs_with_one_y_dlp(
     mask_vl, mask_vr = (vc < aux_point), (vc > aux_point)
 
     if not np.any(mask_vl) or not np.any(mask_vr):
-        raise RuntimeError(
-            "The vertices should not all greater/smaller than the auxiliary point."
-        )
+        raise RuntimeError("The vertices should not all greater/smaller than the auxiliary point.")
 
     ll, lr = aux_lines[[[0], [1]]] if is_convex else aux_lines[[[1], [0]]]
 

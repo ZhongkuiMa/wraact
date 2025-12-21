@@ -1,10 +1,10 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["SigmoidHull"]
 
 from numpy import ndarray
 
-from ._sshape import *
-from .._functions import *
+from wraact.wraact._functions import dsigmoid_np, sigmoid_np
+from wraact.wraact.acthull._sshape import SShapeHull
 
 
 class SigmoidHull(SShapeHull):
@@ -18,17 +18,17 @@ class SigmoidHull(SShapeHull):
     def _get_second_tangent_line(
         x1: float | ndarray, get_big: bool | ndarray
     ) -> tuple[float | ndarray, float | ndarray, float | ndarray]:
-        from .._tangent_lines import get_second_tangent_line_sigmoid_np
+        from wraact.wraact._tangent_lines import get_second_tangent_line_sigmoid_np
 
-        return get_second_tangent_line_sigmoid_np(x1, get_big)
+        return get_second_tangent_line_sigmoid_np(x1, get_big)  # type: ignore[return-value]
 
     @staticmethod
     def _get_parallel_tangent_line(
         k: float | ndarray, get_big: bool | ndarray
     ) -> tuple[float | ndarray, float | ndarray, float | ndarray]:
-        from .._tangent_lines import get_parallel_tangent_line_sigmoid_np
+        from wraact.wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
 
-        return get_parallel_tangent_line_sigmoid_np(k, get_big)
+        return get_parallel_tangent_line_sigmoid_np(k, get_big)  # type: ignore[return-value]
 
     @staticmethod
     def _f(x: ndarray | float) -> ndarray | float:

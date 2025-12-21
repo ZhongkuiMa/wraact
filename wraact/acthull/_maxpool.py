@@ -1,4 +1,4 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["MaxPoolHull", "MaxPoolHullDLP"]
 
 
@@ -7,7 +7,7 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from ._relulike import ReLULikeHull
+from wraact.wraact.acthull._relulike import ReLULikeHull
 
 _TOL = 1e-4
 
@@ -15,6 +15,7 @@ _TOL = 1e-4
 class MaxPoolHullDLP(ReLULikeHull):
     """
     This is to calculate the function hull for the max pooling activation function.
+
     In this method, we construct a DLP function as the upper bound of a MaxPool
     function.
 
@@ -58,7 +59,6 @@ class MaxPoolHullDLP(ReLULikeHull):
         u: ndarray | None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, d+1)
-
         d = c.shape[1] - 1
         c = np.array(c, dtype=np.float64)
         l = np.array(l, dtype=np.float64)
@@ -136,7 +136,6 @@ class MaxPoolHullDLP(ReLULikeHull):
         l: ndarray | None,  # (d-1,)
         u: ndarray | None,  # (d-1,)
     ) -> ndarray:  # (n, d+1)
-
         # ------------------------ Trivial case ------------------------
         cc = cls._handle_case_of_one_vertex(v)
         if cc is not None:
@@ -328,6 +327,7 @@ class MaxPoolHullDLP(ReLULikeHull):
 class MaxPoolHull(MaxPoolHullDLP):
     """
     This is to calculate the function hull for the max pooling activation function.
+
     In this method, we calculate the function hull without constructing a DLP function.
 
     .. tip::

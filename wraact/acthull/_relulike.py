@@ -1,4 +1,4 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["ReLULikeHull"]
 
 from abc import ABC, abstractmethod
@@ -7,15 +7,12 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from ._act import ActHull
-from ._utils import cal_mn_constrs_with_one_y_dlp
+from wraact.wraact.acthull._act import ActHull
+from wraact.wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
 
 
 class ReLULikeHull(ActHull, ABC):
-    """
-    This is the base class for the ReLU-like activation functions to calculate the
-    function hull.
-    """
+    """This is the base class for the ReLU-like activation functions to calculate the function hull."""
 
     def cal_constrs(
         self,
@@ -53,7 +50,7 @@ class ReLULikeHull(ActHull, ABC):
 
         for i in range(d):
             lines, point = cls._construct_dlp(i, d, l[i], u[i])
-            c, v = cls._cal_mn_constrs_with_one_y(i, c, v, lines, point, True)
+            c, v = cls._cal_mn_constrs_with_one_y(i, c, v, lines, point, is_convex=True)
 
         return c
 
@@ -67,9 +64,7 @@ class ReLULikeHull(ActHull, ABC):
         dlp_point: float,
         is_convex: bool,
     ) -> tuple[ndarray, ndarray]:  # (n, d+1) , (m, d+1)
-        return cal_mn_constrs_with_one_y_dlp(
-            idx, c, v, dlp_lines, dlp_point, is_convex=is_convex
-        )
+        return cal_mn_constrs_with_one_y_dlp(idx, c, v, dlp_lines, dlp_point, is_convex=is_convex)
 
     @classmethod
     @abstractmethod

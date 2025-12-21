@@ -1,4 +1,4 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["SShapeHull"]
 
 from abc import ABC, abstractmethod
@@ -7,8 +7,8 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from ._act import ActHull
-from ._utils import cal_mn_constrs_with_one_y_dlp
+from wraact.wraact.acthull._act import ActHull
+from wraact.wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
 
 _MIN_DLP_ANGLE = 0.1
 """
@@ -21,8 +21,7 @@ _MIN_DLP_ANGLE = 0.1
 
 class SShapeHull(ActHull, ABC):
     """
-    This is the base class for the S-shaped activation functions to calculate the
-    function hull.
+    This is the base class for the S-shaped activation functions to calculate the function hull.
 
     The S-shaped activation functions include the sigmoid, hyperbolic tangent, etc.
 
@@ -55,7 +54,6 @@ class SShapeHull(ActHull, ABC):
         u: ndarray | None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, 2*d-1)
-
         d = c.shape[1] - 1
         c = np.array(c, dtype=np.float64)
         l = np.array(l, dtype=np.float64)
@@ -72,18 +70,21 @@ class SShapeHull(ActHull, ABC):
 
         return cc, dtype_cdd
 
-    def cal_sn_constrs(
+    def cal_sn_constrs(  # type: ignore[override]
         self,
         l: ndarray,  # (d,)
         u: ndarray,  # (d,)
     ) -> ndarray:  # (_, 1+2*d)
-
         d = l.shape[0]
         cc = np.empty((0, 1 + d), dtype=np.float64)
 
         f, df = self._f, self._df
         xl, xu = l, u
-        yl, yu, kl, ku = f(xl), f(xu), df(xl), df(xu)
+        yl: ndarray
+        yu: ndarray
+        kl: ndarray
+        ku: ndarray
+        yl, yu, kl, ku = f(xl), f(xu), df(xl), df(xu)  # type: ignore[assignment]
         klu = (yu - yl) / (xu - xl)
 
         for i in range(d):
@@ -92,18 +93,16 @@ class SShapeHull(ActHull, ABC):
 
         return cc
 
-    def cal_mn_constrs(
+    def cal_mn_constrs(  # type: ignore[override]
         self,
         c: ndarray,  # (n, d)
         v: ndarray,  # (m, d)
         l: ndarray | None,  # (d-1,)
         u: ndarray | None,  # (d-1,)
     ) -> ndarray:  # (_, 2*d-1) | (_, d+1)
-
-        if l is None and u is None:
+        if l is None or u is None:
             raise ValueError(
-                "The lower and upper bounds should be provided for the S-shape "
-                "activation function."
+                "Both lower and upper bounds are required for the S-shape activation function."
             )
 
         d = c.shape[1] - 1
@@ -115,13 +114,17 @@ class SShapeHull(ActHull, ABC):
 
         f, df = self._f, self._df
         xl, xu = l, u
-        yl, yu, kl, ku = f(xl), f(xu), df(xl), df(xu)
+        yl: ndarray
+        yu: ndarray
+        kl: ndarray
+        ku: ndarray
+        yl, yu, kl, ku = f(xl), f(xu), df(xl), df(xu)  # type: ignore[assignment]
         klu = (yu - yl) / (xu - xl)
 
         for i in range(d):
             args = (i, d, xl[i], xu[i], yl[i], yu[i], kl[i], ku[i], klu[i], cc_s)
-            dlp_lines_l, dlp_lines_u, dlp_point_l, dlp_point_u, cc_s = (
-                self._construct_dlp(*args, self._add_sn_constrs)
+            dlp_lines_l, dlp_lines_u, dlp_point_l, dlp_point_u, cc_s = self._construct_dlp(
+                *args, self._add_sn_constrs
             )
 
             if self._add_mn_constrs:
@@ -152,9 +155,7 @@ class SShapeHull(ActHull, ABC):
         dlp_point: float | None,
         is_convex: bool,
     ) -> tuple[ndarray, ndarray]:  # (n, d+1) | (n+1, d+1), (m, d+1)
-        return cal_mn_constrs_with_one_y_dlp(
-            idx, c, v, dlp_lines, dlp_point, is_convex=is_convex
-        )
+        return cal_mn_constrs_with_one_y_dlp(idx, c, v, dlp_lines, dlp_point, is_convex=is_convex)
 
     @classmethod
     def _construct_dlp(
@@ -170,12 +171,10 @@ class SShapeHull(ActHull, ABC):
         klui: float,
         c: ndarray,  # (n, d)
         return_single_neuron_constrs: bool,
-    ) -> tuple[
-        ndarray | None, ndarray | None, float | None, float | None, ndarray | None
-    ]:
+    ) -> tuple[ndarray | None, ndarray | None, float | None, float | None, ndarray]:
         """
-        Calculate the auxiliary lines, auxiliary point, and the single-neuron
-        constraints.
+        Calculate the auxiliary lines, auxiliary point, and the single-neuron constraints.
+
         There are three cases:
 
         1. One linear function as the lower bound and one DLP function as the upper
@@ -213,7 +212,7 @@ class SShapeHull(ActHull, ABC):
             c2[:, -1] = -1.0
             c = np.hstack((c, np.zeros((c.shape[0], 1))))
             return c1, c2, None, None, c
-        elif kui > klui:
+        if kui > klui:
             resolve_case = cls._construct_dlp_case1
         elif kli > klui:
             resolve_case = cls._construct_dlp_case2
@@ -246,10 +245,7 @@ class SShapeHull(ActHull, ABC):
         ndarray | None,  # (n+4, 1+dim+idx+1)
     ]:
         """
-        Calculate the auxiliary lines, auxiliary point, and the single-neuron
-        constraints for the case where the slope of the upper linear piece is
-        larger than the slope of the linear piece connecting the lower and upper
-        bounds.
+        Calculate the auxiliary lines, auxiliary point, and the single-neuron constraints for the case where the slope of the upper linear piece is larger than the slope of the linear piece connecting the lower and upper bounds.
 
         :param idx: The index of dimension to extend in output space.
         :param dim: The dimension of input space.
@@ -323,10 +319,7 @@ class SShapeHull(ActHull, ABC):
         ndarray | None,  # (n+4, 1+dim+idx+1)
     ]:
         """
-        Calculate the auxiliary lines, auxiliary point, and the single-neuron
-        constraints for the case where the slope of the lower linear piece is
-        larger than the slope of the linear piece connecting the lower and upper
-        bounds.
+        Calculate the auxiliary lines, auxiliary point, and the single-neuron constraints for the case where the slope of the lower linear piece is larger than the slope of the linear piece connecting the lower and upper bounds.
 
         :param idx: The index of dimension to extend in output space.
         :param dim: The dimension of input space.
@@ -400,11 +393,7 @@ class SShapeHull(ActHull, ABC):
         ndarray | None,  # (n+6, 1+dim+idx+1)
     ]:
         """
-        Calculate the auxiliary lines, auxiliary point, and the single-neuron
-        constraints for the case where (1) the slope of the upper linear piece is
-        smaller than the slope of the linear piece connecting the lower and upper
-        bounds, and (2) the slope of the lower linear piece is smaller than the
-        slope of the linear piece connecting the lower and upper bounds.
+        Calculate the auxiliary lines, auxiliary point, and the single-neuron constraints for the case where (1) the slope of the upper linear piece is smaller than the slope of the linear piece connecting the lower and upper bounds, and (2) the slope of the lower linear piece is smaller than the slope of the linear piece connecting the lower and upper bounds.
 
         :param idx: The index of dimension to extend in output space.
         :param dim: The dimension of input space.
@@ -518,16 +507,13 @@ class SShapeHull(ActHull, ABC):
         x1: float | ndarray, get_big: bool | ndarray
     ) -> tuple[float | ndarray, float | ndarray, float | ndarray]:
         """
-        Get the second tangent line given a point x1, which is not the tangent line
-        taking x1 as tangent point.
+        Get the second tangent line given a point x1, which is not the tangent line taking x1 as tangent point.
 
         :param x1: The point where the tangent line is not taken.
         :param get_big: Whether to get the tangent line with a larger slope.
 
         :return: The bias, slope, and the tangent point of the tangent line.
         """
-
-        pass
 
     @staticmethod
     @abstractmethod
@@ -542,4 +528,3 @@ class SShapeHull(ActHull, ABC):
 
         :return: The bias, slope, and the tangent point of the tangent line.
         """
-        pass

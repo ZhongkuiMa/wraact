@@ -1,16 +1,16 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["ReLULikeHull"]
 
 import numpy as np
 from numpy import ndarray
 
-from ._relulike import ReLULikeHull
-from .._functions import *
+from wraact.wraact._functions import dsilu_np, silu_np
+from wraact.wraact.acthull._relulike import ReLULikeHull
 
 
 class SiLUHull(ReLULikeHull):
     """
-    This is to calculate the function hull for the sigmoid linear unit (SiLU)
+    This is to calculate the function hull for the sigmoid linear unit (SiLU).
 
     .. warning::
         This class is not implemented yet.

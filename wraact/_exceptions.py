@@ -1,11 +1,12 @@
 __docformat__ = "restructuredtext"
-__all__ = ["Degenerated", "NotConverged"]
+__all__ = ["DegeneratedError", "NotConvergedError"]
 
 
-class Degenerated(Exception):
+class DegeneratedError(Exception):
     """
     An exception for degenerated input polytope when calculating function hull.
-    It means the number of vertices is fewer than the dimension
+
+    It means the number of vertices is fewer than the dimension.
     """
 
     def __init__(self, message="The polytope is degenerated."):
@@ -15,7 +16,7 @@ class Degenerated(Exception):
         return f"{self.__class__.__name__}: {super().__str__()}"
 
 
-class NotConverged(Exception):
+class NotConvergedError(Exception):
     """
     An exception for not converged calculation in an algorithm.
 

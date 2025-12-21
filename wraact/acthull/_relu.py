@@ -1,19 +1,18 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["ReLUHull"]
 
 import numpy as np
 from numpy import ndarray
 
-from ._relulike import ReLULikeHull
-from .._functions import *
+from wraact.wraact._functions import drelu_np, relu_np
+from wraact.wraact.acthull._relulike import ReLULikeHull
 
 _TOL = 1e-4
 
 
 class ReLUHull(ReLULikeHull):
     """
-    This is to calculate the function hull for the rectified linear unit (ReLU)
-    activation function.
+    This is to calculate the function hull for the rectified linear unit (ReLU) activation function.
 
     .. tip::
         This is an ad hoc implementation for ReLU to obtain the function hull
@@ -31,6 +30,7 @@ class ReLUHull(ReLULikeHull):
     ) -> ndarray:  # (3*d, 1+2*d)
         """
         Calculate the single-neuron constraints of the function hull for ReLU.
+
         We use *triangle relaxation* to calculate the single-neuron constraints of
         ReLU.
 
@@ -87,8 +87,9 @@ class ReLUHull(ReLULikeHull):
     ) -> ndarray:  # (_, 2*d-1)
         """
         Calculate the multi-neuron constraints of the function hull.
+
         We use the algorithm called *WraLU* to calculate the multi-neuron
-        constraints
+        constraints.
 
         .. seealso::
 
@@ -103,7 +104,7 @@ class ReLUHull(ReLULikeHull):
 
         :return: The multi-neuron constraints of the function hull.
         """
-        # FIXME: Add the code for degenerated input polytope.
+        # TODO: Add the code for degenerated input polytope.
 
         dim = c.shape[1] - 1
 

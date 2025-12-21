@@ -1,23 +1,20 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["ReLUHullWithOneY"]
 
 import numpy as np
 from numpy import ndarray
 
-from ._relulike import ReLULikeHullWithOneY
-from ..acthull import ReLUHull
+from wraact.wraact.acthull import ReLUHull
+from wraact.wraact.oney._relulike import ReLULikeHullWithOneY
 
 _TOL = 1e-4
 
 
 class ReLUHullWithOneY(ReLULikeHullWithOneY, ReLUHull):
     """
-    The class to calculate the function hull for the rectified linear unit (ReLU)
-    activation function with only one output dimension.
+    The class to calculate the function hull for the rectified linear unit (ReLU) activation function with only one output dimension.
 
-    Please refer to the :class:`ReLULikeHullWithOneY` and :class:`ReLUHull` for more
-    details.
-
+    Please refer to the :class:`ReLULikeHullWithOneY` and :class:`ReLUHull` for more details.
     """
 
     @classmethod
@@ -32,9 +29,7 @@ class ReLUHullWithOneY(ReLULikeHullWithOneY, ReLUHull):
         v = np.transpose(v)
         mask_xp, mask_xn = (v > _TOL), (v < -_TOL)
         if not np.any(mask_xp) and not np.any(mask_xn):
-            raise ArithmeticError(
-                "The vertices should not all positive or all negative."
-            )
+            raise ArithmeticError("The vertices should not all positive or all negative.")
 
         cv = np.matmul(c, v)
 

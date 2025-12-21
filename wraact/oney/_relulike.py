@@ -1,4 +1,4 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["ReLULikeHullWithOneY"]
 
 from abc import ABC
@@ -7,19 +7,17 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from ._act import ActHullWithOneY
-from ..acthull import ReLULikeHull
+from wraact.wraact.acthull import ReLULikeHull
+from wraact.wraact.oney._act import ActHullWithOneY
 
 _MIN_BOUNDS_RANGE = 0.04
 
 
 class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
     """
-    The base class for the ReLU like activation functions to calculate the function hull
-    with only one output dimension.
+    The base class for the ReLU like activation functions to calculate the function hull with only one output dimension.
 
-    Please refer to the :class:`ActHullWithOneY` and :class:`ReLULikeHull` for more
-    details.
+    Please refer to the :class:`ActHullWithOneY` and :class:`ReLULikeHull` for more details.
     """
 
     def cal_constrs(
@@ -58,7 +56,6 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
         l: ndarray,  # (d,)
         u: ndarray,  # (d,)
     ) -> ndarray:  # (_, d+2)
-
         dim = l.shape[0]
         c = np.zeros((1, dim + 2), dtype=np.float64)
 
@@ -86,7 +83,7 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
         d = c.shape[1] - 1
 
         aux_lines, aux_point = cls._construct_dlp(0, d, l[0], u[0])
-        c, v = cls._cal_mn_constrs_with_one_y(0, c, v, aux_lines, aux_point, True)
+        c, v = cls._cal_mn_constrs_with_one_y(0, c, v, aux_lines, aux_point, is_convex=True)
         c = cls._get_topk_constrs(c, n_output_constrs)
 
         return c

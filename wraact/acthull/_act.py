@@ -1,16 +1,16 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["ActHull"]
 
-import os
 import time
 from abc import ABC, abstractmethod
-from typing import Literal
+from pathlib import Path
+from typing import Literal, NoReturn
 
 import cdd
 import numpy as np
 from numpy import ndarray
 
-from .._exceptions import *
+from wraact.wraact._exceptions import DegeneratedError
 
 _DEBUG = False
 _MIN_BOUNDS_RANGE = 0.05
@@ -18,8 +18,7 @@ _MIN_BOUNDS_RANGE = 0.05
 
 class ActHull(ABC):
     """
-    An object used to calculate the function hull of the activation
-    function.
+    An object used to calculate the function hull of the activation function.
 
     :param if_cal_single_neuron_constrs: Whether to calculate single-neuron
         constraints.
@@ -60,7 +59,7 @@ class ActHull(ABC):
 
     _reversed_orders: dict[int, list[int]] = {}
     """This is a cache for the reversed orders of the input variables. The key is the
-    dimension of the input space and the value is the reversed order of the input 
+    dimension of the input space and the value is the reversed order of the input
     variable indices."""
 
     __slots__ = [
@@ -109,6 +108,7 @@ class ActHull(ABC):
     ) -> ndarray | None:  # (n, 2*d-1) | (n, d+1)
         """
         Calculate the function hull of an activation function.
+
         There are two options:
 
         1. Calculate the single-neuron constraints with given input lower and upper
@@ -133,7 +133,6 @@ class ActHull(ABC):
         :param input_upper_bounds: The upper bounds of the input variables.
         :return: The constraints defining the function hull.
         """
-
         self._check_input_bounds(input_lower_bounds, input_upper_bounds)
         self._check_input_constrs(input_constrs)
         self._check_inputs(input_constrs, input_lower_bounds, input_upper_bounds)
@@ -157,6 +156,7 @@ class ActHull(ABC):
             c_u = self._build_input_bounds_constraints(u, is_lower=False)
             d = u.size
 
+        assert d is not None, "At least one of input_constrs, input_lower_bounds, or input_upper_bounds must be provided"
         c = np.empty((0, 1 + d), dtype=np.float64)
         if c_i is not None:
             c = np.vstack((c, c_i))
@@ -232,8 +232,7 @@ class ActHull(ABC):
     ) -> ndarray:  # (_, 2*d+1) | (_, d+1)
         if l is None or u is None:
             raise ValueError(
-                "The lower and upper bounds of the input variables should be "
-                "provided."
+                "The lower and upper bounds of the input variables should be provided."
             )
 
         return self.cal_sn_constrs(l, u)
@@ -276,7 +275,7 @@ class ActHull(ABC):
             self._check_degenerated_input_polytope(v, new_l, new_u)
             l = new_l
             u = new_u
-        except Degenerated:
+        except DegeneratedError:
             v, dtype_cdd = self.cal_vertices(c, "fraction")
             l = np.min(v, axis=0)[1:]
             u = np.max(v, axis=0)[1:]
@@ -344,18 +343,18 @@ class ActHull(ABC):
             v, dtype_cdd = self.cal_vertices(c, dtype_cdd)
             self._check_vertices(v)
 
-        except Exception:  # noqa
+        except (cdd.Error, RuntimeError, ArithmeticError, ValueError):
             try:
                 # Change to use the fractional number to calculate the vertices.
                 dtype_cdd = "fraction"
-                v, dtype_cdd = self.cal_vertices(c, dtype_cdd)  # type: ignore
+                v, dtype_cdd = self.cal_vertices(c, dtype_cdd)
                 self._check_vertices(v)
 
-            except Exception as e:
+            except (cdd.Error, RuntimeError, ArithmeticError, ValueError) as e:
                 # This happens when there is an unexpected error.
                 self._record_and_raise_exception(e, c, v, l, u)
 
-        return v, dtype_cdd  # type: ignore
+        return v, dtype_cdd
 
     def _cal_constrs_with_exception(
         self,
@@ -381,16 +380,16 @@ class ActHull(ABC):
             # Maybe a bug caused by float number and the fractional number will be used.
             output_constrs, dtype_cdd = self.cal_constrs(c, v, l, u, dtype_cdd)
 
-        except Exception:  # noqa
+        except (cdd.Error, RuntimeError, ArithmeticError, ValueError):
             try:
                 output_constrs, dtype_cdd = self.cal_constrs(c, v, l, u, "fraction")
 
-            except Exception as e:
+            except (cdd.Error, RuntimeError, ArithmeticError, ValueError) as e:
                 # Normally, there should not be any error.
                 # For debugging, we check and record the error.
                 self._record_and_raise_exception(e, c, v, l, u)
 
-        return output_constrs, dtype_cdd  # noqa
+        return output_constrs, dtype_cdd
 
     @abstractmethod
     def cal_constrs(
@@ -405,8 +404,7 @@ class ActHull(ABC):
         Literal["float", "fraction"],
     ]:
         """
-        Calculate the function hull of the activation function with a single order of
-        input variables.
+        Calculate the function hull of the activation function with a single order of input variables.
 
         :param c: The constraints of the input polytope.
         :param v: The vertices of the input polytope.
@@ -416,11 +414,10 @@ class ActHull(ABC):
 
         :return: The constraints defining the function hull.
         """
-        pass
 
     @classmethod
     @abstractmethod
-    def cal_sn_constrs(
+    def cal_sn_constrs(  # type: ignore[override]
         cls,
         l: ndarray,  # (d,)
         u: ndarray,  # (d,)
@@ -435,11 +432,10 @@ class ActHull(ABC):
         :param l: The lower bounds of the input variables.
         :param u: The upper bounds of the input variables.
         """
-        pass
 
     @classmethod
     @abstractmethod
-    def cal_mn_constrs(
+    def cal_mn_constrs(  # type: ignore[override]
         cls,
         c: ndarray,  # (n, d)
         v: ndarray,  # (m, d)
@@ -463,30 +459,26 @@ class ActHull(ABC):
 
         :return: The constraints defining the function hull.
         """
-        pass
 
     @classmethod
     @abstractmethod
     def _cal_mn_constrs_with_one_y(cls, *args, **kwargs):
         """Calculate the multi-neuron constraint with extending one output dimension."""
-        pass
 
     @classmethod
     @abstractmethod
     def _construct_dlp(cls, *args, **kwargs):
-        """Construct a double-linear-piece (DLP) function as the lower or upper bound of
-        the activation function."""
-        pass
+        """Construct a double-linear-piece (DLP) function as the lower or upper bound of the activation function."""
 
     @staticmethod
+    @abstractmethod
     def _f(x: ndarray | float) -> ndarray | float:
-        """The activation function."""
-        pass
+        """Compute the activation function."""
 
     @staticmethod
+    @abstractmethod
     def _df(x: ndarray | float) -> ndarray | float:
-        """The derivative of the activation function."""
-        pass
+        """Compute the derivative of the activation function."""
 
     @staticmethod
     def _check_inputs(c: ndarray | None, l: ndarray | None, u: ndarray | None):
@@ -546,31 +538,31 @@ class ActHull(ABC):
 
         if np.any(v[:, 0] != 1.0):
             raise ArithmeticError(
-                f"Unbounded polytope. The first column of the vertices should "
-                f"be 1, which means the vertex is not a ray that is used to "
-                f"define a unbounded polytope."
+                "Unbounded polytope. The first column of the vertices should "
+                "be 1, which means the vertex is not a ray that is used to "
+                "define a unbounded polytope."
             )
 
     @staticmethod
     def _check_degenerated_input_polytope(v: ndarray, l: ndarray, u: ndarray):
         d = v.shape[1] - 1
         if len(v) < d + 1:
-            raise Degenerated(
+            raise DegeneratedError(
                 f"The {d}-d input polytope should not be with only {len(v)} vertices."
             )
         if np.any(np.isclose(l, u)):
-            raise Degenerated(
-                f"The input polytope is degenerated because one of the input dimension "
-                f"has the same lower and upper bounds."
+            raise DegeneratedError(
+                "The input polytope is degenerated because one of the input dimension "
+                "has the same lower and upper bounds."
             )
 
     def _record_and_raise_exception(
         self, e: Exception, c: ndarray, v: ndarray, l: ndarray | None, u: ndarray | None
-    ):
+    ) -> NoReturn:
         current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
-        os.makedirs(".temp", exist_ok=True)
+        Path(".temp").mkdir(parents=True, exist_ok=True)
         error_log = f".temp/acthull_{current_time}.log"
-        with open(error_log, "w") as f:
+        with Path(error_log).open("w") as f:
             f.write(f"{self.__class__.__name__}\n")
             f.write(f"Exception: {e}\n")
             f.write(f"Created time: {current_time}\n")

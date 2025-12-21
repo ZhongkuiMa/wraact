@@ -1,4 +1,4 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["MaxPoolHullWithOneY", "MaxPoolHullDLPWithOneY"]
 
 from typing import Literal
@@ -6,17 +6,15 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from ._relulike import ReLULikeHullWithOneY
-from ..acthull import MaxPoolHull, MaxPoolHullDLP
+from wraact.wraact.acthull import MaxPoolHull, MaxPoolHullDLP
+from wraact.wraact.oney._relulike import ReLULikeHullWithOneY
 
 
 class MaxPoolHullDLPWithOneY(ReLULikeHullWithOneY, MaxPoolHullDLP):
     """
-    The class to calculate the function hull for the max pooling layer with only one
-    output dimension.
+    The class to calculate the function hull for the max pooling layer with only one output dimension.
 
-    Please refer to the :class:`ReLULikeHullWithOneY` and :class:`MaxPoolHullDLP` for
-    more details.
+    Please refer to the :class:`ReLULikeHullWithOneY` and :class:`MaxPoolHullDLP` for more details.
     """
 
     def cal_constrs(
@@ -35,7 +33,6 @@ class MaxPoolHullDLPWithOneY(ReLULikeHullWithOneY, MaxPoolHullDLP):
         l: ndarray,  # (d,)
         u: ndarray,  # (d,)
     ) -> ndarray:  # (1, d+2)
-
         d = l.shape[0]
 
         # Upper bounds
@@ -70,11 +67,9 @@ class MaxPoolHullDLPWithOneY(ReLULikeHullWithOneY, MaxPoolHullDLP):
 
 class MaxPoolHullWithOneY(MaxPoolHullDLPWithOneY, MaxPoolHull):
     """
-    The class to calculate the function hull for the max pooling layer with only one
-    output dimension.
+    The class to calculate the function hull for the max pooling layer with only one output dimension.
 
-    Please refer to the :class:`MaxPoolHullDLPWithOneY` and :class:`MaxPoolHull` for
-    more details
+    Please refer to the :class:`MaxPoolHullDLPWithOneY` and :class:`MaxPoolHull` for more details.
     """
 
     @classmethod

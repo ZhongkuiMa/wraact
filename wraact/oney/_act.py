@@ -1,4 +1,4 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["ActHullWithOneY"]
 
 from abc import ABC, abstractmethod
@@ -7,19 +7,17 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from .._exceptions import *
-from ..acthull import ActHull
+from wraact.wraact._exceptions import DegeneratedError
+from wraact.wraact.acthull import ActHull
 
 _TOL = 1e-4
 
 
 class ActHullWithOneY(ActHull, ABC):
     """
-    An object used to calculate the convex hull of the activation
-    function with only extending one output dimension.
+    An object used to calculate the convex hull of the activation function with only extending one output dimension.
 
-    We only need several output constraints which have big beta values, which provide
-    the important multi-neuron constraints.
+    We only need several output constraints which have big beta values, which provide the important multi-neuron constraints.
 
     :param dtype_cdd: The data type used in pycddlib library.
     :param n_output_constraints: The number of output constraints.
@@ -82,7 +80,7 @@ class ActHullWithOneY(ActHull, ABC):
             self._check_degenerated_input_polytope(v, new_l, new_u)
             l = new_l
             u = new_u
-        except Degenerated:
+        except DegeneratedError:
             v, dtype_cdd = self.cal_vertices(c, "fraction")
             l = np.min(v, axis=0)[1:]
             u = np.max(v, axis=0)[1:]
@@ -108,7 +106,7 @@ class ActHullWithOneY(ActHull, ABC):
             # Here we reverse the order of output dimensions to calculate the function
             # hull because our algorithm is a progressive algorithm that calculates the
             # function hull of the output dimensions one by one.
-            o_r = ActHull._get_reversed_order(cc.shape[1] - 1)
+            o_r = self._get_reversed_order(cc.shape[1] - 1)
             c_r = c.copy()  # Reversed constraints
             c_r = c_r[:, o_r]
             cc_r, dtype_cdd = self._cal_constrs_with_exception(c_r, v, l, u, dtype_cdd)
@@ -119,7 +117,7 @@ class ActHullWithOneY(ActHull, ABC):
 
     @classmethod
     @abstractmethod
-    def cal_mn_constrs(
+    def cal_mn_constrs(  # type: ignore[override]
         cls,
         c: ndarray,  # (_, d)
         v: ndarray,  # (_, d)

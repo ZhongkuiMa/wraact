@@ -1,11 +1,11 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["ELUHull"]
 
 import numpy as np
 from numpy import ndarray
 
-from ._relulike import ReLULikeHull
-from .._functions import *
+from wraact.wraact._functions import delu_np, elu_np
+from wraact.wraact.acthull._relulike import ReLULikeHull
 
 _ELU_MAX_AUX_POINT = -1.25
 _MIN_DLP_ANGLE = 0.1
@@ -18,10 +18,7 @@ _MIN_DLP_ANGLE = 0.1
 
 
 class ELUHull(ReLULikeHull):
-    """
-    This is to calculate the function hull for the exponential linear unit (ELU)
-    activation function.
-    """
+    """This is to calculate the function hull for the exponential linear unit (ELU) activation function."""
 
     @classmethod
     def cal_sn_constrs(
@@ -45,7 +42,6 @@ class ELUHull(ReLULikeHull):
         :param u:
         :return:
         """
-
         if np.any(l >= 0) or np.any(u <= 0):
             raise ValueError(
                 "The lower bounds should be negative and the upper bounds should be "
@@ -91,10 +87,7 @@ class ELUHull(ReLULikeHull):
         return c
 
     @classmethod
-    def _construct_dlp(
-        cls, idx: int, dim: int, l: float, u: float
-    ) -> tuple[ndarray, float | None]:
-
+    def _construct_dlp(cls, idx: int, dim: int, l: float, u: float) -> tuple[ndarray, float | None]:
         temp1, temp2 = [0.0] * idx, [0.0] * (dim - 1)
 
         yl = cls._f(l)
@@ -102,9 +95,7 @@ class ELUHull(ReLULikeHull):
         if l >= _ELU_MAX_AUX_POINT or u <= _ELU_MAX_AUX_POINT:
             k = (yu - yl) / (u - l)
             b = yu - k * u
-            aux_lines = np.asarray(
-                [[b] + temp1 + [k] + temp2 + [-1.0]], dtype=np.float64
-            )
+            aux_lines = np.asarray([[b] + temp1 + [k] + temp2 + [-1.0]], dtype=np.float64)
             return aux_lines, None
 
         # The intersection point of the two linear pieces should not be positive to
@@ -121,9 +112,7 @@ class ELUHull(ReLULikeHull):
         if abs((kp1 - kp2) / (1 - kp1 * kp2)) < _MIN_DLP_ANGLE:
             k = (yu - yl) / (u - l)
             b = yu - k * u
-            aux_lines = np.asarray(
-                [[b] + temp1 + [k] + temp2 + [-1.0]], dtype=np.float64
-            )
+            aux_lines = np.asarray([[b] + temp1 + [k] + temp2 + [-1.0]], dtype=np.float64)
             return aux_lines, None
 
         aux_lines = np.asarray(

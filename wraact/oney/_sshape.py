@@ -1,4 +1,4 @@
-__docformat__ = ["restructuredtext"]
+__docformat__ = "restructuredtext"
 __all__ = ["SShapeHullWithOneY"]
 
 from abc import ABC
@@ -7,17 +7,15 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from ._act import ActHullWithOneY
-from ..acthull import *
+from wraact.wraact.acthull import SShapeHull
+from wraact.wraact.oney._act import ActHullWithOneY
 
 
 class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
     """
-    The base class for the S-shape activation functions to calculate the function hull
-    with only one output dimension.
+    The base class for the S-shape activation functions to calculate the function hull with only one output dimension.
 
-    Please refer to the :class:`ActHullWithOneY` and :class:`SShapeHull` for more
-    details.
+    Please refer to the :class:`ActHullWithOneY` and :class:`SShapeHull` for more details.
     """
 
     def cal_constrs(
@@ -35,7 +33,7 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
         #
         # return c_mn, dtype_cdd
 
-    def cal_mn_constrs(
+    def cal_mn_constrs(  # type: ignore[override]
         self,
         c: ndarray,  # (_, d)
         v: ndarray,  # (_, d)
@@ -45,8 +43,7 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
     ) -> ndarray:  # (_, d+1)
         if l is None and u is None:
             raise ValueError(
-                "The lower and upper bounds should be provided for the S-shape "
-                "activation function."
+                "The lower and upper bounds should be provided for the S-shape activation function."
             )
 
         d = c.shape[1] - 1
@@ -76,8 +73,8 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
         )
 
         # Fill c_mn with c_sn if constraints number is smaller than n_output_constrs
-        cc_mu = self._get_topk_constrs(cc_mu, n_output_constrs, True)
-        cc_ml = self._get_topk_constrs(cc_ml, n_output_constrs, False)
+        cc_mu = self._get_topk_constrs(cc_mu, n_output_constrs, is_min=True)
+        cc_ml = self._get_topk_constrs(cc_ml, n_output_constrs, is_min=False)
 
         if cc_mu.shape[0] < n_output_constrs:
             cc_su = cc_s[cc_s[:, -1] > 0]

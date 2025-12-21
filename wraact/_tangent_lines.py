@@ -13,7 +13,7 @@ import numpy as np
 from numba import njit
 from numpy import ndarray
 
-from ._exceptions import *
+from wraact.wraact._exceptions import NotConvergedError
 
 _LOG_MIN = 1e-6
 _MAX_ITER = 100
@@ -27,7 +27,6 @@ logging.getLogger("numba").setLevel(logging.CRITICAL)
 def get_parallel_tangent_line_sigmoid_np(
     k: ndarray, get_big: bool
 ) -> tuple[ndarray, ndarray, ndarray]:
-
     sign = 1.0 if get_big else -1.0
 
     temp = np.maximum(1.0 - 4.0 * k, 0.0)  # Avoid minimal negative value
@@ -40,7 +39,8 @@ def get_parallel_tangent_line_sigmoid_np(
     return b, k, x
 
 
-k_np = np.random.rand(10) / 2
+rng = np.random.Generator(np.random.PCG64())
+k_np = rng.random(10) / 2
 get_big_np = True
 get_parallel_tangent_line_sigmoid_np(k_np, get_big_np)
 
@@ -49,7 +49,6 @@ get_parallel_tangent_line_sigmoid_np(k_np, get_big_np)
 def get_parallel_tangent_line_tanh_np(
     k: ndarray, get_big: bool
 ) -> tuple[ndarray, ndarray, ndarray]:
-
     sign = 1.0 if get_big else -1.0
     temp = np.maximum(1.0 - k, 0.0)  # Avoid minimal negative value
     sigma = sign * np.sqrt(temp)
@@ -78,7 +77,7 @@ def get_second_tangent_line_sigmoid_np(
 
         x2 = x_new
 
-    raise NotConverged()
+    raise NotConvergedError
 
 
 def get_second_tangent_line_tanh_np(
@@ -97,4 +96,4 @@ def get_second_tangent_line_tanh_np(
 
         x2 = x_new
 
-    raise NotConverged()
+    raise NotConvergedError
