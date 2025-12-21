@@ -292,7 +292,10 @@ class ActHull(ABC):
         c[-2 * d : -d, 0] = -l  # noqa: E203
         c[-d:, 0] = u
 
-        cc, dtype_cdd = self._cal_constrs_with_exception(c, v, l, u, dtype_cdd)
+        result = self._cal_constrs_with_exception(c, v, l, u, dtype_cdd)
+        if result is None:
+            raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
+        cc, dtype_cdd = result
 
         # ====================CHECK====================
         # Check if all vertices satisfy the constraints.
@@ -309,7 +312,10 @@ class ActHull(ABC):
             o_r = ActHull._get_reversed_order(cc.shape[1] - 1)
             c_r = c.copy()  # Reversed constraints
             c_r = c_r[:, o_r]
-            cc_r, dtype_cdd = self._cal_constrs_with_exception(c_r, v, l, u, dtype_cdd)
+            result_r = self._cal_constrs_with_exception(c_r, v, l, u, dtype_cdd)
+            if result_r is None:
+                raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
+            cc_r, dtype_cdd = result_r
             cc_r = cc_r[:, o_r]
             cc = np.vstack((cc, cc_r))
 
@@ -330,14 +336,13 @@ class ActHull(ABC):
         u: ndarray | None = None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (m, d)
+        v: ndarray | None = None
         if _DEBUG:
             # When debugging, we directly calculate the vertices and check the
             # correctness without exception handling to see the error message.
             v, dtype_cdd = self.cal_vertices(c, dtype_cdd)
             self._check_vertices(v)
             return v, dtype_cdd
-
-        v = None
         try:
             # Maybe a bug caused by float number and the fractional number will be used.
             v, dtype_cdd = self.cal_vertices(c, dtype_cdd)
@@ -354,6 +359,7 @@ class ActHull(ABC):
                 # This happens when there is an unexpected error.
                 self._record_and_raise_exception(e, c, v, l, u)
 
+        assert v is not None
         return v, dtype_cdd
 
     def _cal_constrs_with_exception(

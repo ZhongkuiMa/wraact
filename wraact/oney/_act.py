@@ -92,7 +92,10 @@ class ActHullWithOneY(ActHull, ABC):
         c[-2 * d : -d, 0] = -l  # noqa: E203
         c[-d:, 0] = u
 
-        cc, dtype_cdd = self._cal_constrs_with_exception(c, v, l, u, dtype_cdd)
+        result = self._cal_constrs_with_exception(c, v, l, u, dtype_cdd)
+        if result is None:
+            raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
+        cc, dtype_cdd = result
 
         # ====================CHECK====================
         # Check if all vertices satisfy the constraints.
@@ -109,7 +112,10 @@ class ActHullWithOneY(ActHull, ABC):
             o_r = self._get_reversed_order(cc.shape[1] - 1)
             c_r = c.copy()  # Reversed constraints
             c_r = c_r[:, o_r]
-            cc_r, dtype_cdd = self._cal_constrs_with_exception(c_r, v, l, u, dtype_cdd)
+            result_r = self._cal_constrs_with_exception(c_r, v, l, u, dtype_cdd)
+            if result_r is None:
+                raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
+            cc_r, dtype_cdd = result_r
             cc_r = cc_r[:, o_r]
             cc = np.vstack((cc, cc_r))
 

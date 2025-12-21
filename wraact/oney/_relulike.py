@@ -30,18 +30,22 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, d+1)
         c = np.array(c, dtype=np.float64)
 
-        if np.min(np.abs(u - l)) < _MIN_BOUNDS_RANGE and len(v) > 2:
+        # Type narrowing for bounds
+        l_arr: ndarray = l  # type: ignore[assignment]
+        u_arr: ndarray = u  # type: ignore[assignment]
+
+        if np.min(np.abs(u_arr - l_arr)) < _MIN_BOUNDS_RANGE and len(v) > 2:
             # The input polytope is too small, and we only return the single-neuron
             # constraints.
             # We do not want to remove the trivial cases of MaxPool function (one vertex
             # and one piece).
             c_m = np.empty((0, c.shape[1] + 1), dtype=np.float64)
         else:
-            c_m = self.cal_mn_constrs(c, v, l, u, self._n_output_constrs)
+            c_m = self.cal_mn_constrs(c, v, l_arr, u_arr, self._n_output_constrs)
 
         # Fill c_m with c_s if constraints number is smaller than n_output_constrs
         if c_m.shape[0] < self._n_output_constrs:
-            c_s = self.cal_sn_constrs(l, u)
+            c_s = self.cal_sn_constrs(l_arr, u_arr)
             c_su = c_s[c_s[:, -1] < 0]
             n_fill = self._n_output_constrs - c_m.shape[0]
             # Repeat c_s to fill the rest with the constraints
@@ -82,7 +86,10 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
     ) -> ndarray:  # (_, d+1)
         d = c.shape[1] - 1
 
-        aux_lines, aux_point = cls._construct_dlp(0, d, l[0], u[0])
+        # Type assertion: l and u are expected to be ndarrays if this code path is reached
+        l_arr: ndarray = l  # type: ignore[assignment]
+        u_arr: ndarray = u  # type: ignore[assignment]
+        aux_lines, aux_point = cls._construct_dlp(0, d, l_arr[0], u_arr[0])
         c, v = cls._cal_mn_constrs_with_one_y(0, c, v, aux_lines, aux_point, is_convex=True)
         c = cls._get_topk_constrs(c, n_output_constrs)
 

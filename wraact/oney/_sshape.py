@@ -55,8 +55,11 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
 
         vl, vu = v, v.copy()
 
+        # Type assertion: l and u are expected to be ndarrays if this code path is reached
+        l_arr: ndarray = l  # type: ignore[assignment]
+        u_arr: ndarray = u  # type: ignore[assignment]
         f, df = self._f, self._df
-        xl, xu = l[0], u[0]
+        xl, xu = l_arr[0], u_arr[0]
         yl, yu, kl, ku = f(xl), f(xu), df(xl), df(xu)
         klu = (yu - yl) / (xu - xl)
 

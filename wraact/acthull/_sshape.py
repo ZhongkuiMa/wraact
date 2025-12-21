@@ -213,11 +213,11 @@ class SShapeHull(ActHull, ABC):
             c = np.hstack((c, np.zeros((c.shape[0], 1))))
             return c1, c2, None, None, c
         if kui > klui:
-            resolve_case = cls._construct_dlp_case1
+            resolve_case = cls._construct_dlp_case1  # type: ignore[assignment]
         elif kli > klui:
-            resolve_case = cls._construct_dlp_case2
+            resolve_case = cls._construct_dlp_case2  # type: ignore[assignment]
         else:
-            resolve_case = cls._construct_dlp_case3
+            resolve_case = cls._construct_dlp_case3  # type: ignore[assignment]
 
         c = np.hstack((c, np.zeros((c.shape[0], 1))))
         args = (idx, dim, xli, xui, yli, yui, kli, kui, klui, c)

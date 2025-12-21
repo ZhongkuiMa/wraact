@@ -47,9 +47,12 @@ class ReLULikeHull(ActHull, ABC):
         u: ndarray | None,  # (d-1,)
     ) -> ndarray:  # (_, 2*d-1)
         d = c.shape[1] - 1
+        # Type assertion: l and u are expected to be ndarrays if this code path is reached
+        l_arr: ndarray = l  # type: ignore[assignment]
+        u_arr: ndarray = u  # type: ignore[assignment]
 
         for i in range(d):
-            lines, point = cls._construct_dlp(i, d, l[i], u[i])
+            lines, point = cls._construct_dlp(i, d, l_arr[i], u_arr[i])
             c, v = cls._cal_mn_constrs_with_one_y(i, c, v, lines, point, is_convex=True)
 
         return c

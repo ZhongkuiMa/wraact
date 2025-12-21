@@ -14,9 +14,10 @@ __all__ = [
     "dsilu_np",
 ]
 
+from typing import cast, overload
+
 import numpy as np
 from numpy import ndarray
-from typing import cast, overload
 
 
 def relu_np(x: ndarray | float) -> ndarray | float:
