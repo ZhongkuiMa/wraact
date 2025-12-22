@@ -31,8 +31,10 @@ def drelu_np(x: ndarray | float) -> ndarray | float:
 @overload
 def sigmoid_np(x: ndarray) -> ndarray: ...
 
+
 @overload
 def sigmoid_np(x: float) -> float: ...
+
 
 def sigmoid_np(x: ndarray | float) -> ndarray | float:
     return cast(ndarray | float, np.reciprocal(1.0 + np.exp(-x)))
@@ -41,8 +43,10 @@ def sigmoid_np(x: ndarray | float) -> ndarray | float:
 @overload
 def dsigmoid_np(x: ndarray) -> ndarray: ...
 
+
 @overload
 def dsigmoid_np(x: float) -> float: ...
+
 
 def dsigmoid_np(x: ndarray | float) -> ndarray | float:
     s = sigmoid_np(x)
@@ -57,8 +61,10 @@ def ddsigmoid_np(x: ndarray | float) -> ndarray | float:
 @overload
 def tanh_np(x: ndarray) -> ndarray: ...
 
+
 @overload
 def tanh_np(x: float) -> float: ...
+
 
 def tanh_np(x: ndarray | float) -> ndarray | float:
     return np.tanh(x)
@@ -67,8 +73,10 @@ def tanh_np(x: ndarray | float) -> ndarray | float:
 @overload
 def dtanh_np(x: ndarray) -> ndarray: ...
 
+
 @overload
 def dtanh_np(x: float) -> float: ...
+
 
 def dtanh_np(x: ndarray | float) -> ndarray | float:
     return 1.0 - np.tanh(x) ** 2
@@ -97,8 +105,10 @@ def dleakyrelu_np(x: ndarray | float, negative_slope: ndarray | float = 0.01) ->
 @overload
 def silu_np(x: ndarray) -> ndarray: ...
 
+
 @overload
 def silu_np(x: float) -> float: ...
+
 
 def silu_np(x: ndarray | float) -> ndarray | float:
     return cast(ndarray | float, np.reciprocal(1.0 + np.exp(-x)) * x)
@@ -107,8 +117,10 @@ def silu_np(x: ndarray | float) -> ndarray | float:
 @overload
 def dsilu_np(x: ndarray) -> ndarray: ...
 
+
 @overload
 def dsilu_np(x: float) -> float: ...
+
 
 def dsilu_np(x: ndarray | float) -> ndarray | float:
     s = sigmoid_np(x)

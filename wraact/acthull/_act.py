@@ -156,7 +156,9 @@ class ActHull(ABC):
             c_u = self._build_input_bounds_constraints(u, is_lower=False)
             d = u.size
 
-        assert d is not None, "At least one of input_constrs, input_lower_bounds, or input_upper_bounds must be provided"
+        assert d is not None, (
+            "At least one of input_constrs, input_lower_bounds, or input_upper_bounds must be provided"
+        )
         c = np.empty((0, 1 + d), dtype=np.float64)
         if c_i is not None:
             c = np.vstack((c, c_i))
