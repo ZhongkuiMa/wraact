@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wraact"
+version = "0.1.0"
+description = "Wrapper and abstraction utilities for neural network components"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Zhongkui Ma", email = "zhongkui@example.com"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "pycddlib==2.1.8.post1",
+    "numpy==2.2.4",
+    "numba==0.61.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.14.0",
+    "mypy>=1.0",
+    "pyright>=1.1.0",
+]
+
+[tool.setuptools]
+packages = ["wraact"]
+
+[tool.setuptools.package-data]
+wraact = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".venv",
+    ".eggs",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "C90", "UP", "PT", "PIE"]
+ignore = []
+per-file-ignores = {"__init__.py" = ["F401"]}
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+disallow_untyped_defs = false
+
+[tool.pyright]
+include = ["wraact"]
+exclude = ["tests", "venv", ".venv", "build", "dist"]
+typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--tb=short"
+
+[project.urls]
+Homepage = "https://github.com/ZhongkuiMa/wraact"
+Repository = "https://github.com/ZhongkuiMa/wraact.git"
+Documentation = "https://github.com/ZhongkuiMa/wraact#readme"
