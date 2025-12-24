@@ -66,6 +66,7 @@ ignore = [
     "E501", "B008", "RET504", "SIM108", "FBT001", "FBT002",
     "D100", "D104", "TD002", "TD003",
     "E741",  # Allow ambiguous variable names (mathematical notation)
+    "T201", "PLR0913", "ERA001",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -73,6 +74,7 @@ ignore = [
 "tests/**" = ["INP001", "D103"]
 "**/test/**" = ["INP001", "D103"]
 "**/tests/**" = ["INP001", "D103"]
+"wraact/*" = ["N806"]  # Mathematical variable names (Axb = A*x + b)
 
 [tool.ruff.lint.isort]
 known-first-party = ["wraact"]
