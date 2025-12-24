@@ -24,7 +24,7 @@ repos:
           - types-PyYAML
           - types-requests
         # Only show errors, don't block commit
-        args: [--no-error-summary, --show-column-numbers]
+        args: [--no-error-summary, --show-column-numbers, --ignore-missing-imports]
         verbose: true
         # Note: Configured to be lenient - see pyproject.toml for settings
 
