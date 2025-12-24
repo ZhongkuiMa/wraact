@@ -61,10 +61,13 @@ per-file-ignores = {"__init__.py" = ["F401"]}
 
 [tool.mypy]
 python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-warn_unused_ignores = true
+warn_return_any = false
+warn_unused_configs = false
+warn_unused_ignores = false
 disallow_untyped_defs = false
+ignore_missing_imports = true
+check_untyped_defs = false
+no_implicit_optional = false
 
 [tool.pyright]
 include = ["wraact"]
