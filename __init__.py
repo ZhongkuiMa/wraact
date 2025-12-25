@@ -1,4 +1,4 @@
-from wraact import (
+from wraact.wraact import (
     ActHull,
     ActHullWithOneY,
     ELUHull,
