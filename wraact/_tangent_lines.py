@@ -13,7 +13,7 @@ import numpy as np
 from numba import njit
 from numpy import ndarray
 
-from wraact.wraact._exceptions import NotConvergedError
+from wraact._exceptions import NotConvergedError
 
 _LOG_MIN = 1e-6
 _MAX_ITER = 100

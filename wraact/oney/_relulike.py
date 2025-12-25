@@ -7,8 +7,8 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from wraact.wraact.acthull import ReLULikeHull
-from wraact.wraact.oney._act import ActHullWithOneY
+from wraact.acthull import ReLULikeHull
+from wraact.oney._act import ActHullWithOneY
 
 _MIN_BOUNDS_RANGE = 0.04
 

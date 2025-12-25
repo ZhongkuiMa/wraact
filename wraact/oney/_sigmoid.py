@@ -1,8 +1,8 @@
 __docformat__ = "restructuredtext"
 __all__ = ["SigmoidHullWithOneY"]
 
-from wraact.wraact.acthull import SigmoidHull
-from wraact.wraact.oney._sshape import SShapeHullWithOneY
+from wraact.acthull import SigmoidHull
+from wraact.oney._sshape import SShapeHullWithOneY
 
 
 class SigmoidHullWithOneY(SShapeHullWithOneY, SigmoidHull):

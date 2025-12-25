@@ -7,8 +7,8 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from wraact.wraact._exceptions import DegeneratedError
-from wraact.wraact.acthull import ActHull
+from wraact._exceptions import DegeneratedError
+from wraact.acthull import ActHull
 
 _TOL = 1e-4
 

@@ -1,8 +1,8 @@
 __docformat__ = "restructuredtext"
 __all__ = ["LeakyReLUHullWithOneY"]
 
-from wraact.wraact.acthull import LeakyReLUHull
-from wraact.wraact.oney._relulike import ReLULikeHullWithOneY
+from wraact.acthull import LeakyReLUHull
+from wraact.oney._relulike import ReLULikeHullWithOneY
 
 
 class LeakyReLUHullWithOneY(ReLULikeHullWithOneY, LeakyReLUHull):

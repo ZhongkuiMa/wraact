@@ -4,8 +4,8 @@ __all__ = ["ReLUHull"]
 import numpy as np
 from numpy import ndarray
 
-from wraact.wraact._functions import drelu_np, relu_np
-from wraact.wraact.acthull._relulike import ReLULikeHull
+from wraact._functions import drelu_np, relu_np
+from wraact.acthull._relulike import ReLULikeHull
 
 _TOL = 1e-4
 

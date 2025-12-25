@@ -1,4 +1,4 @@
-from wraact.wraact.acthull import (
+from wraact.acthull import (
     ActHull,
     ELUHull,
     LeakyReLUHull,
@@ -11,7 +11,7 @@ from wraact.wraact.acthull import (
     TanhHull,
     cal_mn_constrs_with_one_y_dlp,
 )
-from wraact.wraact.oney import (
+from wraact.oney import (
     ActHullWithOneY,
     ELUHullWithOneY,
     LeakyReLUHullWithOneY,

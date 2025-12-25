@@ -7,8 +7,8 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from wraact.wraact.acthull import SShapeHull
-from wraact.wraact.oney._act import ActHullWithOneY
+from wraact.acthull import SShapeHull
+from wraact.oney._act import ActHullWithOneY
 
 
 class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):

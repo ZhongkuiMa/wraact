@@ -4,8 +4,8 @@ __all__ = ["LeakyReLUHull"]
 import numpy as np
 from numpy import ndarray
 
-from wraact.wraact._functions import dleakyrelu_np, leakyrelu_np
-from wraact.wraact.acthull._relulike import ReLULikeHull
+from wraact._functions import dleakyrelu_np, leakyrelu_np
+from wraact.acthull._relulike import ReLULikeHull
 
 _LEAKY_RELU_ALPHA = 0.01
 _MIN_BOUNDS_RANGE = 0.05

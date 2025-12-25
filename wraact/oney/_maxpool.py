@@ -6,8 +6,8 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from wraact.wraact.acthull import MaxPoolHull, MaxPoolHullDLP
-from wraact.wraact.oney._relulike import ReLULikeHullWithOneY
+from wraact.acthull import MaxPoolHull, MaxPoolHullDLP
+from wraact.oney._relulike import ReLULikeHullWithOneY
 
 
 class MaxPoolHullDLPWithOneY(ReLULikeHullWithOneY, MaxPoolHullDLP):

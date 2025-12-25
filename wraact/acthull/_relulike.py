@@ -7,8 +7,8 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from wraact.wraact.acthull._act import ActHull
-from wraact.wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
+from wraact.acthull._act import ActHull
+from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
 
 
 class ReLULikeHull(ActHull, ABC):

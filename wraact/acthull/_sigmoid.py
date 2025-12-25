@@ -3,8 +3,8 @@ __all__ = ["SigmoidHull"]
 
 from numpy import ndarray
 
-from wraact.wraact._functions import dsigmoid_np, sigmoid_np
-from wraact.wraact.acthull._sshape import SShapeHull
+from wraact._functions import dsigmoid_np, sigmoid_np
+from wraact.acthull._sshape import SShapeHull
 
 
 class SigmoidHull(SShapeHull):
@@ -18,7 +18,7 @@ class SigmoidHull(SShapeHull):
     def _get_second_tangent_line(
         x1: float | ndarray, get_big: bool | ndarray
     ) -> tuple[float | ndarray, float | ndarray, float | ndarray]:
-        from wraact.wraact._tangent_lines import get_second_tangent_line_sigmoid_np
+        from wraact._tangent_lines import get_second_tangent_line_sigmoid_np
 
         return get_second_tangent_line_sigmoid_np(x1, get_big)  # type: ignore[return-value]
 
@@ -26,7 +26,7 @@ class SigmoidHull(SShapeHull):
     def _get_parallel_tangent_line(
         k: float | ndarray, get_big: bool | ndarray
     ) -> tuple[float | ndarray, float | ndarray, float | ndarray]:
-        from wraact.wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
+        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
 
         return get_parallel_tangent_line_sigmoid_np(k, get_big)  # type: ignore[return-value]
 

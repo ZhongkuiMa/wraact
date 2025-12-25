@@ -10,7 +10,7 @@ import cdd
 import numpy as np
 from numpy import ndarray
 
-from wraact.wraact._exceptions import DegeneratedError
+from wraact._exceptions import DegeneratedError
 
 _DEBUG = False
 _MIN_BOUNDS_RANGE = 0.05

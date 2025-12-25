@@ -4,8 +4,8 @@ __all__ = ["ELUHull"]
 import numpy as np
 from numpy import ndarray
 
-from wraact.wraact._functions import delu_np, elu_np
-from wraact.wraact.acthull._relulike import ReLULikeHull
+from wraact._functions import delu_np, elu_np
+from wraact.acthull._relulike import ReLULikeHull
 
 _ELU_MAX_AUX_POINT = -1.25
 _MIN_DLP_ANGLE = 0.1

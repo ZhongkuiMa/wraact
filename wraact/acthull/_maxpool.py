@@ -7,7 +7,7 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-from wraact.wraact.acthull._relulike import ReLULikeHull
+from wraact.acthull._relulike import ReLULikeHull
 
 _TOL = 1e-4
 
