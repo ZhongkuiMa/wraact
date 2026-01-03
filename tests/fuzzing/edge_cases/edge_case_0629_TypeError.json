@@ -1,0 +1,18 @@
+{
+  "iteration": 6003,
+  "hull": "SigmoidHull",
+  "dim": 3,
+  "strategy": "extreme",
+  "lb": [
+    7386565051.289775,
+    -9455494229.03395,
+    3514324748.78828
+  ],
+  "ub": [
+    10305442362.287294,
+    -4229852908.989318,
+    13488149607.803236
+  ],
+  "exception": "TypeError",
+  "message": "catching classes that do not inherit from BaseException is not allowed"
+}

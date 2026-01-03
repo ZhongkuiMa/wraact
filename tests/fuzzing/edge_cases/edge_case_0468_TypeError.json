@@ -1,0 +1,20 @@
+{
+  "iteration": 4532,
+  "hull": "TanhHull",
+  "dim": 4,
+  "strategy": "extreme",
+  "lb": [
+    -0.28808301030208416,
+    -0.4742628328799985,
+    5.280409051591862e-06,
+    -7520503233.222458
+  ],
+  "ub": [
+    -0.012202029221971222,
+    0.3879199795489957,
+    9.547219025125048e-06,
+    -7041140865.34709
+  ],
+  "exception": "TypeError",
+  "message": "catching classes that do not inherit from BaseException is not allowed"
+}

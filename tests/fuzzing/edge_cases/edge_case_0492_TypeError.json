@@ -1,0 +1,22 @@
+{
+  "iteration": 4777,
+  "hull": "ELUHull",
+  "dim": 5,
+  "strategy": "extreme",
+  "lb": [
+    55386.292891769015,
+    -62914.280790216595,
+    -1748401121.1056938,
+    2.4206361186391416e-07,
+    13884.251855192153
+  ],
+  "ub": [
+    83294.06314729132,
+    -43854.060964868855,
+    5588125920.602261,
+    8.437771654294364e-06,
+    34346.645578322554
+  ],
+  "exception": "TypeError",
+  "message": "catching classes that do not inherit from BaseException is not allowed"
+}

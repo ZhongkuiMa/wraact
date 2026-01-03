@@ -1,0 +1,20 @@
+{
+  "iteration": 4474,
+  "hull": "ReLUHull",
+  "dim": 4,
+  "strategy": "extreme",
+  "lb": [
+    6.411739358220019e-06,
+    -4.072287969697906e-06,
+    -2.942653166732301e-11,
+    28145.307977872315
+  ],
+  "ub": [
+    1.527194731293947e-05,
+    2.074713639001594e-06,
+    -2.357419784349694e-11,
+    56219.33260885619
+  ],
+  "exception": "TypeError",
+  "message": "catching classes that do not inherit from BaseException is not allowed"
+}

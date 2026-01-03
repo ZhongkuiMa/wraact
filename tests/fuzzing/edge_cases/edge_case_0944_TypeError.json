@@ -1,0 +1,22 @@
+{
+  "iteration": 8747,
+  "hull": "MaxPoolHullDLP",
+  "dim": 5,
+  "strategy": "extreme",
+  "lb": [
+    4483284210.861944,
+    -96959.55207813361,
+    8325519555.836127,
+    -4.796201660220814e-06,
+    -80772.04755027605
+  ],
+  "ub": [
+    7799586996.287155,
+    -82542.57759802755,
+    17110482889.736591,
+    3.6629235260757494e-06,
+    19146.595248649726
+  ],
+  "exception": "TypeError",
+  "message": "catching classes that do not inherit from BaseException is not allowed"
+}

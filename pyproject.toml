@@ -1,0 +1,179 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wraact"
+version = "2026.1.0"
+description = "Precise Activation Function Over-Approximation for Neural Network Verification"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Zhongkui Ma", email = "zhongkui@example.com"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "pycddlib==2.1.7",
+    "numpy==1.26.4",
+    "numba==0.59.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.14.0",
+    "mypy>=1.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["wraact*"]
+exclude = ["tests*", "docs*"]
+
+[tool.setuptools.package-data]
+wraact = ["py.typed"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".venv",
+    ".eggs",
+]
+
+[tool.ruff.lint]
+# Comprehensive rule set (matches propdag standard)
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "PIE",   # flake8-pie
+    "RET",   # flake8-return
+    "SIM",   # flake8-simplify
+    "TID",   # flake8-tidy-imports
+    "A",     # flake8-builtins
+    "BLE",   # flake8-blind-except
+    "C90",   # mccabe
+    "FBT",   # flake8-boolean-trap
+    "ICN",   # flake8-import-conventions
+    "ISC",   # flake8-implicit-str-concat
+    "PGH",   # pygrep-hooks
+    "Q",     # flake8-quotes
+    "RSE",   # flake8-raise
+    "SLF",   # flake8-self
+    "TD",    # flake8-todos
+    "D",     # pydocstyle
+    "PERF",  # perflint
+    "FURB",  # refurb
+    "PT",    # flake8-pytest-style
+    "T10",   # flake8-debugger
+    "PTH",   # flake8-use-pathlib
+    "INP",   # flake8-no-pep420
+    "RUF",   # Ruff-specific rules (includes non-ASCII detection)
+]
+
+ignore = [
+    "E501",    # Line too long - ruff format handles this
+    "B008",    # Function call in defaults
+    "RET504",  # Unnecessary assignment before return
+    "SIM108",  # Use ternary operator
+    "FBT001",  # Boolean positional arg
+    "FBT002",  # Boolean default positional arg
+    "D104",    # Missing public package docstring
+    "TD002",   # Missing TODO author
+    "TD003",   # Missing TODO link
+    "T201",    # Print statements - used in debugging/tests
+    "PLR0913", # Too many arguments - valid design choice
+    "ERA001",  # Commented code - intentional for reference
+    "E741",    # Allow ambiguous variable names (mathematical notation: l, O, I)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__ (but still detect undefined names from star imports)
+"tests/**" = ["INP001", "D100", "D103", "D101", "D102", "C901", "N806"]  # Test code: allow complex functions, mathematical notation
+"**/test/**" = ["INP001", "D100", "D103", "D101", "D102", "C901", "N806"]  # Test code: allow complex functions, mathematical notation
+"**/tests/**" = ["INP001", "D100", "D103", "D101", "D102", "C901", "N806"]  # Test code: allow complex functions, mathematical notation
+"src/wraact/*" = ["N806"]  # Mathematical variable names (Axb = A*x + b)
+
+[tool.ruff.lint.isort]
+known-first-party = ["wraact"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "double"
+docstring-quotes = "double"
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+warn_return_any = false
+warn_unused_configs = false
+warn_unused_ignores = false
+disallow_untyped_defs = false
+ignore_missing_imports = true
+check_untyped_defs = false
+no_implicit_optional = false
+files = ["src/wraact"]
+exclude = ["tests", "venv", ".venv", "build", "dist"]
+
+[tool.coverage.run]
+source = ["src/wraact"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.paths]
+source = [
+    "src/wraact",
+    "*/site-packages/wraact",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+timeout = 10
+timeout_method = "thread"
+addopts = [
+    "-v",
+    "--tb=short",
+    "-ra",
+    "--strict-markers",
+]
+markers = [
+    "benchmark: Slow benchmark tests for manual runs",
+]
+
+[project.urls]
+Homepage = "https://github.com/ZhongkuiMa/wraact"
+Repository = "https://github.com/ZhongkuiMa/wraact.git"
+Documentation = "https://github.com/ZhongkuiMa/wraact#readme"
