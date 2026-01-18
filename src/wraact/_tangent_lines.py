@@ -1,3 +1,9 @@
+"""Tangent line computation for S-shaped activation functions.
+
+This module provides functions to compute tangent lines for sigmoid and tanh
+functions, used in convex hull construction for neural network verification.
+"""
+
 __docformat__ = "restructuredtext"
 __all__ = [
     "get_parallel_tangent_line_sigmoid_np",
@@ -27,6 +33,16 @@ logging.getLogger("numba").setLevel(logging.CRITICAL)
 def get_parallel_tangent_line_sigmoid_np(
     k: ndarray, get_big: bool
 ) -> tuple[ndarray, ndarray, ndarray]:
+    """Find tangent line to sigmoid with given slope.
+
+    Computes the tangent line y = k*x + b where the slope k is given,
+    and the line is tangent to the sigmoid curve.
+
+    :param k: Slope values. Shape: (n,).
+    :param get_big: If True, return upper tangent; else lower tangent.
+    :return: Tuple of (b, k, x) where b is intercept, k is slope, x is
+        tangent point. Each has shape (n,).
+    """
     sign = 1.0 if get_big else -1.0
 
     temp = np.maximum(1.0 - 4.0 * k, 0.0)  # Avoid minimal negative value
@@ -43,6 +59,16 @@ def get_parallel_tangent_line_sigmoid_np(
 def get_parallel_tangent_line_tanh_np(
     k: ndarray, get_big: bool
 ) -> tuple[ndarray, ndarray, ndarray]:
+    """Find tangent line to tanh with given slope.
+
+    Computes the tangent line y = k*x + b where the slope k is given,
+    and the line is tangent to the tanh curve.
+
+    :param k: Slope values. Shape: (n,).
+    :param get_big: If True, return upper tangent; else lower tangent.
+    :return: Tuple of (b, k, x) where b is intercept, k is slope, x is
+        tangent point. Each has shape (n,).
+    """
     sign = 1.0 if get_big else -1.0
     temp = np.maximum(1.0 - k, 0.0)  # Avoid minimal negative value
     sigma = sign * np.sqrt(temp)
@@ -78,6 +104,17 @@ _warmup_jit_functions()
 def get_second_tangent_line_sigmoid_np(
     x1: ndarray, get_big: bool
 ) -> tuple[ndarray, ndarray, ndarray]:
+    """Find second tangent line to sigmoid passing through point x1.
+
+    Uses iterative method to find a tangent line that passes through
+    the point (x1, sigmoid(x1)) on the sigmoid curve.
+
+    :param x1: First tangent point x-coordinates. Shape: (n,).
+    :param get_big: If True, return upper tangent; else lower tangent.
+    :return: Tuple of (b, k, x2) where b is intercept, k is slope, x2 is
+        second tangent point. Each has shape (n,).
+    :raises NotConvergedError: If iteration does not converge.
+    """
     x2 = np.where(x1 == 0.0, 0.5, 0.0)  # Initialize x2 away from x1 to avoid division by zero
     y1 = np.reciprocal(1.0 + np.exp(-x1))
 
@@ -100,6 +137,17 @@ def get_second_tangent_line_sigmoid_np(
 def get_second_tangent_line_tanh_np(
     x1: ndarray | float, get_big: bool
 ) -> tuple[ndarray, ndarray, ndarray]:
+    """Find second tangent line to tanh passing through point x1.
+
+    Uses iterative method to find a tangent line that passes through
+    the point (x1, tanh(x1)) on the tanh curve.
+
+    :param x1: First tangent point x-coordinates. Shape: (n,) or scalar.
+    :param get_big: If True, return upper tangent; else lower tangent.
+    :return: Tuple of (b, k, x2) where b is intercept, k is slope, x2 is
+        second tangent point. Each has shape (n,).
+    :raises NotConvergedError: If iteration does not converge.
+    """
     # Initialize x2 away from x1 to avoid division by zero on first iteration
     if isinstance(x1, (int, float)):
         x2 = 0.5 if x1 == 0.0 else 0.0

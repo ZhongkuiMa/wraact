@@ -1,3 +1,9 @@
+"""Base class for single-output activation hull computation.
+
+This module provides ActHullWithOneY, an optimized variant that extends
+only one output dimension for faster multi-neuron constraint computation.
+"""
+
 __docformat__ = "restructuredtext"
 __all__ = ["ActHullWithOneY"]
 
@@ -46,7 +52,18 @@ class ActHullWithOneY(ActHull, ABC):
         c: ndarray,  # (n, d)
         lb: ndarray | None = None,  # (d-1,)
         ub: ndarray | None = None,  # (d-1,)
-    ) -> ndarray | None:  # (_, 2*d-1) | (_, d+1)
+    ) -> ndarray | None:
+        """Compute hull with multi-neuron constraints for single output.
+
+        Computes vertices from input constraints, updates bounds, and
+        generates multi-neuron constraints extending one output dimension.
+
+        :param c: Input constraints in H-representation. Shape: (n, d).
+        :param lb: Lower bounds per dimension. Shape: (d-1,).
+        :param ub: Upper bounds per dimension. Shape: (d-1,).
+        :return: Hull constraints or None if degenerate.
+        :raises ValueError: If input constraints are not provided.
+        """
         if c is None:  # pragma: no cover - defensive check, validated by caller in cal_hull
             raise ValueError("The input constraints should be provided.")
 
@@ -127,15 +144,35 @@ class ActHullWithOneY(ActHull, ABC):
         lb: ndarray | None = None,  # (d-1,)
         ub: ndarray | None = None,  # (d-1,)
         n_output_constrs: int = 1,
-    ) -> ndarray:  # (_, d+1)
-        pass
+    ) -> ndarray:
+        """Compute multi-neuron constraints for single output dimension.
+
+        Abstract method to be implemented by subclasses.
+
+        :param c: Input constraints. Shape: (_, d).
+        :param v: Vertices. Shape: (_, d).
+        :param lb: Lower bounds. Shape: (d-1,).
+        :param ub: Upper bounds. Shape: (d-1,).
+        :param n_output_constrs: Number of output constraints to generate.
+        :return: Multi-neuron constraints. Shape: (_, d+1).
+        """
 
     @staticmethod
     def _get_topk_constrs(
         c: ndarray,  # (_, d)
         topk: int,
         is_min: bool = True,
-    ) -> ndarray:  # (_, d)
+    ) -> ndarray:
+        """Select top-k constraints by output coefficient magnitude.
+
+        Filters constraints with non-zero output coefficients and returns
+        those with smallest (or largest) output coefficient values.
+
+        :param c: Constraints to filter. Shape: (_, d).
+        :param topk: Number of constraints to return.
+        :param is_min: If True, return minimum values; else maximum.
+        :return: Selected constraints. Shape: (topk, d) or fewer.
+        """
         # Choose the constraints with non-zero beta values, which is the last column
         # of the constraints.
         c = c[(c[:, -1] < -TOLERANCE) | (c[:, -1] > TOLERANCE)]

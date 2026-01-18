@@ -1,3 +1,9 @@
+"""Base class for ReLU-like activation hull computation.
+
+This module provides the base class for computing convex hulls of piecewise
+linear activation functions like ReLU, LeakyReLU, and ELU.
+"""
+
 __docformat__ = "restructuredtext"
 __all__ = ["ReLULikeHull"]
 
@@ -12,7 +18,12 @@ from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
 
 
 class ReLULikeHull(ActHull, ABC):
-    """This is the base class for the ReLU-like activation functions to calculate the function hull."""
+    """Base class for ReLU-like activation function hull computation.
+
+    ReLU-like functions are piecewise linear with a kink at zero. This class
+    provides methods for computing tight convex hull constraints using
+    Double Linear Programming (DLP) techniques.
+    """
 
     def cal_constrs(
         self,
@@ -21,7 +32,17 @@ class ReLULikeHull(ActHull, ABC):
         lb: ndarray | None,  # (d-1,)
         ub: ndarray | None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
-    ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, 2*d-1)
+    ) -> tuple[ndarray, Literal["float", "fraction"]]:
+        """Compute hull constraints combining single and multi-neuron constraints.
+
+        :param c: Input constraints in H-representation. Shape: (n, d).
+        :param v: Vertices of input polytope. Shape: (m, d).
+        :param lb: Lower bounds per dimension. Shape: (d-1,).
+        :param ub: Upper bounds per dimension. Shape: (d-1,).
+        :param dtype_cdd: Data type for CDD library. Default: "float".
+        :return: Tuple of (constraints, dtype) where constraints has
+            shape (_, 2*d-1).
+        """
         d = c.shape[1] - 1
         c = np.array(c, dtype=np.float64)
         lb = np.array(lb, dtype=np.float64)
@@ -45,7 +66,18 @@ class ReLULikeHull(ActHull, ABC):
         v: ndarray,  # (m, d)
         lb: ndarray | None,  # (d-1,)
         ub: ndarray | None,  # (d-1,)
-    ) -> ndarray:  # (_, 2*d-1)
+    ) -> ndarray:
+        """Compute multi-neuron constraints using DLP.
+
+        Iteratively applies DLP to each output dimension to generate
+        tight multi-neuron constraints.
+
+        :param c: Input constraints in H-representation. Shape: (n, d).
+        :param v: Vertices of input polytope. Shape: (m, d).
+        :param lb: Lower bounds per dimension. Shape: (d-1,).
+        :param ub: Upper bounds per dimension. Shape: (d-1,).
+        :return: Multi-neuron constraints. Shape: (_, 2*d-1).
+        """
         d = c.shape[1] - 1
         # Type assertion: lb and ub are expected to be ndarrays if this code path is reached
         lb_arr: ndarray = lb  # type: ignore[assignment]
@@ -66,7 +98,17 @@ class ReLULikeHull(ActHull, ABC):
         dlp_lines: ndarray,  # (2, d+1)
         dlp_point: float,
         is_convex: bool,
-    ) -> tuple[ndarray, ndarray]:  # (n, d+1) , (m, d+1)
+    ) -> tuple[ndarray, ndarray]:
+        """Compute multi-neuron constraints for one output dimension.
+
+        :param idx: Index of the output dimension to process.
+        :param c: Current constraints. Shape: (n, d).
+        :param v: Current vertices. Shape: (m, d).
+        :param dlp_lines: DLP line parameters. Shape: (2, d+1).
+        :param dlp_point: DLP auxiliary point.
+        :param is_convex: True if activation is convex in this region.
+        :return: Tuple of (updated_constraints, updated_vertices).
+        """
         return cal_mn_constrs_with_one_y_dlp(idx, c, v, dlp_lines, dlp_point, is_convex=is_convex)
 
     @classmethod

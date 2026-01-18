@@ -100,36 +100,70 @@ class ActHull(ABC):
 
     def cal_hull(
         self,
-        input_constrs: ndarray | None = None,  # (n, d)
-        input_lower_bounds: ndarray | None = None,  # (d-1,)
-        input_upper_bounds: ndarray | None = None,  # (d-1,)
-    ) -> ndarray | None:  # (n, 2*d-1) | (n, d+1)
+        input_constrs: ndarray | None = None,  # (n, d+1)
+        input_lower_bounds: ndarray | None = None,  # (d,)
+        input_upper_bounds: ndarray | None = None,  # (d,)
+    ) -> ndarray | None:  # (num_constrs, 2*d+1)
         """
         Calculate the function hull of an activation function.
 
-        There are two options:
+        There are two usage modes:
 
-        1. Calculate the single-neuron constraints with given input lower and upper
-           bounds. (Two arguments: input_lower_bounds and input_upper_bounds)
-        2. Calculate the multi-neuron constraints with given input constraints and
-           input lower and upper bounds. (Three arguments: input_constrs,
-           lower_bounds, and upper_bounds). Some functions require the lower and
-           upper bounds of the input variables, and we suggest to provide them.
+        1. **Single-neuron mode**: Provide only ``input_lower_bounds`` and
+           ``input_upper_bounds``. Calculates constraints directly from bounds.
+           Requires ``if_cal_single_neuron_constrs=True`` in constructor.
 
-        .. tip::
-
-            The input bounds are used to generate a set of constraints that are
-            consistent with the input bounds.
+        2. **Multi-neuron mode**: Provide ``input_constrs`` with optionally
+           ``input_lower_bounds`` and ``input_upper_bounds``. Calculates more
+           sophisticated constraints considering polytope geometry.
+           Requires ``if_cal_multi_neuron_constrs=True`` in constructor (default).
 
         .. tip::
-            The datatye of numpy array is float64 in this function to ensure the
+            The datatype of numpy array is float64 in this function to ensure the
             precision of the calculation.
 
+        :param input_constrs: Input polytope constraints in H-representation.
+            Shape: ``(n, d+1)`` where ``n`` = number of constraints, ``d`` = input dimension.
+            Format: ``[b | A]`` where each row represents ``b + A @ x >= 0``.
+            The first column is the bias ``b``, remaining columns are coefficients ``A``.
+            Example for a 2D box [0,1] x [0,1]::
 
-        :param input_constrs: The input constraints.
-        :param input_lower_bounds: The lower bounds of the input variables.
-        :param input_upper_bounds: The upper bounds of the input variables.
-        :return: The constraints defining the function hull.
+                input_constrs = np.array([
+                    [0,   1,  0],   # 0 + 1*x1 + 0*x2 >= 0  =>  x1 >= 0
+                    [1,  -1,  0],   # 1 - 1*x1 + 0*x2 >= 0  =>  x1 <= 1
+                    [0,   0,  1],   # 0 + 0*x1 + 1*x2 >= 0  =>  x2 >= 0
+                    [1,   0, -1],   # 1 + 0*x1 - 1*x2 >= 0  =>  x2 <= 1
+                ])
+
+        :param input_lower_bounds: Lower bounds for each input variable.
+            Shape: ``(d,)`` where ``d`` = input dimension.
+            Example: ``np.array([-1.0, -1.0])`` for 2D input with lower bounds -1.
+
+        :param input_upper_bounds: Upper bounds for each input variable.
+            Shape: ``(d,)`` where ``d`` = input dimension.
+            Example: ``np.array([1.0, 1.0])`` for 2D input with upper bounds 1.
+
+        :return: Constraint matrix in H-representation defining the function hull.
+            Shape: ``(num_constraints, 2*d+1)`` for standard hulls.
+            Format: ``[b | A_x | A_y]`` where ``b + A_x @ x + A_y @ y >= 0``.
+            The first column is the bias, next ``d`` columns are input coefficients,
+            last ``d`` columns are output coefficients.
+            Returns ``None`` if only single-neuron constraints are requested without
+            multi-neuron constraints.
+
+        :raises ValueError: If parameters are invalid or bounds don't match dimensions.
+        :raises DegeneratedError: If the input polytope is degenerate (too few vertices).
+
+        Example::
+
+            from wraact import ReLUHull
+            import numpy as np
+
+            hull = ReLUHull()
+            lb = np.array([-1.0, -1.0])
+            ub = np.array([1.0, 1.0])
+            constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            # constraints.shape = (num_constraints, 5)  # [b, x1, x2, y1, y2]
         """
         self._check_input_bounds(input_lower_bounds, input_upper_bounds)
         self._check_input_constrs(input_constrs)

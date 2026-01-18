@@ -1,4 +1,17 @@
-__version__ = "2026.1.0"
+"""WRAACT: Precise Activation Function Over-Approximation for Neural Network Verification.
+
+This package computes tight convex hulls for neural network activation
+functions (ReLU, Sigmoid, Tanh, ELU, LeakyReLU, MaxPool) with sound
+over-approximation guarantees for abstract interpretation during verification.
+
+Main classes:
+    - ActHull: Base class for activation hull computation
+    - ReLUHull, SigmoidHull, TanhHull, ELUHull, LeakyReLUHull: Standard hulls
+    - MaxPoolHull, MaxPoolHullDLP: Max pooling hulls
+    - *WithOneY variants: Optimized single-output versions
+"""
+
+__version__ = "2026.1.1"
 
 from wraact.acthull import (
     ActHull,
