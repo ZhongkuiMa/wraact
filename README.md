@@ -7,7 +7,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![Tests](https://img.shields.io/badge/tests-1876%20passed-success)](https://github.com/ZhongkuiMa/wraact/actions/workflows/unit-tests.yml)
 [![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)](https://github.com/ZhongkuiMa/wraact)
-[![Version](https://img.shields.io/badge/version-2026.1.1-blue.svg)](https://github.com/ZhongkuiMa/wraact/releases)
+[![Version](https://img.shields.io/github/v/tag/ZhongkuiMa/wraact?sort=semver)](https://github.com/ZhongkuiMa/wraact/releases)
 
 Compute tight convex hulls for neural network activation functions (ReLU, Sigmoid, Tanh, ELU, LeakyReLU, MaxPool) with sound over-approximation guarantees for abstract interpretation during verification.
 
@@ -97,11 +97,7 @@ wraact/
 
 ## Contributing
 
-1. Fork and clone the repository
-2. Install: `pip install -e ".[dev]"`
-3. Test: `pytest tests/ -v`
-4. Lint: `ruff check src/wraact tests`
-5. Submit a pull request
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing procedures, code quality standards, and pull request guidelines.
 
 ## License
 
