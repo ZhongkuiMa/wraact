@@ -13,19 +13,6 @@ import numpy as np
 import pytest
 
 # ============================================================================
-# PYTEST CONFIGURATION
-# ============================================================================
-
-
-def pytest_configure(config):
-    """Register custom markers for test selection."""
-    config.addinivalue_line("markers", "slow: Slow-running performance tests")
-    config.addinivalue_line("markers", "soundness: Soundness verification tests")
-    config.addinivalue_line("markers", "integration: Integration tests")
-    config.addinivalue_line("markers", "requires_elina: Tests requiring ELINA library")
-
-
-# ============================================================================
 # TOLERANCE AND NUMERICAL PARAMETERS
 # ============================================================================
 

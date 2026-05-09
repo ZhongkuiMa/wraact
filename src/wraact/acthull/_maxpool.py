@@ -1,3 +1,5 @@
+"""MaxPool activation hull computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["MaxPoolHull", "MaxPoolHullDLP"]
 
@@ -58,6 +60,15 @@ class MaxPoolHullDLP(ReLULikeHull):
         ub: ndarray | None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, d+1)
+        """Compute MaxPool hull constraints using DLP upper bound construction.
+
+        :param c: Input constraints in H-representation. Shape: (n, d).
+        :param v: Vertices of input polytope. Shape: (m, d).
+        :param lb: Lower bounds per dimension. Shape: (d-1,).
+        :param ub: Upper bounds per dimension. Shape: (d-1,).
+        :param dtype_cdd: Data type for pycddlib. Default: "float".
+        :return: Tuple of (constraints, dtype_cdd). Constraints shape: (_, d+2).
+        """
         d = c.shape[1] - 1
         c = np.array(c, dtype=np.float64)
         lb = np.array(lb, dtype=np.float64)
@@ -97,14 +108,7 @@ class MaxPoolHullDLP(ReLULikeHull):
         d = lb.shape[0]
         c_u = np.zeros((1, d + 2), dtype=lb.dtype)
 
-        # Upper bounds
-        # (1) The following solution is not precise enough.
-        # lb_sum = np.sum(lb)
-        # lb_max = np.max(lb)
-        # c_u[-1, 0] = lb_max - lb_sum
-        # c_u[-1, 1:-1] = 1.0
-        # c_u[-1, -1] = -1.0
-        # (2) y < ub_max
+        # Upper bound: y <= max(ub)
         c_u[-1, 0] = np.max(ub)
         c_u[-1, -1] = -1.0
 
@@ -135,6 +139,17 @@ class MaxPoolHullDLP(ReLULikeHull):
         lb: ndarray | None,  # (d-1,)
         ub: ndarray | None,  # (d-1,)
     ) -> ndarray:  # (n, d+1)
+        """Compute multi-neuron constraints for MaxPool using DLP construction.
+
+        Handles trivial cases (single vertex, single piece) directly,
+        then constructs a DLP upper bound for the non-trivial case.
+
+        :param c: Input constraints in H-representation. Shape: (n, d).
+        :param v: Vertices of input polytope. Shape: (m, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :return: Multi-neuron constraints. Shape: (_, d+2).
+        """
         # ------------------------ Trivial case ------------------------
         cc = cls._handle_case_of_one_vertex(v)
         if cc is not None:
@@ -167,7 +182,6 @@ class MaxPoolHullDLP(ReLULikeHull):
         Axb = np.expand_dims(Axb, 1)  # (n_c, 1, n_v)
         if not np.all(Axb >= -TOLERANCE):
             raise RuntimeError(f"Negative beta.\nAxb={Axb}.")
-        # Axb = np.maximum(Axb, 0.0)  # Remove tiny negative values
 
         # Calculate y - each piece
         v_y = np.max(pv, 0, keepdims=True)  # (1, n_v)
@@ -178,7 +192,6 @@ class MaxPoolHullDLP(ReLULikeHull):
             beta = np.where(yx != 0, Axb / yx, np.inf)  # (n_c, 2, n_v)
         if not np.all(beta >= -TOLERANCE):
             raise RuntimeError(f"Negative beta.\nbeta={beta}.")
-        # beta = np.maximum(beta, 0.0)  # Remove tiny negative values
 
         # Find the minimum value of beta for all vertices to maintain the soundness of
         # the function hull.
@@ -361,6 +374,17 @@ class MaxPoolHull(MaxPoolHullDLP):
         lb: ndarray | None,  # (d-1,)
         ub: ndarray | None,  # (d-1,)
     ) -> ndarray:  # (n, d+1)
+        """Compute multi-neuron constraints for MaxPool without DLP construction.
+
+        Computes upper constraints directly from the input polytope
+        vertices and constraints, handling trivial cases first.
+
+        :param c: Input constraints in H-representation. Shape: (n, d).
+        :param v: Vertices of input polytope. Shape: (m, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :return: Multi-neuron constraints. Shape: (_, d+2).
+        """
         # This only calculate the upper constraints of the function hull, which are
         # non-trivial constraints.
 
@@ -394,7 +418,6 @@ class MaxPoolHull(MaxPoolHullDLP):
 
         if not np.all(beta >= -TOLERANCE):
             raise RuntimeError(f"Negative beta.\nbeta={beta}.")
-        # beta = np.minimum(beta, 0.0)  # Remove tiny negative values
 
         # Find the minimum value of beta for all vertices to maintain the soundness of
         # the function hull.

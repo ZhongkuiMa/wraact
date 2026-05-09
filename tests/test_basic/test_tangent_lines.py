@@ -23,14 +23,20 @@ __docformat__ = "restructuredtext"
 
 import numpy as np
 
+from wraact._exceptions import NotConvergedError
+from wraact._tangent_lines import (
+    get_parallel_tangent_line_sigmoid_np,
+    get_parallel_tangent_line_tanh_np,
+    get_second_tangent_line_sigmoid_np,
+    get_second_tangent_line_tanh_np,
+)
+
 
 class TestParallelTangentLineSigmoid:
     """Tests for get_parallel_tangent_line_sigmoid_np."""
 
     def test_parallel_tangent_sigmoid_returns_correct_format(self):
         """Verify function returns tuple (b, k, x)."""
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         k = np.array([0.1, 0.15, 0.2])
         b, k_out, x = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
 
@@ -43,8 +49,6 @@ class TestParallelTangentLineSigmoid:
 
     def test_parallel_tangent_sigmoid_output_slope_matches_input(self):
         """Verify returned slope k matches input slope."""
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         k = np.array([0.1, 0.15, 0.2])
         _b, k_out, _x = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
 
@@ -52,8 +56,6 @@ class TestParallelTangentLineSigmoid:
 
     def test_parallel_tangent_sigmoid_tangent_point_valid(self):
         """Verify x point is finite and reasonable."""
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         k = np.array([0.1, 0.15, 0.2])
         _b, _k_out, x = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
 
@@ -63,8 +65,6 @@ class TestParallelTangentLineSigmoid:
 
     def test_parallel_tangent_sigmoid_small_slope_get_big_true(self):
         """Test with small slope and get_big=True."""
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         k = np.array([0.05])
         _b, _k_out, x = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
 
@@ -73,8 +73,6 @@ class TestParallelTangentLineSigmoid:
 
     def test_parallel_tangent_sigmoid_small_slope_get_big_false(self):
         """Test with small slope and get_big=False."""
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         k = np.array([0.05])
         _b, _k_out, x = get_parallel_tangent_line_sigmoid_np(k, get_big=False)
 
@@ -83,8 +81,6 @@ class TestParallelTangentLineSigmoid:
 
     def test_parallel_tangent_sigmoid_max_slope_constraint(self):
         """Verify slope is at most 0.25 (sigmoid derivative max)."""
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         # Sigmoid derivative max is 0.25, so this should not raise
         k = np.array([0.24, 0.245, 0.249])
         b, _k_out, x = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
@@ -94,8 +90,6 @@ class TestParallelTangentLineSigmoid:
 
     def test_parallel_tangent_sigmoid_slope_too_large(self):
         """Verify behavior with slope > 0.25 (exceeds sigmoid derivative)."""
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         k = np.array([0.26])
         b, _k_out, _x = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
 
@@ -104,8 +98,6 @@ class TestParallelTangentLineSigmoid:
 
     def test_parallel_tangent_sigmoid_intercept_finite(self):
         """Verify intercept b is finite."""
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         k = np.array([0.1, 0.15, 0.2])
         b, _k_out, _x = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
 
@@ -117,8 +109,6 @@ class TestParallelTangentLineTanh:
 
     def test_parallel_tangent_tanh_returns_correct_format(self):
         """Verify function returns tuple (b, k, x)."""
-        from wraact._tangent_lines import get_parallel_tangent_line_tanh_np
-
         k = np.array([0.2, 0.4, 0.6])
         b, k_out, x = get_parallel_tangent_line_tanh_np(k, get_big=True)
 
@@ -131,8 +121,6 @@ class TestParallelTangentLineTanh:
 
     def test_parallel_tangent_tanh_output_slope_matches_input(self):
         """Verify returned slope k matches input slope."""
-        from wraact._tangent_lines import get_parallel_tangent_line_tanh_np
-
         k = np.array([0.2, 0.4, 0.6])
         _b, k_out, _x = get_parallel_tangent_line_tanh_np(k, get_big=True)
 
@@ -140,8 +128,6 @@ class TestParallelTangentLineTanh:
 
     def test_parallel_tangent_tanh_tangent_point_valid(self):
         """Verify x point is finite and reasonable."""
-        from wraact._tangent_lines import get_parallel_tangent_line_tanh_np
-
         k = np.array([0.2, 0.4, 0.6])
         _b, _k_out, x = get_parallel_tangent_line_tanh_np(k, get_big=True)
 
@@ -151,8 +137,6 @@ class TestParallelTangentLineTanh:
 
     def test_parallel_tangent_tanh_symmetry(self):
         """Test symmetry: get_big_true vs get_big_false should be opposite."""
-        from wraact._tangent_lines import get_parallel_tangent_line_tanh_np
-
         k = np.array([0.5])
         _b_pos, _k_out_pos, x_pos = get_parallel_tangent_line_tanh_np(k, get_big=True)
         _b_neg, _k_out_neg, x_neg = get_parallel_tangent_line_tanh_np(k, get_big=False)
@@ -164,8 +148,6 @@ class TestParallelTangentLineTanh:
 
     def test_parallel_tangent_tanh_max_slope_constraint(self):
         """Verify slope is at most 1.0 (tanh derivative max)."""
-        from wraact._tangent_lines import get_parallel_tangent_line_tanh_np
-
         # Tanh derivative max is 1.0
         k = np.array([0.5, 0.8, 0.99])
         b, _k_out, x = get_parallel_tangent_line_tanh_np(k, get_big=True)
@@ -175,8 +157,6 @@ class TestParallelTangentLineTanh:
 
     def test_parallel_tangent_tanh_intercept_finite(self):
         """Verify intercept b is finite."""
-        from wraact._tangent_lines import get_parallel_tangent_line_tanh_np
-
         k = np.array([0.2, 0.4, 0.6])
         b, _k_out, _x = get_parallel_tangent_line_tanh_np(k, get_big=True)
 
@@ -188,8 +168,6 @@ class TestSecondTangentLineSigmoid:
 
     def test_second_tangent_sigmoid_returns_correct_format(self):
         """Verify function returns tuple (b, k, x)."""
-        from wraact._tangent_lines import get_second_tangent_line_sigmoid_np
-
         x1 = np.array([0.5])
         b, k, x = get_second_tangent_line_sigmoid_np(x1, get_big=True)
 
@@ -202,8 +180,6 @@ class TestSecondTangentLineSigmoid:
 
     def test_second_tangent_sigmoid_convergence(self):
         """Verify function converges and returns result."""
-        from wraact._tangent_lines import get_second_tangent_line_sigmoid_np
-
         x1 = np.array([0.5, 1.0, 1.5])
         b, k, x = get_second_tangent_line_sigmoid_np(x1, get_big=True)
 
@@ -214,8 +190,6 @@ class TestSecondTangentLineSigmoid:
 
     def test_second_tangent_sigmoid_output_bounds(self):
         """Verify x is within reasonable bounds."""
-        from wraact._tangent_lines import get_second_tangent_line_sigmoid_np
-
         x1 = np.array([0.5])
         _b, _k, x = get_second_tangent_line_sigmoid_np(x1, get_big=True)
 
@@ -224,8 +198,6 @@ class TestSecondTangentLineSigmoid:
 
     def test_second_tangent_sigmoid_slope_valid(self):
         """Verify computed slope is within sigmoid derivative range."""
-        from wraact._tangent_lines import get_second_tangent_line_sigmoid_np
-
         x1 = np.array([0.5, 1.0])
         _b, k, _x = get_second_tangent_line_sigmoid_np(x1, get_big=True)
 
@@ -235,9 +207,6 @@ class TestSecondTangentLineSigmoid:
 
     def test_second_tangent_sigmoid_different_x1_values(self):
         """Test with different first tangent point x1."""
-        from wraact._exceptions import NotConvergedError
-        from wraact._tangent_lines import get_second_tangent_line_sigmoid_np
-
         # Test values that should converge
         x1_values = np.array([0.0, 0.5, 1.0])
         for x1 in x1_values:
@@ -252,8 +221,6 @@ class TestSecondTangentLineSigmoid:
 
     def test_second_tangent_sigmoid_get_big_consistency(self):
         """Verify get_big parameter affects result consistently."""
-        from wraact._tangent_lines import get_second_tangent_line_sigmoid_np
-
         x1 = np.array([1.0])
         b_big, _k_big, x_big = get_second_tangent_line_sigmoid_np(x1, get_big=True)
         b_small, _k_small, x_small = get_second_tangent_line_sigmoid_np(x1, get_big=False)
@@ -267,8 +234,6 @@ class TestSecondTangentLineTanh:
 
     def test_second_tangent_tanh_returns_correct_format(self):
         """Verify function returns tuple (b, k, x)."""
-        from wraact._tangent_lines import get_second_tangent_line_tanh_np
-
         x1 = np.array([0.5])
         b, k, x = get_second_tangent_line_tanh_np(x1, get_big=True)
 
@@ -281,8 +246,6 @@ class TestSecondTangentLineTanh:
 
     def test_second_tangent_tanh_scalar_input(self):
         """Verify function handles scalar input (not just arrays)."""
-        from wraact._tangent_lines import get_second_tangent_line_tanh_np
-
         x1 = 0.5  # Scalar, not array
         b, k, x = get_second_tangent_line_tanh_np(x1, get_big=True)
 
@@ -293,8 +256,6 @@ class TestSecondTangentLineTanh:
 
     def test_second_tangent_tanh_convergence(self):
         """Verify function converges and returns result."""
-        from wraact._tangent_lines import get_second_tangent_line_tanh_np
-
         x1 = np.array([0.5, 1.0, 1.5])
         b, k, x = get_second_tangent_line_tanh_np(x1, get_big=True)
 
@@ -305,8 +266,6 @@ class TestSecondTangentLineTanh:
 
     def test_second_tangent_tanh_output_bounds(self):
         """Verify x is within reasonable bounds."""
-        from wraact._tangent_lines import get_second_tangent_line_tanh_np
-
         x1 = np.array([0.5])
         _b, _k, x = get_second_tangent_line_tanh_np(x1, get_big=True)
 
@@ -315,8 +274,6 @@ class TestSecondTangentLineTanh:
 
     def test_second_tangent_tanh_slope_valid(self):
         """Verify computed slope is within tanh derivative range."""
-        from wraact._tangent_lines import get_second_tangent_line_tanh_np
-
         x1 = np.array([0.5, 1.0])
         _b, k, _x = get_second_tangent_line_tanh_np(x1, get_big=True)
 
@@ -326,8 +283,6 @@ class TestSecondTangentLineTanh:
 
     def test_second_tangent_tanh_symmetry_property(self):
         """Test symmetry: second tangent for -x1 with get_big_false."""
-        from wraact._tangent_lines import get_second_tangent_line_tanh_np
-
         x1 = np.array([1.0])
         _b_pos, _k_pos, _x_pos = get_second_tangent_line_tanh_np(x1, get_big=True)
         b_neg, k_neg, x_neg = get_second_tangent_line_tanh_np(-x1, get_big=False)
@@ -345,35 +300,33 @@ class TestTangentLineExceptionHandling:
 
     def test_second_tangent_sigmoid_raises_not_converged(self):
         """Verify NotConvergedError raised when iteration limit exceeded."""
-        from wraact._exceptions import NotConvergedError
-        from wraact._tangent_lines import get_second_tangent_line_sigmoid_np
-
         # This is hard to trigger in normal cases, but the function should
         # raise NotConvergedError if convergence criteria not met
         # (Testing actual non-convergence is difficult without modifying internal state)
         # Just verify the error can be caught
         try:
             x1 = np.array([0.5])
-            _b, _k, _x = get_second_tangent_line_sigmoid_np(x1, get_big=True)
-            # If we get here, convergence succeeded
-            assert True
+            b, k, x = get_second_tangent_line_sigmoid_np(x1, get_big=True)
+            # If we get here, convergence succeeded - verify results are valid
+            assert np.all(np.isfinite(b))
+            assert np.all(np.isfinite(k))
+            assert np.all(np.isfinite(x))
         except NotConvergedError:
             # If convergence fails, that's also acceptable for this test
-            assert True
+            pass
 
     def test_second_tangent_tanh_raises_not_converged(self):
         """Verify NotConvergedError raised when iteration limit exceeded."""
-        from wraact._exceptions import NotConvergedError
-        from wraact._tangent_lines import get_second_tangent_line_tanh_np
-
         try:
             x1 = np.array([0.5])
-            _b, _k, _x = get_second_tangent_line_tanh_np(x1, get_big=True)
-            # If we get here, convergence succeeded
-            assert True
+            b, k, x = get_second_tangent_line_tanh_np(x1, get_big=True)
+            # If we get here, convergence succeeded - verify results are valid
+            assert np.all(np.isfinite(b))
+            assert np.all(np.isfinite(k))
+            assert np.all(np.isfinite(x))
         except NotConvergedError:
             # If convergence fails, that's also acceptable for this test
-            assert True
+            pass
 
 
 class TestTangentLineNumericalProperties:
@@ -381,8 +334,6 @@ class TestTangentLineNumericalProperties:
 
     def test_parallel_tangent_sigmoid_equation_verification(self):
         """Verify tangent line equation: y = b + k*x."""
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         k = np.array([0.1])
         b, _k_out, x = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
 
@@ -395,8 +346,6 @@ class TestTangentLineNumericalProperties:
 
     def test_parallel_tangent_tanh_equation_verification(self):
         """Verify tangent line equation: y = b + k*x."""
-        from wraact._tangent_lines import get_parallel_tangent_line_tanh_np
-
         k = np.array([0.5])
         b, _k_out, x = get_parallel_tangent_line_tanh_np(k, get_big=True)
 
@@ -409,8 +358,6 @@ class TestTangentLineNumericalProperties:
 
     def test_parallel_tangent_sigmoid_slope_matches_derivative(self):
         """Verify slope matches sigmoid derivative at tangent point."""
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         k = np.array([0.15])
         _b, _k_out, x = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
 
@@ -423,8 +370,6 @@ class TestTangentLineNumericalProperties:
 
     def test_parallel_tangent_tanh_slope_matches_derivative(self):
         """Verify slope matches tanh derivative at tangent point."""
-        from wraact._tangent_lines import get_parallel_tangent_line_tanh_np
-
         k = np.array([0.7])
         _b, _k_out, x = get_parallel_tangent_line_tanh_np(k, get_big=True)
 

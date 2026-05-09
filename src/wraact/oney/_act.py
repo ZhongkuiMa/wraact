@@ -37,6 +37,13 @@ class ActHullWithOneY(ActHull, ABC):
         n_output_constraints: int = 1,
         if_return_input_bounds_by_vertices: bool = False,
     ):
+        """Initialize the single-output activation hull calculator.
+
+        :param dtype_cdd: Data type for pycddlib. Default: "float".
+        :param n_output_constraints: Number of output constraints to generate.
+        :param if_return_input_bounds_by_vertices: Whether to return tightened
+            input bounds derived from polytope vertices.
+        """
         super().__init__(
             if_cal_single_neuron_constrs=True,
             if_cal_multi_neuron_constrs=True,
@@ -105,14 +112,6 @@ class ActHullWithOneY(ActHull, ABC):
             raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
         cc, dtype_cdd = result
 
-        # ====================CHECK====================
-        # Check if all vertices satisfy the constraints.
-        # v_y = self._f(v[:, 1:])
-        # vertices = np.hstack((v, v_y))
-        # check = np.matmul(cc, vertices.T)
-        # if not np.all(check >= -TOLERANCE):
-        #     raise RuntimeError("Not all vertices satisfy the constraints.")
-
         if self._use_double_orders:  # pragma: no cover - always False in OneY (set in __init__)
             # Here we reverse the order of input dimensions to calculate the function
             # hull because our algorithm is a progressive algorithm that calculates the
@@ -176,8 +175,6 @@ class ActHullWithOneY(ActHull, ABC):
         # Choose the constraints with non-zero beta values, which is the last column
         # of the constraints.
         c = c[(c[:, -1] < -TOLERANCE) | (c[:, -1] > TOLERANCE)]
-
-        # c = c[np.argsort(-np.abs(c[:, 0] / c[:, -1]))]
         c = c[np.argsort(c[:, -1])]
 
         # Get the topk maximum or minimum beta values.

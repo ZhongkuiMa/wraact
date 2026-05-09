@@ -16,11 +16,9 @@ import numpy as np
 class TestActHullBoundsHandling:
     """Test bounds validation and handling in ActHull."""
 
-    def test_relu_large_dimension_bounds(self):
+    def test_relu_large_dimension_bounds(self, relu_hull_class):
         """Test ReLU with large dimensional input bounds."""
-        from wraact.acthull import ReLUHull
-
-        hull = ReLUHull()
+        hull = relu_hull_class()
         d = 10
         lb = -np.ones(d)
         ub = np.ones(d)
@@ -30,11 +28,9 @@ class TestActHullBoundsHandling:
         assert constraints.shape[1] == 2 * d + 1  # 2d + 1
         assert np.all(np.isfinite(constraints))
 
-    def test_leakyrelu_asymmetric_large_bounds(self):
+    def test_leakyrelu_asymmetric_large_bounds(self, leakyrelu_hull_class):
         """Test LeakyReLU with large asymmetric bounds."""
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         lb = np.array([-100.0, -50.0, -200.0])
         ub = np.array([50.0, 100.0, 10.0])
 
@@ -43,11 +39,9 @@ class TestActHullBoundsHandling:
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_elu_both_constraint_modes_with_different_bounds(self):
+    def test_elu_both_constraint_modes_with_different_bounds(self, elu_hull_class):
         """Test ELU with both modes and varying bound configurations."""
-        from wraact.acthull import ELUHull
-
-        hull = ELUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=True)
+        hull = elu_hull_class(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=True)
 
         # Test with different bound configurations
         test_cases = [
@@ -64,11 +58,9 @@ class TestActHullBoundsHandling:
 class TestActHullMultiDimensional:
     """Test ActHull with various dimensionalities."""
 
-    def test_sigmoid_very_high_dimension(self):
+    def test_sigmoid_very_high_dimension(self, sigmoid_hull_class):
         """Test Sigmoid with high-dimensional input."""
-        from wraact.acthull import SigmoidHull
-
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         d = 8
         lb = -2.0 * np.ones(d)
         ub = 2.0 * np.ones(d)
@@ -78,11 +70,9 @@ class TestActHullMultiDimensional:
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_tanh_high_dimension(self):
+    def test_tanh_high_dimension(self, tanh_hull_class):
         """Test Tanh with high-dimensional input."""
-        from wraact.acthull import TanhHull
-
-        hull = TanhHull()
+        hull = tanh_hull_class()
         d = 6
         lb = -2.0 * np.ones(d)
         ub = 2.0 * np.ones(d)
@@ -92,11 +82,9 @@ class TestActHullMultiDimensional:
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_maxpool_high_dimension(self):
+    def test_maxpool_high_dimension(self, maxpool_hull_class):
         """Test MaxPool with high-dimensional input."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         d = 7
         lb = -np.ones(d)
         ub = np.ones(d)
@@ -110,9 +98,8 @@ class TestActHullMultiDimensional:
 class TestActHullConstraintCombinations:
     """Test various constraint mode combinations."""
 
-    def test_relu_single_multi_combined_soundness(self):
+    def test_relu_single_multi_combined_soundness(self, relu_hull_class):
         """Test ReLU with combined single and multi-neuron modes."""
-        from wraact.acthull import ReLUHull
 
         def relu_np(x):
             return np.maximum(0, x)
@@ -120,7 +107,7 @@ class TestActHullConstraintCombinations:
         lb = np.array([-2.0, -2.0, -2.0])
         ub = np.array([2.0, 2.0, 2.0])
 
-        hull = ReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=True)
+        hull = relu_hull_class(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=True)
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         # Soundness check
@@ -143,9 +130,8 @@ class TestActHullConstraintCombinations:
         satisfaction_rate = 100.0 * (num_samples - violations) / num_samples
         assert satisfaction_rate >= 99.0
 
-    def test_leakyrelu_combined_modes_3d_soundness(self):
+    def test_leakyrelu_combined_modes_3d_soundness(self, leakyrelu_hull_class):
         """Test LeakyReLU soundness with combined constraint modes in 3D."""
-        from wraact.acthull import LeakyReLUHull
 
         def leakyrelu_np(x, negative_slope=0.01):
             return np.where(x >= 0, x, negative_slope * x)
@@ -153,7 +139,9 @@ class TestActHullConstraintCombinations:
         lb = np.array([-1.5, -1.5, -1.5])
         ub = np.array([1.5, 1.5, 1.5])
 
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=True)
+        hull = leakyrelu_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=True
+        )
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         num_samples = 300
@@ -179,41 +167,37 @@ class TestActHullConstraintCombinations:
 class TestActHullOutputDimensions:
     """Test output dimensions for different configurations."""
 
-    def test_relu_single_neuron_output_dims(self):
+    def test_relu_single_neuron_output_dims(self, relu_hull_class):
         """Test ReLU single-neuron output dimensions across various input sizes."""
-        from wraact.acthull import ReLUHull
-
         for d in range(1, 8):
             lb = -np.ones(d)
             ub = np.ones(d)
 
-            hull = ReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+            hull = relu_hull_class(
+                if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+            )
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
             assert constraints.shape[1] == 2 * d + 1
 
-    def test_maxpool_output_dims_various_inputs(self):
+    def test_maxpool_output_dims_various_inputs(self, maxpool_hull_class):
         """Test MaxPool output dimensions across various input sizes."""
-        from wraact.acthull import MaxPoolHull
-
         for d in range(2, 9):
             lb = -np.ones(d)
             ub = np.ones(d)
 
-            hull = MaxPoolHull()
+            hull = maxpool_hull_class()
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
             assert constraints.shape[1] == d + 2  # d+2 format for maxpool
 
-    def test_sigmoid_output_dims(self):
+    def test_sigmoid_output_dims(self, sigmoid_hull_class):
         """Test Sigmoid output dimensions."""
-        from wraact.acthull import SigmoidHull
-
         for d in range(1, 7):
             lb = -2.0 * np.ones(d)
             ub = 2.0 * np.ones(d)
 
-            hull = SigmoidHull()
+            hull = sigmoid_hull_class()
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
             assert constraints.shape[1] == 2 * d + 1
@@ -222,11 +206,9 @@ class TestActHullOutputDimensions:
 class TestActHullSpecialBounds:
     """Test ActHull with special bound configurations."""
 
-    def test_relu_near_zero_bounds(self):
+    def test_relu_near_zero_bounds(self, relu_hull_class):
         """Test ReLU with bounds very close to zero."""
-        from wraact.acthull import ReLUHull
-
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-0.1, -0.1])
         ub = np.array([0.1, 0.1])
 
@@ -235,11 +217,9 @@ class TestActHullSpecialBounds:
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_leakyrelu_crossing_zero_asymmetric(self):
+    def test_leakyrelu_crossing_zero_asymmetric(self, leakyrelu_hull_class):
         """Test LeakyReLU with asymmetric bounds crossing zero."""
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         lb = np.array([-10.0, -0.5, -2.0])
         ub = np.array([-0.1, 10.0, 0.1])
 
@@ -248,11 +228,9 @@ class TestActHullSpecialBounds:
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_elu_crossing_zero(self):
+    def test_elu_crossing_zero(self, elu_hull_class):
         """Test ELU with bounds crossing zero."""
-        from wraact.acthull import ELUHull
-
-        hull = ELUHull()
+        hull = elu_hull_class()
         lb = np.array([-3.0, -1.0, -0.5])
         ub = np.array([0.5, 2.0, 3.0])
 
@@ -261,11 +239,9 @@ class TestActHullSpecialBounds:
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_sigmoid_extreme_bounds(self):
+    def test_sigmoid_extreme_bounds(self, sigmoid_hull_class):
         """Test Sigmoid with extreme bounds."""
-        from wraact.acthull import SigmoidHull
-
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.array([-10.0, -5.0])
         ub = np.array([5.0, 10.0])
 
@@ -278,11 +254,9 @@ class TestActHullSpecialBounds:
 class TestActHullReproducibility:
     """Test reproducibility of ActHull computations."""
 
-    def test_relu_multi_call_reproducibility(self):
+    def test_relu_multi_call_reproducibility(self, relu_hull_class):
         """Test ReLU produces identical results across multiple calls."""
-        from wraact.acthull import ReLUHull
-
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-2.0, -2.0, -2.0])
         ub = np.array([2.0, 2.0, 2.0])
 
@@ -295,11 +269,11 @@ class TestActHullReproducibility:
         for i in range(1, len(results)):
             np.testing.assert_array_equal(results[0], results[i])
 
-    def test_leakyrelu_multi_call_reproducibility(self):
+    def test_leakyrelu_multi_call_reproducibility(self, leakyrelu_hull_class):
         """Test LeakyReLU reproducibility."""
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=True)
+        hull = leakyrelu_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=True
+        )
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -312,11 +286,9 @@ class TestActHullReproducibility:
         for i in range(1, len(results)):
             np.testing.assert_array_equal(results[0], results[i])
 
-    def test_tanh_multi_call_reproducibility(self):
+    def test_tanh_multi_call_reproducibility(self, tanh_hull_class):
         """Test Tanh reproducibility."""
-        from wraact.acthull import TanhHull
-
-        hull = TanhHull()
+        hull = tanh_hull_class()
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 

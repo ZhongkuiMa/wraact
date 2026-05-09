@@ -101,11 +101,9 @@ class TestLeakyReLUSoundnessCustomSlope(BaseSoundnessTest):
 class TestLeakyReLUBasicFunctionality:
     """Basic functionality tests for LeakyReLUHull."""
 
-    def test_cal_hull_returns_ndarray(self):
+    def test_cal_hull_returns_ndarray(self, leakyrelu_hull_class):
         """Verify cal_hull() returns an ndarray."""
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -114,37 +112,26 @@ class TestLeakyReLUBasicFunctionality:
         assert isinstance(result, np.ndarray)
         assert result.ndim == 2  # 2D array
 
-    def test_cal_hull_output_shape_2d(self):
-        """Verify output shape follows formula: 2*dim + 1 = 5 for 2D."""
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull()
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
-        result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        # For 2D input: 2*2 + 1 = 5 columns
-        assert result.shape[1] == 5
-
-    def test_cal_hull_output_shape_3d(self):
-        """Verify output shape follows formula: 2*dim + 1 = 7 for 3D."""
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull()
-        lb = np.array([-1.0, -1.0, -1.0])
-        ub = np.array([1.0, 1.0, 1.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(2, 5, id="2d"),
+            pytest.param(3, 7, id="3d"),
+        ],
+    )
+    def test_cal_hull_output_shape(self, dim, expected_cols, leakyrelu_hull_class):
+        """Verify output shape follows formula: 2*dim + 1."""
+        hull = leakyrelu_hull_class()
+        lb = -np.ones(dim)
+        ub = np.ones(dim)
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        # For 3D input: 2*3 + 1 = 7 columns
-        assert result.shape[1] == 7
+        assert result.shape[1] == expected_cols
 
-    def test_cal_hull_output_finite(self):
+    def test_cal_hull_output_finite(self, leakyrelu_hull_class):
         """Verify output contains no inf or nan values."""
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -156,94 +143,43 @@ class TestLeakyReLUBasicFunctionality:
 class TestLeakyReLUBoundEdgeCases:
     """Test LeakyReLU with edge case bounds (trivial cases)."""
 
-    def test_cal_hull_all_positive_bounds(self):
-        """Test LeakyReLU with all-positive bounds (lb >= 0)."""
-        from wraact.acthull import LeakyReLUHull
-
-        lb = np.array([0.5, 0.5])
-        ub = np.array([1.0, 1.0])
-
-        hull = LeakyReLUHull()
-        # All-positive bounds should work (linear region)
-        try:
-            constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-            assert isinstance(constraints, np.ndarray)
-            assert np.all(np.isfinite(constraints))
-        except ValueError:
-            # Some implementations may require crossing zero
-            pass
-
-    def test_cal_hull_all_negative_bounds(self):
-        """Test LeakyReLU with all-negative bounds (ub <= 0)."""
-        from wraact.acthull import LeakyReLUHull
-
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([-0.5, -0.5])
-
-        hull = LeakyReLUHull()
-        # All-negative bounds should work (linear with slope)
-        try:
-            constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-            assert isinstance(constraints, np.ndarray)
-            assert np.all(np.isfinite(constraints))
-        except ValueError:
-            # Some implementations may require crossing zero
-            pass
-
-    def test_cal_hull_very_small_range(self):
-        """Test LeakyReLU with small input range (just above minimum threshold)."""
-        from wraact.acthull import LeakyReLUHull
-
-        # Minimum range threshold is 0.05, so we use range 0.06
-        lb = np.array([-0.03, -0.03])
-        ub = np.array([0.03, 0.03])
-
-        hull = LeakyReLUHull()
+    @pytest.mark.parametrize(
+        ("lb", "ub", "scenario", "expected_cols"),
+        [
+            pytest.param(
+                np.array([0.5, 0.5]), np.array([1.0, 1.0]), "all_positive", 5, id="all_positive"
+            ),
+            pytest.param(
+                np.array([-1.0, -1.0]), np.array([-0.5, -0.5]), "all_negative", 5, id="all_negative"
+            ),
+            pytest.param(
+                np.array([-0.03, -0.03]), np.array([0.03, 0.03]), "small_range", 5, id="small_range"
+            ),
+            pytest.param(
+                np.array([-2.0, -2.0]), np.array([0.5, 0.5]), "asymmetric", 5, id="asymmetric"
+            ),
+            pytest.param(
+                np.array([-10.0, -10.0]), np.array([10.0, 10.0]), "large_range", 5, id="large_range"
+            ),
+            pytest.param(
+                np.array([-5.0, -1.0, -0.1]),
+                np.array([0.1, 2.0, 5.0]),
+                "3d_asymmetric",
+                7,
+                id="3d_asymmetric",
+            ),
+        ],
+    )
+    def test_cal_hull_bound_configurations(
+        self, lb, ub, scenario, expected_cols, leakyrelu_hull_class
+    ):
+        """Test LeakyReLU with various bound configurations."""
+        hull = leakyrelu_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
-        assert constraints.shape[1] == 5  # 2D input
-
-    def test_cal_hull_asymmetric_bounds(self):
-        """Test LeakyReLU with asymmetric bounds around zero."""
-        from wraact.acthull import LeakyReLUHull
-
-        lb = np.array([-2.0, -2.0])
-        ub = np.array([0.5, 0.5])
-
-        hull = LeakyReLUHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
-    def test_cal_hull_large_range(self):
-        """Test LeakyReLU with large input range."""
-        from wraact.acthull import LeakyReLUHull
-
-        lb = np.array([-10.0, -10.0])
-        ub = np.array([10.0, 10.0])
-
-        hull = LeakyReLUHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
-    def test_cal_hull_3d_edge_case(self):
-        """Test LeakyReLU with 3D asymmetric bounds."""
-        from wraact.acthull import LeakyReLUHull
-
-        lb = np.array([-5.0, -1.0, -0.1])
-        ub = np.array([0.1, 2.0, 5.0])
-
-        hull = LeakyReLUHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-        assert constraints.shape[1] == 7  # 3D input
+        assert constraints.shape[1] == expected_cols
 
 
 class TestLeakyReLUSingleNeuronMode:
@@ -254,59 +190,36 @@ class TestLeakyReLUSingleNeuronMode:
     caching behavior which is unique to LeakyReLU.
     """
 
-    def test_cal_hull_single_neuron_2d(self):
-        """Test single-neuron constraints for 2D input."""
-        from wraact.acthull import LeakyReLUHull
-
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 2 * len(lb) + 1
-        assert np.all(np.isfinite(constraints))
-
-    def test_cal_hull_single_neuron_3d(self):
-        """Test single-neuron constraints for 3D input."""
-        from wraact.acthull import LeakyReLUHull
-
-        lb = np.array([-1.0, -1.0, -1.0])
-        ub = np.array([1.0, 1.0, 1.0])
-
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+    @pytest.mark.parametrize(
+        ("dim", "lb", "ub"),
+        [
+            pytest.param(2, np.array([-1.0, -1.0]), np.array([1.0, 1.0]), id="2d"),
+            pytest.param(3, np.array([-1.0, -1.0, -1.0]), np.array([1.0, 1.0, 1.0]), id="3d"),
+            pytest.param(
+                4, np.array([-1.0, -1.0, -1.0, -1.0]), np.array([1.0, 1.0, 1.0, 1.0]), id="4d"
+            ),
+        ],
+    )
+    def test_cal_hull_single_neuron(self, dim, lb, ub, leakyrelu_hull_class):
+        """Test single-neuron constraints for given input dimension."""
+        hull = leakyrelu_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 2 * len(lb) + 1
+        assert constraints.shape[1] == 2 * dim + 1
         assert np.all(np.isfinite(constraints))
 
-    def test_cal_hull_single_neuron_4d(self):
-        """Test single-neuron constraints for 4D input."""
-        from wraact.acthull import LeakyReLUHull
-
-        lb = np.array([-1.0, -1.0, -1.0, -1.0])
-        ub = np.array([1.0, 1.0, 1.0, 1.0])
-
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 2 * 4 + 1  # 9 columns for 4D
-        assert np.all(np.isfinite(constraints))
-
-    def test_cal_hull_single_neuron_soundness(self):
+    def test_cal_hull_single_neuron_soundness(self, leakyrelu_hull_class):
         """Verify soundness of single-neuron constraints with Monte Carlo."""
-        from wraact.acthull import LeakyReLUHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = leakyrelu_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
@@ -330,11 +243,11 @@ class TestLeakyReLUSingleNeuronMode:
         # Single-neuron constraints may be less tight, but should still be sound
         assert satisfaction_rate >= 95.0
 
-    def test_cal_hull_single_neuron_cache_behavior(self):
+    def test_cal_hull_single_neuron_cache_behavior(self, leakyrelu_hull_class):
         """Test that LeakyReLU caches lower constraints."""
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = leakyrelu_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         # First call - cache miss
         lb1 = np.array([-1.0, -1.0])
@@ -349,11 +262,11 @@ class TestLeakyReLUSingleNeuronMode:
         # Verify cache was used (constraints share structure)
         assert c1.shape[0] == c2.shape[0]  # Same number of constraints
 
-    def test_cal_hull_single_neuron_cache_hit(self):
+    def test_cal_hull_single_neuron_cache_hit(self, leakyrelu_hull_class):
         """Test cache behavior on multiple calls with same dimension."""
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = leakyrelu_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
@@ -366,11 +279,11 @@ class TestLeakyReLUSingleNeuronMode:
         # All should have same shape (cache hit)
         assert c1.shape == c2.shape == c3.shape
 
-    def test_cal_hull_single_neuron_cache_miss(self):
+    def test_cal_hull_single_neuron_cache_miss(self, leakyrelu_hull_class):
         """Test cache behavior on calls with different dimensions."""
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = leakyrelu_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         # First call: 2D
         lb2d = np.array([-1.0, -1.0])
@@ -386,50 +299,49 @@ class TestLeakyReLUSingleNeuronMode:
         assert c2d.shape[1] == 5  # 2*2 + 1
         assert c3d.shape[1] == 7  # 2*3 + 1
 
-    def test_cal_sn_constrs_direct(self):
+    def test_cal_sn_constrs_direct(self, leakyrelu_hull_class):
         """Test direct call to cal_sn_constrs method."""
-        from wraact.acthull import LeakyReLUHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = leakyrelu_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         # Call cal_hull which internally calls cal_sn_constrs
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         # Verify the method executed successfully
-        assert constraints is not None
+        assert isinstance(constraints, np.ndarray)
         assert constraints.shape[0] > 0
 
-    def test_cal_hull_mixed_mode_disabled_error(self):
+    def test_cal_hull_mixed_mode_disabled_error(self, leakyrelu_hull_class):
         """Test that having both modes disabled raises error or is handled."""
-        from wraact.acthull import LeakyReLUHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
         # This tests the edge case where both constraint modes are disabled
         # The implementation may either raise an error or handle it gracefully
         try:
-            hull = LeakyReLUHull(
+            hull = leakyrelu_hull_class(
                 if_cal_single_neuron_constrs=False, if_cal_multi_neuron_constrs=False
             )
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             # If it succeeds, at least constraints should be valid
-            assert constraints is not None
+            assert isinstance(constraints, np.ndarray)
+            assert constraints.shape[0] > 0
         except (ValueError, RuntimeError):
             # Expected: both modes disabled should raise an error
             pass
 
-    def test_cal_hull_single_neuron_output_properties(self):
+    def test_cal_hull_single_neuron_output_properties(self, leakyrelu_hull_class):
         """Test properties of single-neuron constraint output."""
-        from wraact.acthull import LeakyReLUHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = LeakyReLUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = leakyrelu_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 

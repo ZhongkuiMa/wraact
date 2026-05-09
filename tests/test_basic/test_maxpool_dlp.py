@@ -10,16 +10,17 @@ This module tests MaxPoolHullDLP specific functionality:
 __docformat__ = "restructuredtext"
 
 import numpy as np
+import pytest
+
+from wraact.acthull import MaxPoolHullDLP
 
 
 class TestMaxPoolDLPLowerConstraintCache:
     """Test lower constraint caching in MaxPoolHullDLP."""
 
-    def test_maxpool_dlp_cache_same_dimension(self):
+    def test_maxpool_dlp_cache_same_dimension(self, maxpool_hull_class):
         """Test that lower constraints are cached for repeated dimensions."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -32,11 +33,9 @@ class TestMaxPoolDLPLowerConstraintCache:
         # Results should be identical
         np.testing.assert_array_equal(c1, c2)
 
-    def test_maxpool_dlp_cache_2d_then_3d(self):
+    def test_maxpool_dlp_cache_2d_then_3d(self, maxpool_hull_class):
         """Test cache behavior when switching between dimensions."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
 
         # First: 2D
         c1 = hull.cal_hull(
@@ -57,11 +56,9 @@ class TestMaxPoolDLPLowerConstraintCache:
         # c1 and c3 should be identical
         np.testing.assert_array_equal(c1, c3)
 
-    def test_maxpool_dlp_cache_multiple_2d_calls(self):
+    def test_maxpool_dlp_cache_multiple_2d_calls(self, maxpool_hull_class):
         """Test cache consistency across multiple 2D calls."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -78,11 +75,9 @@ class TestMaxPoolDLPLowerConstraintCache:
 class TestMaxPoolDLPTrivialCases:
     """Test trivial case detection in MaxPool DLP."""
 
-    def test_maxpool_dlp_single_vertex_polytope(self):
+    def test_maxpool_dlp_single_vertex_polytope(self, maxpool_hull_class):
         """Test MaxPool with single vertex polytope (constant output)."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         # Single point (not actually single vertex, but nearly constant)
         lb = np.array([0.5, 0.5])
         ub = np.array([0.5001, 0.5001])
@@ -94,11 +89,9 @@ class TestMaxPoolDLPTrivialCases:
             # May raise due to minimum range threshold
             pass
 
-    def test_maxpool_dlp_one_piece_case(self):
+    def test_maxpool_dlp_one_piece_case(self, maxpool_hull_class):
         """Test MaxPool case where one input dominates (one piece)."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         # One dimension much larger than others
         lb = np.array([10.0, -1.0])
         ub = np.array([11.0, 1.0])
@@ -109,11 +102,9 @@ class TestMaxPoolDLPTrivialCases:
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_maxpool_dlp_dominant_dimension(self):
+    def test_maxpool_dlp_dominant_dimension(self, maxpool_hull_class):
         """Test MaxPool where one dimension is always largest."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         # First dimension always larger
         lb = np.array([5.0, -10.0, -10.0])
         ub = np.array([10.0, 0.0, 0.0])
@@ -129,8 +120,6 @@ class TestMaxPoolDLPMultiNeuronConstraints:
 
     def test_maxpool_dlp_mn_constrs_direct_2d(self):
         """Test cal_mn_constrs method directly for 2D."""
-        from wraact.acthull import MaxPoolHullDLP
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -157,8 +146,6 @@ class TestMaxPoolDLPMultiNeuronConstraints:
 
     def test_maxpool_dlp_mn_constrs_3d(self):
         """Test cal_mn_constrs for 3D input."""
-        from wraact.acthull import MaxPoolHullDLP
-
         lb = np.array([-1.0, -1.0, -1.0])
         ub = np.array([1.0, 1.0, 1.0])
 
@@ -188,38 +175,25 @@ class TestMaxPoolDLPMultiNeuronConstraints:
 class TestMaxPoolDLPSingleNeuronConstraints:
     """Test single-neuron constraint generation."""
 
-    def test_maxpool_dlp_sn_constrs_2d(self):
-        """Test single-neuron constraints for 2D MaxPool."""
-        from wraact.acthull import MaxPoolHullDLP
-
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
+    @pytest.mark.parametrize(
+        ("dim", "lb", "ub", "expected_cols"),
+        [
+            pytest.param(2, np.array([-1.0, -1.0]), np.array([1.0, 1.0]), 4, id="2d"),
+            pytest.param(
+                4, np.array([-2.0, -1.0, -3.0, -0.5]), np.array([2.0, 1.0, 3.0, 0.5]), 6, id="4d"
+            ),
+        ],
+    )
+    def test_maxpool_dlp_sn_constrs(self, dim, lb, ub, expected_cols):
+        """Test single-neuron constraints for MaxPool with given dimension."""
         cc = MaxPoolHullDLP.cal_sn_constrs(lb, ub)
 
         assert isinstance(cc, np.ndarray)
-        # Should have (d+2) columns for MaxPool
-        assert cc.shape[1] == 4  # 2 inputs + 1 bias + 1 output
-        assert np.all(np.isfinite(cc))
-
-    def test_maxpool_dlp_sn_constrs_4d(self):
-        """Test single-neuron constraints for 4D MaxPool."""
-        from wraact.acthull import MaxPoolHullDLP
-
-        lb = np.array([-2.0, -1.0, -3.0, -0.5])
-        ub = np.array([2.0, 1.0, 3.0, 0.5])
-
-        cc = MaxPoolHullDLP.cal_sn_constrs(lb, ub)
-
-        assert isinstance(cc, np.ndarray)
-        # Should have (d+2) columns for MaxPool
-        assert cc.shape[1] == 6  # 4 inputs + 1 bias + 1 output
+        assert cc.shape[1] == expected_cols
         assert np.all(np.isfinite(cc))
 
     def test_maxpool_dlp_sn_constrs_consistency(self):
         """Test single-neuron constraints are consistent."""
-        from wraact.acthull import MaxPoolHullDLP
-
         lb = np.array([-1.0, -1.0, -1.0])
         ub = np.array([1.0, 1.0, 1.0])
 
@@ -232,24 +206,37 @@ class TestMaxPoolDLPSingleNeuronConstraints:
 class TestMaxPoolDLPVariousInputs:
     """Test MaxPool DLP with various input configurations."""
 
-    def test_maxpool_dlp_all_positive_all_negative_mix(self):
-        """Test MaxPool with mixed positive/negative dimensions."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
-        lb = np.array([-5.0, 2.0, -1.0])
-        ub = np.array([1.0, 8.0, 1.0])
-
+    @pytest.mark.parametrize(
+        ("lb", "ub"),
+        [
+            pytest.param(
+                np.array([-5.0, 2.0, -1.0]),
+                np.array([1.0, 8.0, 1.0]),
+                id="mixed_signs",
+            ),
+            pytest.param(
+                np.array([-100.0, -50.0, -200.0]),
+                np.array([100.0, 50.0, 200.0]),
+                id="wide_ranges",
+            ),
+            pytest.param(
+                np.array([-0.1, -0.1]),
+                np.array([0.1, 0.1]),
+                id="narrow_ranges",
+            ),
+        ],
+    )
+    def test_maxpool_dlp_various_input_ranges(self, maxpool_hull_class, lb, ub):
+        """Test MaxPool DLP with various input bound configurations."""
+        hull = maxpool_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
+        # [REVIEW] Deleted: test_maxpool_dlp_all_positive_all_negative_mix, test_maxpool_dlp_wide_ranges, test_maxpool_dlp_narrow_ranges
 
-    def test_maxpool_dlp_uniform_bounds(self):
+    def test_maxpool_dlp_uniform_bounds(self, maxpool_hull_class):
         """Test MaxPool with uniform bounds."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         for d in range(2, 8):
             lb = -5.0 * np.ones(d)
             ub = 5.0 * np.ones(d)
@@ -259,41 +246,13 @@ class TestMaxPoolDLPVariousInputs:
             assert constraints.shape[1] == d + 2
             assert np.all(np.isfinite(constraints))
 
-    def test_maxpool_dlp_wide_ranges(self):
-        """Test MaxPool with wide range bounds."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
-        lb = np.array([-100.0, -50.0, -200.0])
-        ub = np.array([100.0, 50.0, 200.0])
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
-    def test_maxpool_dlp_narrow_ranges(self):
-        """Test MaxPool with narrow range bounds."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
-        lb = np.array([-0.1, -0.1])
-        ub = np.array([0.1, 0.1])
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
 
 class TestMaxPoolDLPConstraintProperties:
     """Test properties of MaxPool DLP constraints."""
 
-    def test_maxpool_dlp_constraints_finite_2d(self):
+    def test_maxpool_dlp_constraints_finite_2d(self, maxpool_hull_class):
         """Test MaxPool constraints are always finite."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         test_cases = [
             (np.array([-1.0, -1.0]), np.array([1.0, 1.0])),
             (np.array([-10.0, -10.0]), np.array([10.0, 10.0])),
@@ -305,11 +264,9 @@ class TestMaxPoolDLPConstraintProperties:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             assert np.all(np.isfinite(constraints)), f"Non-finite constraints for lb={lb}, ub={ub}"
 
-    def test_maxpool_dlp_constraints_deterministic_2d(self):
+    def test_maxpool_dlp_constraints_deterministic_2d(self, maxpool_hull_class):
         """Test MaxPool constraints are deterministic."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -322,14 +279,13 @@ class TestMaxPoolDLPConstraintProperties:
         for i in range(1, len(results)):
             np.testing.assert_array_equal(results[0], results[i])
 
-    def test_maxpool_dlp_upper_bound_constraints_dominate(self):
+    def test_maxpool_dlp_upper_bound_constraints_dominate(self, maxpool_hull_class):
         """Test that MaxPool upper bound constraints are sensible."""
-        from wraact.acthull import MaxPoolHull
 
         def maxpool_np(x):
             return np.max(x)
 
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 

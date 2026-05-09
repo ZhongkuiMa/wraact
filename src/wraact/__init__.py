@@ -11,7 +11,8 @@ Main classes:
     - *WithOneY variants: Optimized single-output versions
 """
 
-__version__ = "2026.2.0"
+__docformat__ = "restructuredtext"
+__version__ = "2026.5.0"
 
 from wraact.acthull import (
     ActHull,

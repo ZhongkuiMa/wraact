@@ -1,3 +1,5 @@
+"""Single-output MaxPool activation hull computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["MaxPoolHullDLPWithOneY", "MaxPoolHullWithOneY"]
 
@@ -25,6 +27,15 @@ class MaxPoolHullDLPWithOneY(ReLULikeHullWithOneY, MaxPoolHullDLP):
         ub: ndarray | None = None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, d+1)
+        """Compute single-output MaxPool DLP hull constraints.
+
+        :param c: Input constraints. Shape: (_, d).
+        :param v: Vertices. Shape: (_, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :param dtype_cdd: Data type for pycddlib. Default: "float".
+        :return: Tuple of (constraints, dtype_cdd).
+        """
         return ReLULikeHullWithOneY.cal_constrs(self, c, v, lb, ub, dtype_cdd)
 
     @classmethod
@@ -33,6 +44,12 @@ class MaxPoolHullDLPWithOneY(ReLULikeHullWithOneY, MaxPoolHullDLP):
         lb: ndarray,  # (d,)
         ub: ndarray,  # (d,)
     ) -> ndarray:  # (1, d+2)
+        """Compute single-neuron upper bound constraint for MaxPool.
+
+        :param lb: Lower bounds per dimension. Shape: (d,).
+        :param ub: Upper bounds per dimension. Shape: (d,).
+        :return: Upper bound constraint. Shape: (1, d+2).
+        """
         d = lb.shape[0]
 
         # Upper bounds
@@ -41,11 +58,6 @@ class MaxPoolHullDLPWithOneY(ReLULikeHullWithOneY, MaxPoolHullDLP):
         # y <= sum(x_i - l_i) + l_max
         c_u = np.zeros((1, d + 2), dtype=np.float64)
 
-        # Here, we do not use Ehler's method because it is not very precise.
-        # Just use the maximum value of upper bounds.
-        # l_sum = np.sum(lb)
-        # l_max = np.max(lb)
-        # c_u[-1, 0] = l_max - l_sum
         c_u[-1, 0] = np.max(ub)
         c_u[-1, -1] = -1.0
 
@@ -60,6 +72,15 @@ class MaxPoolHullDLPWithOneY(ReLULikeHullWithOneY, MaxPoolHullDLP):
         ub: ndarray | None = None,  # (d-1,)
         n_output_constrs: int = 1,
     ) -> ndarray:  # (_, d+1)
+        """Compute multi-neuron constraints for single-output MaxPool DLP.
+
+        :param c: Input constraints. Shape: (_, d).
+        :param v: Vertices. Shape: (_, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :param n_output_constrs: Number of output constraints to return.
+        :return: Top-k multi-neuron constraints. Shape: (_, d+1).
+        """
         c = MaxPoolHullDLP.cal_mn_constrs(c, v, lb, ub)
         c = cls._get_topk_constrs(c, n_output_constrs)
         return c
@@ -81,6 +102,15 @@ class MaxPoolHullWithOneY(MaxPoolHullDLPWithOneY, MaxPoolHull):
         ub: ndarray | None = None,  # (d-1,)
         n_output_constrs: int = 1,
     ) -> ndarray:  # (_, d+1)
+        """Compute multi-neuron constraints for single-output MaxPool (no DLP).
+
+        :param c: Input constraints. Shape: (_, d).
+        :param v: Vertices. Shape: (_, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :param n_output_constrs: Number of output constraints to return.
+        :return: Top-k multi-neuron constraints. Shape: (_, d+1).
+        """
         c = MaxPoolHull.cal_mn_constrs(c, v, lb, ub)
         c = cls._get_topk_constrs(c, n_output_constrs)
         return c

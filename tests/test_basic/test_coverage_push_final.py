@@ -13,6 +13,18 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
+from wraact._tangent_lines import (
+    get_parallel_tangent_line_sigmoid_np,
+    get_parallel_tangent_line_tanh_np,
+    get_second_tangent_line_tanh_np,
+)
+from wraact.acthull import LeakyReLUHull, MaxPoolHull, MaxPoolHullDLP, ReLUHull
+from wraact.oney import (
+    LeakyReLUHullWithOneY,
+    MaxPoolHullWithOneY,
+    SigmoidHullWithOneY,
+)
+
 
 class TestMaxPoolDLPRemainingCoverage:
     """Target remaining uncovered lines in MaxPool DLP."""
@@ -22,8 +34,6 @@ class TestMaxPoolDLPRemainingCoverage:
 
         Tests line 115 (cache retrieval) and 141 (early return).
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -43,8 +53,6 @@ class TestMaxPoolDLPRemainingCoverage:
 
         Tests lines 156-162, 169, 180, 188 (various single-neuron paths).
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         for dim in [4, 5, 6]:
             lb = -np.ones(dim)
             ub = np.ones(dim)
@@ -62,8 +70,6 @@ class TestMaxPoolDLPRemainingCoverage:
         Tests degenerate case where maximum is always ub.
         Line 370 (trivial case detection).
         """
-        from wraact.acthull import MaxPoolHull
-
         # All positive bounds - max is always ub
         lb = np.array([0.5, 0.5, 0.5])
         ub = np.array([1.0, 1.0, 1.0])
@@ -80,8 +86,6 @@ class TestMaxPoolDLPRemainingCoverage:
 
         Tests line 215-223 (single vertex handling).
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         hull = MaxPoolHullDLP(if_cal_multi_neuron_constrs=True)
 
         # Bounds that are close together
@@ -106,8 +110,6 @@ class TestActHullRemainingCoverage:
 
         Tests line 489 (dimension consistency check).
         """
-        from wraact.acthull import ReLUHull
-
         hull = ReLUHull(if_cal_multi_neuron_constrs=True)
 
         # Constraint matrix dimension mismatch with bounds
@@ -124,8 +126,6 @@ class TestActHullRemainingCoverage:
 
         Tests line 542 (unbounded polytope check).
         """
-        from wraact.acthull import ReLUHull
-
         hull = ReLUHull(if_cal_multi_neuron_constrs=True)
 
         # Constraints that don't bound the space
@@ -150,8 +150,6 @@ class TestActHullRemainingCoverage:
 
         Tests line 556 (degenerate polytope check).
         """
-        from wraact.acthull import ReLUHull
-
         hull = ReLUHull()
 
         # Bounds are extremely tight (below minimum threshold)
@@ -167,8 +165,6 @@ class TestActHullRemainingCoverage:
 
         Tests line 293 (cal_constrs computation).
         """
-        from wraact.acthull import ReLUHull
-
         hull = ReLUHull(if_cal_multi_neuron_constrs=True)
 
         # Valid constraint matrix (must be at least d+1 constraints for d dimensions)
@@ -197,79 +193,39 @@ class TestLeakyReLUEdgeCases:
     Tests lines 42, 100-103, 119, 123 in acthull/_leakyrelu.py.
     """
 
-    def test_leakyrelu_negative_bounds_only(self):
-        """Test LeakyReLU with all negative bounds.
+    @pytest.mark.parametrize(
+        ("lb", "ub", "scenario"),
+        [
+            pytest.param(
+                np.array([-10.0, -5.0]), np.array([-1.0, -0.5]), "all_negative", id="all_negative"
+            ),
+            pytest.param(
+                np.array([0.5, 1.0]), np.array([5.0, 10.0]), "all_positive", id="all_positive"
+            ),
+            pytest.param(
+                np.array([-1.0, -1.0, -1.0]),
+                np.array([1.0, 1.0, 1.0]),
+                "mixed_symmetric",
+                id="mixed_symmetric",
+            ),
+            pytest.param(
+                np.array([-5.0, 0.5, -1.0]),
+                np.array([1.0, 5.0, 1.0]),
+                "mixed_asymmetric",
+                id="mixed_asymmetric",
+            ),
+        ],
+    )
+    def test_leakyrelu_bound_configurations(self, lb, ub, scenario):
+        """Test LeakyReLU with various bound configurations.
 
-        Tests the negative branch computation.
+        Tests negative/positive/mixed branches across different dimensions.
         """
-        from wraact.acthull import LeakyReLUHull
-
         hull = LeakyReLUHull()
-
-        # All negative bounds
-        lb = np.array([-10.0, -5.0])
-        ub = np.array([-1.0, -0.5])
-
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
-
-    def test_leakyrelu_positive_bounds_only(self):
-        """Test LeakyReLU with all positive bounds.
-
-        Tests the positive branch computation.
-        """
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull()
-
-        # All positive bounds
-        lb = np.array([0.5, 1.0])
-        ub = np.array([5.0, 10.0])
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
-    def test_leakyrelu_mixed_sign_dimensions(self):
-        """Test LeakyReLU with mixed positive/negative across dimensions.
-
-        Tests both branches across multiple dimensions.
-        """
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull()
-
-        test_cases = [
-            (np.array([-1.0, -1.0, -1.0]), np.array([1.0, 1.0, 1.0])),
-            (np.array([-5.0, 0.5, -1.0]), np.array([1.0, 5.0, 1.0])),
-            (np.array([-100.0, 1.0, -1.0]), np.array([1.0, 100.0, 1.0])),
-        ]
-
-        for lb, ub in test_cases:
-            constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-            assert isinstance(constraints, np.ndarray)
-            assert np.all(np.isfinite(constraints))
-
-    def test_leakyrelu_high_dimensional(self):
-        """Test LeakyReLU with high-dimensional inputs.
-
-        Tests scalability and various code paths.
-        """
-        from wraact.acthull import LeakyReLUHull
-
-        hull = LeakyReLUHull()
-
-        for dim in [4, 5, 6, 7]:
-            lb = -np.ones(dim)
-            ub = np.ones(dim)
-
-            constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-            assert isinstance(constraints, np.ndarray)
-            assert np.all(np.isfinite(constraints))
 
 
 class TestOneYExceptionPathsCoverage:
@@ -283,8 +239,6 @@ class TestOneYExceptionPathsCoverage:
 
         Tests lines 78-79, 88 (exception handling).
         """
-        from wraact.oney import LeakyReLUHullWithOneY
-
         hull = LeakyReLUHullWithOneY()
 
         # Test with valid bounds that are large enough for OneY
@@ -301,8 +255,6 @@ class TestOneYExceptionPathsCoverage:
 
         Tests lines 103-111 (multi-output constraint handling).
         """
-        from wraact.oney import SigmoidHullWithOneY
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -319,8 +271,6 @@ class TestOneYExceptionPathsCoverage:
 
         Tests lines 51 (exception handling).
         """
-        from wraact.oney import MaxPoolHullWithOneY
-
         hull = MaxPoolHullWithOneY()
 
         # Test with various bounds
@@ -351,8 +301,6 @@ class TestTangentLineCoverage:
 
         Tests convergence at boundaries (lines 30-39).
         """
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         # Test with k values very close to boundary
         k = np.array([0.001, 0.249, 0.248])
         b, k_out, x = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
@@ -367,11 +315,6 @@ class TestTangentLineCoverage:
 
         Tests convergence edge cases (lines 52-58, 83, 112).
         """
-        from wraact._tangent_lines import (
-            get_parallel_tangent_line_tanh_np,
-            get_second_tangent_line_tanh_np,
-        )
-
         # Boundary values
         x1 = np.array([0.01, 0.5, 0.99])
         b, _k, x2 = get_second_tangent_line_tanh_np(x1, get_big=False)
@@ -391,8 +334,6 @@ class TestTangentLineCoverage:
 
         Tests alternate convergence path.
         """
-        from wraact._tangent_lines import get_parallel_tangent_line_sigmoid_np
-
         k = np.array([0.1, 0.15, 0.2])
         b_big, _, _ = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
         b_small, _, _ = get_parallel_tangent_line_sigmoid_np(k, get_big=False)

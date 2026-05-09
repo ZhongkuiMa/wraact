@@ -10,8 +10,10 @@ Tests for edge cases and numerical stability in tangent line calculation:
 __docformat__ = "restructuredtext"
 
 import numpy as np
+import pytest
 
 from wraact._tangent_lines import (
+    _warmup_jit_functions,
     get_parallel_tangent_line_sigmoid_np,
     get_parallel_tangent_line_tanh_np,
     get_second_tangent_line_sigmoid_np,
@@ -44,23 +46,17 @@ class TestParallelTangentLineSigmoid:
         assert np.all(np.isfinite(b))
         assert np.all(np.isfinite(x))
 
-    def test_parallel_tangent_sigmoid_small_k(self):
-        """Test with small slope values."""
-        k = np.array([0.01, 0.02, 0.03])
-        b, _, _ = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
-
-        assert np.all(np.isfinite(b))
-
-    def test_parallel_tangent_sigmoid_large_k(self):
-        """Test with large slope values near boundary."""
-        k = np.array([0.24, 0.23, 0.22])
-        b, _, _ = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
-
-        assert np.all(np.isfinite(b))
-
-    def test_parallel_tangent_sigmoid_edge_k(self):
-        """Test with edge case k values."""
-        k = np.array([0.0, 0.1, 0.249])
+    @pytest.mark.parametrize(
+        "k",
+        [
+            np.array([0.01, 0.02, 0.03]),
+            np.array([0.24, 0.23, 0.22]),
+            np.array([0.0, 0.1, 0.249]),
+        ],
+        ids=["small_k", "large_k", "edge_k"],
+    )
+    def test_parallel_tangent_sigmoid_k_values(self, k):
+        """Test parallel tangent line for Sigmoid with varied k values."""
         b, _, _ = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
 
         assert np.all(np.isfinite(b))
@@ -108,23 +104,17 @@ class TestParallelTangentLineTanh:
         assert np.all(np.isfinite(b))
         assert np.all(np.isfinite(x))
 
-    def test_parallel_tangent_tanh_small_k(self):
-        """Test with small k values."""
-        k = np.array([0.01, 0.05, 0.1])
-        b, _, _ = get_parallel_tangent_line_tanh_np(k, get_big=True)
-
-        assert np.all(np.isfinite(b))
-
-    def test_parallel_tangent_tanh_large_k(self):
-        """Test with large k values near boundary."""
-        k = np.array([0.95, 0.9, 0.85])
-        b, _, _ = get_parallel_tangent_line_tanh_np(k, get_big=True)
-
-        assert np.all(np.isfinite(b))
-
-    def test_parallel_tangent_tanh_edge_k(self):
-        """Test with edge case k values (excluding boundary 0 and 1)."""
-        k = np.array([0.01, 0.5, 0.99])
+    @pytest.mark.parametrize(
+        "k",
+        [
+            np.array([0.01, 0.05, 0.1]),
+            np.array([0.95, 0.9, 0.85]),
+            np.array([0.01, 0.5, 0.99]),
+        ],
+        ids=["small_k", "large_k", "edge_k"],
+    )
+    def test_parallel_tangent_tanh_k_values(self, k):
+        """Test parallel tangent line for Tanh with varied k values."""
         b, _, _ = get_parallel_tangent_line_tanh_np(k, get_big=True)
 
         assert np.all(np.isfinite(b))
@@ -174,32 +164,18 @@ class TestSecondTangentLineSigmoid:
         assert np.all(np.isfinite(b))
         assert np.all(np.isfinite(x2))
 
-    def test_second_tangent_sigmoid_x1_zero(self):
-        """Test with x1=0 (edge case)."""
-        x1 = np.array([0.0])
-        b, _, _ = get_second_tangent_line_sigmoid_np(x1, get_big=True)
-
-        assert np.all(np.isfinite(b))
-        # x2 should be initialized differently from x1
-
-    def test_second_tangent_sigmoid_negative_x1(self):
-        """Test with negative x1 values."""
-        x1 = np.array([-2.0, -1.0, -0.5])
-        b, _, _ = get_second_tangent_line_sigmoid_np(x1, get_big=True)
-
-        assert np.all(np.isfinite(b))
-
-    def test_second_tangent_sigmoid_positive_x1(self):
-        """Test with positive x1 values."""
-        x1 = np.array([0.5, 1.0, 2.0])
-        b, _, _ = get_second_tangent_line_sigmoid_np(x1, get_big=True)
-
-        assert np.all(np.isfinite(b))
-
-    def test_second_tangent_sigmoid_large_magnitude(self):
-        """Test with large magnitude x1 values."""
-        x1 = np.array([-5.0, 0.0, 5.0])
-        b, _, _ = get_second_tangent_line_sigmoid_np(x1, get_big=True)
+    @pytest.mark.parametrize(
+        "x1_values",
+        [
+            pytest.param(np.array([0.0]), id="x1_zero"),
+            pytest.param(np.array([-2.0, -1.0, -0.5]), id="negative_x1"),
+            pytest.param(np.array([0.5, 1.0, 2.0]), id="positive_x1"),
+            pytest.param(np.array([-5.0, 0.0, 5.0]), id="large_magnitude"),
+        ],
+    )
+    def test_second_tangent_sigmoid(self, x1_values):
+        """Test second tangent line for sigmoid with various inputs."""
+        b, _, _ = get_second_tangent_line_sigmoid_np(x1_values, get_big=True)
 
         assert np.all(np.isfinite(b))
 
@@ -236,58 +212,21 @@ class TestSecondTangentLineTanh:
         assert np.all(np.isfinite(b))
         assert np.all(np.isfinite(x2))
 
-    def test_second_tangent_tanh_get_big_false(self):
-        """Test with get_big=False."""
-        x1 = np.array([-0.5, 0.0, 0.5])
-        b, _, x2 = get_second_tangent_line_tanh_np(x1, get_big=False)
-
-        assert np.all(np.isfinite(b))
-        assert np.all(np.isfinite(x2))
-
-    def test_second_tangent_tanh_x1_zero(self):
-        """Test with x1=0 (edge case)."""
-        x1 = np.array([0.0])
-        b, _, x2 = get_second_tangent_line_tanh_np(x1, get_big=True)
-
-        assert np.all(np.isfinite(b))
-        assert np.all(np.isfinite(x2))
-
-    def test_second_tangent_tanh_negative_x1(self):
-        """Test with negative x1 values."""
-        x1 = np.array([-2.0, -1.0, -0.5])
-        b, _, x2 = get_second_tangent_line_tanh_np(x1, get_big=True)
-
-        assert np.all(np.isfinite(b))
-        assert np.all(np.isfinite(x2))
-
-    def test_second_tangent_tanh_positive_x1(self):
-        """Test with positive x1 values."""
-        x1 = np.array([0.5, 1.0, 2.0])
-        b, _, x2 = get_second_tangent_line_tanh_np(x1, get_big=True)
-
-        assert np.all(np.isfinite(b))
-        assert np.all(np.isfinite(x2))
-
-    def test_second_tangent_tanh_extreme_values(self):
-        """Test with extreme x1 values."""
-        x1 = np.array([-10.0, 0.0, 10.0])
-        b, _, x2 = get_second_tangent_line_tanh_np(x1, get_big=True)
-
-        assert np.all(np.isfinite(b))
-        assert np.all(np.isfinite(x2))
-
-    def test_second_tangent_tanh_scalar_zero(self):
-        """Test with scalar x1=0."""
-        x1_scalar = 0.0
-        b, _, x2 = get_second_tangent_line_tanh_np(x1_scalar, get_big=True)
-
-        assert np.all(np.isfinite(b))
-        assert np.all(np.isfinite(x2))
-
-    def test_second_tangent_tanh_scalar_nonzero(self):
-        """Test with scalar x1 != 0."""
-        x1_scalar = 1.5
-        b, _, x2 = get_second_tangent_line_tanh_np(x1_scalar, get_big=True)
+    @pytest.mark.parametrize(
+        ("x1_values", "get_big"),
+        [
+            pytest.param(np.array([-0.5, 0.0, 0.5]), False, id="get_big_false"),
+            pytest.param(np.array([0.0]), True, id="x1_zero"),
+            pytest.param(np.array([-2.0, -1.0, -0.5]), True, id="negative_x1"),
+            pytest.param(np.array([0.5, 1.0, 2.0]), True, id="positive_x1"),
+            pytest.param(np.array([-10.0, 0.0, 10.0]), True, id="extreme_values"),
+            pytest.param(0.0, True, id="scalar_zero"),
+            pytest.param(1.5, True, id="scalar_nonzero"),
+        ],
+    )
+    def test_second_tangent_tanh(self, x1_values, get_big):
+        """Test second tangent line for tanh with various inputs."""
+        b, _, x2 = get_second_tangent_line_tanh_np(x1_values, get_big=get_big)
 
         assert np.all(np.isfinite(b))
         assert np.all(np.isfinite(x2))
@@ -359,10 +298,13 @@ class TestTangentLineWarmup:
         This tests the refactored JIT warmup code which was moved from
         module-level side effects to an explicit function.
         """
-        from wraact._tangent_lines import _warmup_jit_functions
-
         # Should execute without error
         _warmup_jit_functions()
+
+        # Verify functions are callable after warmup
+        k = np.array([0.15])
+        b, _, _ = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
+        assert np.all(np.isfinite(b))
 
     def test_tangent_functions_compiled_after_warmup(self):
         """Test that tangent functions work correctly after warmup.
@@ -370,12 +312,6 @@ class TestTangentLineWarmup:
         Verifies that JIT compilation completes successfully and functions
         produce correct results.
         """
-        from wraact._tangent_lines import (
-            _warmup_jit_functions,
-            get_parallel_tangent_line_sigmoid_np,
-            get_parallel_tangent_line_tanh_np,
-        )
-
         # Execute warmup
         _warmup_jit_functions()
 

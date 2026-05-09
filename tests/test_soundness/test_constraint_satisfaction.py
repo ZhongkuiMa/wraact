@@ -16,55 +16,38 @@ import numpy as np
 import pytest
 
 from wraact._functions import elu_np, leakyrelu_np, relu_np, sigmoid_np
-from wraact.acthull import ELUHull, LeakyReLUHull, ReLUHull, SigmoidHull
 
 
 class TestReLUConstraintSatisfaction:
     """Test constraint satisfaction for ReLU hulls."""
 
-    def test_relu_constraints_satisfied_at_bounds(self):
-        """Verify constraints are satisfied at input bounds."""
-        hull = ReLUHull()
+    @pytest.mark.parametrize(
+        ("label", "get_point"),
+        [
+            pytest.param("lower_bound", lambda lb, ub: (lb, relu_np(lb)), id="at_bounds"),
+            pytest.param("upper_bound", lambda lb, ub: (ub, relu_np(ub)), id="at_upper"),
+            pytest.param(
+                "center", lambda lb, ub: ((lb + ub) / 2, relu_np((lb + ub) / 2)), id="at_center"
+            ),
+        ],
+    )
+    def test_relu_constraints_satisfied(self, relu_hull_class, label, get_point):
+        """Verify ReLU constraints are satisfied at various sampling points."""
+        hull = relu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
-
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        # Test at lower bound
-        x_lb = lb
-        y_lb = relu_np(x_lb)
-        point_lb = np.concatenate([x_lb, y_lb])
+        x, y = get_point(lb, ub)
+        point = np.concatenate([x, y])
         b = result[:, 0]
         a = result[:, 1:]
-        constraints_lb = b + a @ point_lb
-        assert np.all(constraints_lb >= -1e-8), "Constraints violated at lower bound"
+        constraints = b + a @ point
+        assert np.all(constraints >= -1e-8), f"Constraints violated at {label}"
 
-        # Test at upper bound
-        x_ub = ub
-        y_ub = relu_np(x_ub)
-        point_ub = np.concatenate([x_ub, y_ub])
-        constraints_ub = b + a @ point_ub
-        assert np.all(constraints_ub >= -1e-8), "Constraints violated at upper bound"
-
-    def test_relu_constraints_satisfied_at_center(self):
-        """Verify constraints are satisfied at center point."""
-        hull = ReLUHull()
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
-        result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        x_center = (lb + ub) / 2
-        y_center = relu_np(x_center)
-        point_center = np.concatenate([x_center, y_center])
-        b = result[:, 0]
-        a = result[:, 1:]
-        constraints_center = b + a @ point_center
-        assert np.all(constraints_center >= -1e-8), "Constraints violated at center"
-
-    def test_sigmoid_constraints_satisfied_at_bounds(self):
+    def test_sigmoid_constraints_satisfied_at_bounds(self, sigmoid_hull_class):
         """Verify sigmoid constraints are satisfied at bounds."""
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -90,9 +73,9 @@ class TestReLUConstraintSatisfaction:
 class TestBoundsConsistency:
     """Test error handling for inconsistent bounds."""
 
-    def test_lower_greater_than_upper_raises_error(self):
+    def test_lower_greater_than_upper_raises_error(self, relu_hull_class):
         """Verify error when lower bound > upper bound."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([1.0, 1.0])
         ub = np.array([-1.0, -1.0])
 
@@ -106,9 +89,9 @@ class TestBoundsConsistency:
             # Expected: error on inverted bounds
             pass
 
-    def test_equal_bounds_produces_valid_constraints(self):
+    def test_equal_bounds_produces_valid_constraints(self, relu_hull_class):
         """Verify handling when lb == ub (single point)."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([0.5, 0.5])
         ub = np.array([0.5, 0.5])
 
@@ -122,40 +105,31 @@ class TestBoundsConsistency:
 class TestNumericalStability:
     """Test numerical stability with extreme bounds."""
 
-    def test_very_large_positive_bounds(self):
-        """Test ReLU with large positive bounds."""
-        hull = ReLUHull()
-        lb = np.array([1000.0, 1000.0])
-        ub = np.array([2000.0, 2000.0])
-
+    @pytest.mark.parametrize(
+        ("lb", "ub"),
+        [
+            pytest.param(np.array([1000.0, 1000.0]), np.array([2000.0, 2000.0]), id="positive"),
+            pytest.param(np.array([-2000.0, -2000.0]), np.array([-1000.0, -1000.0]), id="negative"),
+        ],
+    )
+    def test_very_large_bounds(self, relu_hull_class, lb, ub):
+        """Test ReLU numerical stability with extreme bounds."""
+        hull = relu_hull_class()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        # Verify no inf/nan in constraints
         assert np.all(np.isfinite(result)), "Large bounds produced inf/nan"
 
-    def test_very_large_negative_bounds(self):
-        """Test ReLU with large negative bounds."""
-        hull = ReLUHull()
-        lb = np.array([-2000.0, -2000.0])
-        ub = np.array([-1000.0, -1000.0])
-
-        result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        # Verify no inf/nan in constraints
-        assert np.all(np.isfinite(result)), "Large negative bounds produced inf/nan"
-
-    def test_very_small_bounds(self, tiny_polytope_2d):
+    def test_very_small_bounds(self, relu_hull_class, tiny_polytope_2d):
         """Test ReLU raises ValueError for very small bounds."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb, ub = tiny_polytope_2d
 
         # Algorithm should raise ValueError for bounds with range < MIN_BOUNDS_RANGE (0.05)
         with pytest.raises(ValueError, match="Polytope too small"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-    def test_mixed_scale_bounds(self):
+    def test_mixed_scale_bounds(self, relu_hull_class):
         """Test with mixed magnitude bounds."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([1e-6, 1e3])
         ub = np.array([1e6, 1e4])
 
@@ -168,9 +142,9 @@ class TestNumericalStability:
 class TestLeakyReLUParameterValidation:
     """Test LeakyReLU with default negative slope."""
 
-    def test_leakyrelu_basic_constraints(self):
+    def test_leakyrelu_basic_constraints(self, leakyrelu_hull_class):
         """Test LeakyReLU produces valid constraints."""
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -185,9 +159,9 @@ class TestLeakyReLUParameterValidation:
         else:
             assert np.all(np.isfinite(result)), "Constraints contain inf/nan"
 
-    def test_leakyrelu_constraint_satisfaction(self):
+    def test_leakyrelu_constraint_satisfaction(self, leakyrelu_hull_class):
         """Test LeakyReLU constraints are satisfied."""
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -209,9 +183,9 @@ class TestLeakyReLUParameterValidation:
 class TestELUAlphaValidation:
     """Test ELU with default alpha parameter."""
 
-    def test_elu_basic_constraints(self):
+    def test_elu_basic_constraints(self, elu_hull_class):
         """Test ELU produces valid constraints."""
-        hull = ELUHull()
+        hull = elu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -226,9 +200,9 @@ class TestELUAlphaValidation:
         else:
             assert np.all(np.isfinite(result)), "Constraints contain inf/nan"
 
-    def test_elu_constraint_satisfaction(self):
+    def test_elu_constraint_satisfaction(self, elu_hull_class):
         """Test ELU constraints are satisfied."""
-        hull = ELUHull()
+        hull = elu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -251,9 +225,9 @@ class TestMultiDimensionalConstraints:
     """Test constraint satisfaction across different dimensions."""
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_relu_constraints_all_dimensions(self, dim):
+    def test_relu_constraints_all_dimensions(self, relu_hull_class, dim):
         """Verify ReLU constraints satisfied for various dimensions."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -272,9 +246,9 @@ class TestMultiDimensionalConstraints:
         assert np.all(constraints >= -1e-8), f"Constraints violated for dimension {dim}"
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_sigmoid_constraints_all_dimensions(self, dim):
+    def test_sigmoid_constraints_all_dimensions(self, sigmoid_hull_class, dim):
         """Verify Sigmoid constraints satisfied for various dimensions."""
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.full(dim, -2.0)
         ub = np.full(dim, 2.0)
 

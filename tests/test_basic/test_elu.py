@@ -73,11 +73,9 @@ class TestELUSoundness(BaseSoundnessTest):
 class TestELUBasicFunctionality:
     """Basic functionality tests for ELUHull."""
 
-    def test_cal_hull_returns_ndarray(self):
+    def test_cal_hull_returns_ndarray(self, elu_hull_class):
         """Verify cal_hull() returns an ndarray."""
-        from wraact.acthull import ELUHull
-
-        hull = ELUHull()
+        hull = elu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -86,37 +84,26 @@ class TestELUBasicFunctionality:
         assert isinstance(result, np.ndarray)
         assert result.ndim == 2  # 2D array
 
-    def test_cal_hull_output_shape_2d(self):
-        """Verify output shape follows formula: 2*dim + 1 = 5 for 2D."""
-        from wraact.acthull import ELUHull
-
-        hull = ELUHull()
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
-        result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        # For 2D input: 2*2 + 1 = 5 columns
-        assert result.shape[1] == 5
-
-    def test_cal_hull_output_shape_3d(self):
-        """Verify output shape follows formula: 2*dim + 1 = 7 for 3D."""
-        from wraact.acthull import ELUHull
-
-        hull = ELUHull()
-        lb = np.array([-1.0, -1.0, -1.0])
-        ub = np.array([1.0, 1.0, 1.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(2, 5, id="2d"),
+            pytest.param(3, 7, id="3d"),
+        ],
+    )
+    def test_cal_hull_output_shape(self, dim, expected_cols, elu_hull_class):
+        """Verify output shape follows formula: 2*dim + 1."""
+        hull = elu_hull_class()
+        lb = -np.ones(dim)
+        ub = np.ones(dim)
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        # For 3D input: 2*3 + 1 = 7 columns
-        assert result.shape[1] == 7
+        assert result.shape[1] == expected_cols
 
-    def test_cal_hull_output_finite(self):
+    def test_cal_hull_output_finite(self, elu_hull_class):
         """Verify output contains no inf or nan values."""
-        from wraact.acthull import ELUHull
-
-        hull = ELUHull()
+        hull = elu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -183,77 +170,29 @@ class TestELUBasicFunctionality:
 class TestELUBoundEdgeCases:
     """Test ELU with edge case bounds (trivial cases)."""
 
-    def test_cal_hull_all_positive_bounds(self):
-        """Test ELU with all-positive bounds (lb >= 0)."""
-        from wraact.acthull import ELUHull
-
-        lb = np.array([0.5, 0.5])
-        ub = np.array([1.0, 1.0])
-
-        hull = ELUHull()
-        # All-positive bounds might raise error or return trivial constraints
-        try:
-            constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-            # If it succeeds, verify constraints are valid
-            assert isinstance(constraints, np.ndarray)
-            assert np.all(np.isfinite(constraints))
-        except ValueError:
-            # Expected: ELU requires both negative and positive bounds
-            pass
-
-    def test_cal_hull_all_negative_bounds(self):
-        """Test ELU with all-negative bounds (ub <= 0)."""
-        from wraact.acthull import ELUHull
-
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([-0.5, -0.5])
-
-        hull = ELUHull()
-        # All-negative bounds might raise error or return trivial constraints
-        try:
-            constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-            assert isinstance(constraints, np.ndarray)
-            assert np.all(np.isfinite(constraints))
-        except ValueError:
-            # Expected: ELU requires both negative and positive bounds
-            pass
-
-    def test_cal_hull_very_small_range(self):
-        """Test ELU with small input range (just above minimum threshold)."""
-        from wraact.acthull import ELUHull
-
-        # Minimum range threshold is 0.05, so we use range 0.06
-        lb = np.array([-0.03, -0.03])
-        ub = np.array([0.03, 0.03])
-
-        hull = ELUHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-        assert constraints.shape[1] == 5  # 2D input
-
-    def test_cal_hull_asymmetric_bounds(self):
-        """Test ELU with asymmetric bounds around zero."""
-        from wraact.acthull import ELUHull
-
-        lb = np.array([-2.0, -2.0])
-        ub = np.array([0.5, 0.5])
-
-        hull = ELUHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
-    def test_cal_hull_large_range(self):
-        """Test ELU with large input range."""
-        from wraact.acthull import ELUHull
-
-        lb = np.array([-10.0, -10.0])
-        ub = np.array([10.0, 10.0])
-
-        hull = ELUHull()
+    @pytest.mark.parametrize(
+        ("lb", "ub", "scenario"),
+        [
+            pytest.param(
+                np.array([0.5, 0.5]), np.array([1.0, 1.0]), "all_positive", id="all_positive"
+            ),
+            pytest.param(
+                np.array([-1.0, -1.0]), np.array([-0.5, -0.5]), "all_negative", id="all_negative"
+            ),
+            pytest.param(
+                np.array([-0.03, -0.03]), np.array([0.03, 0.03]), "small_range", id="small_range"
+            ),
+            pytest.param(
+                np.array([-2.0, -2.0]), np.array([0.5, 0.5]), "asymmetric", id="asymmetric"
+            ),
+            pytest.param(
+                np.array([-10.0, -10.0]), np.array([10.0, 10.0]), "large_range", id="large_range"
+            ),
+        ],
+    )
+    def test_cal_hull_bound_configurations(self, lb, ub, scenario, elu_hull_class):
+        """Test ELU with various bound configurations."""
+        hull = elu_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
@@ -267,73 +206,32 @@ class TestELUSingleNeuronMode:
     normally disabled in default ActHull initialization.
     """
 
-    def test_cal_hull_single_neuron_2d(self):
-        """Test single-neuron constraints for 2D input."""
-        from wraact.acthull import ELUHull
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(2, 5, id="2d"),
+            pytest.param(3, 7, id="3d"),
+        ],
+    )
+    def test_cal_hull_single_neuron(self, dim, expected_cols, elu_hull_class):
+        """Test single-neuron constraints for given input dimension."""
+        lb = -np.ones(dim)
+        ub = np.ones(dim)
 
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
-        hull = ELUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 2 * len(lb) + 1
-        assert np.all(np.isfinite(constraints))
-
-    def test_cal_hull_single_neuron_3d(self):
-        """Test single-neuron constraints for 3D input."""
-        from wraact.acthull import ELUHull
-
-        lb = np.array([-1.0, -1.0, -1.0])
-        ub = np.array([1.0, 1.0, 1.0])
-
-        hull = ELUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = elu_hull_class(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 2 * len(lb) + 1
+        assert constraints.shape[1] == expected_cols
         assert np.all(np.isfinite(constraints))
 
-    def test_cal_hull_single_neuron_output_shape(self):
-        """Verify single-neuron constraint output shape for 2D."""
-        from wraact.acthull import ELUHull
-
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
-        hull = ELUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        # For 2D input: 2*2 + 1 = 5 columns
-        assert constraints.shape[1] == 5
-        # Should have at least some constraints
-        assert constraints.shape[0] > 0
-
-    def test_cal_hull_single_neuron_finite(self):
-        """Verify single-neuron constraints contain no inf or nan."""
-        from wraact.acthull import ELUHull
-
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
-        hull = ELUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert np.all(np.isfinite(constraints))
-
-    def test_cal_hull_single_neuron_constraint_count(self):
+    def test_cal_hull_single_neuron_constraint_count(self, elu_hull_class):
         """Verify single-neuron constraints produce expected number of constraints."""
-        from wraact.acthull import ELUHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = ELUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = elu_hull_class(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
@@ -345,35 +243,31 @@ class TestELUSingleNeuronMode:
         assert constraints.shape[0] >= 2
         assert constraints.shape[1] == 5  # 2*d + 1 for 2D
 
-    def test_cal_sn_constrs_direct_call(self):
+    def test_cal_sn_constrs_direct_call(self, elu_hull_class):
         """Test direct call to cal_sn_constrs method."""
-        from wraact.acthull import ELUHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = ELUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = elu_hull_class(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
 
         # Call cal_hull which internally calls cal_sn_constrs
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         # Verify the method executed successfully
-        assert constraints is not None
+        assert isinstance(constraints, np.ndarray)
         assert constraints.shape[0] > 0
 
-    def test_cal_hull_single_neuron_deterministic(self):
+    def test_cal_hull_single_neuron_deterministic(self, elu_hull_class):
         """Verify single-neuron constraints are deterministic."""
-        from wraact.acthull import ELUHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
         # First call
-        hull1 = ELUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull1 = elu_hull_class(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
         constraints1 = hull1.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         # Second call with same inputs
-        hull2 = ELUHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull2 = elu_hull_class(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
         constraints2 = hull2.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         # Results should be identical

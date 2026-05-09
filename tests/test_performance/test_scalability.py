@@ -17,30 +17,21 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
-from wraact.acthull import (
-    ELUHull,
-    LeakyReLUHull,
-    MaxPoolHull,
-    MaxPoolHullDLP,
-    ReLUHull,
-    SigmoidHull,
-    TanhHull,
-)
+from wraact.acthull import MaxPoolHull, MaxPoolHullDLP
 
 
-@pytest.mark.slow
 class TestConstraintCountScaling:
     """Test how constraint count grows with dimension."""
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_relu_constraint_scaling(self, dim):
+    def test_relu_constraint_scaling(self, relu_hull_class, dim):
         """Measure ReLU constraint count for different dimensions.
 
         Expected baselines (2·d formula, ±20% tolerance):
         - Formula: 2·d constraints
         - 2D: 4 constraints, 3D: 6 constraints, 4D: 8 constraints
         """
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -54,20 +45,19 @@ class TestConstraintCountScaling:
         print(f"ReLU dim {dim}: {num_constraints} constraints (expected {expected})")
 
         # Mark as xfail if constraint count deviates beyond ±20%
-        if num_constraints < threshold_low or num_constraints > threshold_high:
-            pytest.xfail(
-                f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
-            )
+        assert threshold_low <= num_constraints <= threshold_high, (
+            f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_sigmoid_constraint_scaling(self, dim):
+    def test_sigmoid_constraint_scaling(self, sigmoid_hull_class, dim):
         """Measure Sigmoid constraint count for different dimensions.
 
         Expected baselines (6·d formula, ±20% tolerance):
         - Formula: 6·d constraints
         - 2D: 12 constraints, 3D: 18 constraints, 4D: 24 constraints
         """
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.full(dim, -2.0)
         ub = np.full(dim, 2.0)
 
@@ -81,20 +71,19 @@ class TestConstraintCountScaling:
         print(f"Sigmoid dim {dim}: {num_constraints} constraints (expected {expected})")
 
         # Mark as xfail if constraint count deviates beyond ±20%
-        if num_constraints < threshold_low or num_constraints > threshold_high:
-            pytest.xfail(
-                f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
-            )
+        assert threshold_low <= num_constraints <= threshold_high, (
+            f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_tanh_constraint_scaling(self, dim):
+    def test_tanh_constraint_scaling(self, tanh_hull_class, dim):
         """Measure Tanh constraint count for different dimensions.
 
         Expected baselines (4·d formula, ±20% tolerance):
         - Formula: 4·d constraints
         - 2D: 8 constraints, 3D: 12 constraints, 4D: 16 constraints
         """
-        hull = TanhHull()
+        hull = tanh_hull_class()
         lb = np.full(dim, -2.0)
         ub = np.full(dim, 2.0)
 
@@ -108,20 +97,19 @@ class TestConstraintCountScaling:
         print(f"Tanh dim {dim}: {num_constraints} constraints (expected {expected})")
 
         # Mark as xfail if constraint count deviates beyond ±20%
-        if num_constraints < threshold_low or num_constraints > threshold_high:
-            pytest.xfail(
-                f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
-            )
+        assert threshold_low <= num_constraints <= threshold_high, (
+            f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_leakyrelu_constraint_scaling(self, dim):
+    def test_leakyrelu_constraint_scaling(self, leakyrelu_hull_class, dim):
         """Measure LeakyReLU constraint count for different dimensions.
 
         Expected baselines (2·d formula, ±20% tolerance):
         - Formula: 2·d constraints
         - 2D: 4 constraints, 3D: 6 constraints, 4D: 8 constraints
         """
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -135,20 +123,19 @@ class TestConstraintCountScaling:
         print(f"LeakyReLU dim {dim}: {num_constraints} constraints (expected {expected})")
 
         # Mark as xfail if constraint count deviates beyond ±20%
-        if num_constraints < threshold_low or num_constraints > threshold_high:
-            pytest.xfail(
-                f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
-            )
+        assert threshold_low <= num_constraints <= threshold_high, (
+            f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_elu_constraint_scaling(self, dim):
+    def test_elu_constraint_scaling(self, elu_hull_class, dim):
         """Measure ELU constraint count for different dimensions.
 
         Expected baselines (3·d formula, ±20% tolerance):
         - Formula: 3·d constraints
         - 2D: 6 constraints, 3D: 9 constraints, 4D: 12 constraints
         """
-        hull = ELUHull()
+        hull = elu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -162,10 +149,9 @@ class TestConstraintCountScaling:
         print(f"ELU dim {dim}: {num_constraints} constraints (expected {expected})")
 
         # Mark as xfail if constraint count deviates beyond ±20%
-        if num_constraints < threshold_low or num_constraints > threshold_high:
-            pytest.xfail(
-                f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
-            )
+        assert threshold_low <= num_constraints <= threshold_high, (
+            f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
     def test_maxpool_constraint_scaling(self, dim):
@@ -189,10 +175,9 @@ class TestConstraintCountScaling:
         print(f"MaxPool dim {dim}: {num_constraints} constraints (expected {expected})")
 
         # Mark as xfail if constraint count deviates beyond ±20%
-        if num_constraints < threshold_low or num_constraints > threshold_high:
-            pytest.xfail(
-                f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
-            )
+        assert threshold_low <= num_constraints <= threshold_high, (
+            f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
     def test_maxpooldlp_constraint_scaling(self, dim):
@@ -216,20 +201,18 @@ class TestConstraintCountScaling:
         print(f"MaxPoolDLP dim {dim}: {num_constraints} constraints (expected {expected})")
 
         # Mark as xfail if constraint count deviates beyond ±20%
-        if num_constraints < threshold_low or num_constraints > threshold_high:
-            pytest.xfail(
-                f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
-            )
+        assert threshold_low <= num_constraints <= threshold_high, (
+            f"Constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
+        )
 
 
-@pytest.mark.slow
 class TestMemoryScaling:
     """Test memory usage growth with dimension."""
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_relu_memory_usage(self, dim):
+    def test_relu_memory_usage(self, relu_hull_class, dim):
         """Measure memory usage for ReLU hull of different dimensions."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -241,13 +224,14 @@ class TestMemoryScaling:
         print(f"ReLU dim {dim}: {memory_bytes} bytes ({memory_kb:.2f} KB)")
 
         # Verify reasonable memory usage (<1MB is expected for small polytopes)
-        if memory_bytes > 10 * 1024 * 1024:
-            pytest.xfail(f"Excessive memory for dimension {dim}: {memory_kb:.2f} KB")
+        assert memory_bytes <= 10 * 1024 * 1024, (
+            f"Excessive memory for dimension {dim}: {memory_kb:.2f} KB"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_sigmoid_memory_usage(self, dim):
+    def test_sigmoid_memory_usage(self, sigmoid_hull_class, dim):
         """Measure memory usage for Sigmoid hull of different dimensions."""
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.full(dim, -2.0)
         ub = np.full(dim, 2.0)
 
@@ -259,13 +243,14 @@ class TestMemoryScaling:
         print(f"Sigmoid dim {dim}: {memory_bytes} bytes ({memory_kb:.2f} KB)")
 
         # Verify reasonable memory usage (<10MB is expected for small polytopes)
-        if memory_bytes > 10 * 1024 * 1024:
-            pytest.xfail(f"Excessive memory for dimension {dim}: {memory_kb:.2f} KB")
+        assert memory_bytes <= 10 * 1024 * 1024, (
+            f"Excessive memory for dimension {dim}: {memory_kb:.2f} KB"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_leakyrelu_memory_usage(self, dim):
+    def test_leakyrelu_memory_usage(self, leakyrelu_hull_class, dim):
         """Measure memory usage for LeakyReLU hull of different dimensions."""
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -280,9 +265,9 @@ class TestMemoryScaling:
         assert memory_bytes < 1 * 1024 * 1024, f"Excessive memory for LeakyReLU dimension {dim}"
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_elu_memory_usage(self, dim):
+    def test_elu_memory_usage(self, elu_hull_class, dim):
         """Measure memory usage for ELU hull of different dimensions."""
-        hull = ELUHull()
+        hull = elu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -331,16 +316,15 @@ class TestMemoryScaling:
         assert memory_bytes < 1 * 1024 * 1024, f"Excessive memory for MaxPoolDLP dimension {dim}"
 
 
-@pytest.mark.slow
 class TestComputationalComplexity:
     """Test computational complexity across dimensions."""
 
-    def test_constraint_column_count_scaling(self):
+    def test_constraint_column_count_scaling(self, relu_hull_class):
         """Verify constraint matrix columns scale with dimension.
 
         Expected: columns = 1 (bias) + dim (inputs) + dim (outputs)
         """
-        hull = ReLUHull()
+        hull = relu_hull_class()
 
         column_counts = {}
         mismatches = []
@@ -363,16 +347,15 @@ class TestComputationalComplexity:
         print(f"Column count scaling: {column_counts}")
 
         # Mark as xfail if any dimension has unexpected column count
-        if mismatches:
-            pytest.xfail(f"Column count regression: {', '.join(mismatches)}")
+        assert not mismatches, f"Column count regression: {', '.join(mismatches)}"
 
-    def test_constraint_row_count_polynomial_growth(self):
+    def test_constraint_row_count_polynomial_growth(self, relu_hull_class):
         """Verify constraint row count grows polynomially with dimension.
 
         For ReLU (piecewise linear), growth should be O(d) = 2·d constraints.
         Exponential growth would be > (2*2)^2 = 16 constraints at 4D.
         """
-        hull = ReLUHull()
+        hull = relu_hull_class()
 
         constraint_counts = {}
 
@@ -389,23 +372,21 @@ class TestComputationalComplexity:
 
         # Verify growth is reasonable (not exponential)
         # For ReLU, growth should be O(d), so 4D should be ~8, definitely < 2D squared
-        if constraint_counts[4] >= constraint_counts[2] ** 2:
-            pytest.xfail(
-                f"Excessive constraint growth: {constraint_counts[4]} >= {constraint_counts[2]}^2"
-            )
+        assert constraint_counts[4] < constraint_counts[2] ** 2, (
+            f"Excessive constraint growth: {constraint_counts[4]} >= {constraint_counts[2]}^2"
+        )
 
 
-@pytest.mark.slow
 class TestInputBoundScaling:
     """Test scaling with different input bound ranges."""
 
-    def test_varying_bound_ranges(self):
+    def test_varying_bound_ranges(self, relu_hull_class):
         """Test ReLU with different input bound ranges.
 
         Constraint count should not significantly depend on range magnitude.
         All ranges should produce similar number of constraints (within 2x).
         """
-        hull = ReLUHull()
+        hull = relu_hull_class()
         dim = 2
 
         ranges = [0.1, 1.0, 10.0, 100.0]
@@ -430,19 +411,17 @@ class TestInputBoundScaling:
         ratio = max_count / min_count if min_count > 0 else 1.0
 
         # Mark as xfail if ratio indicates range has significant impact
-        if ratio >= 2.0:
-            pytest.xfail(
-                f"Large variation in constraint count across ranges: {ratio:.2f}x {constraint_counts}"
-            )
+        assert ratio < 2.0, (
+            f"Large variation in constraint count across ranges: {ratio:.2f}x {constraint_counts}"
+        )
 
 
-@pytest.mark.slow
 class TestAsymptoticBehavior:
     """Test asymptotic behavior at extreme dimensions/bounds."""
 
-    def test_dimension_four_stability(self):
+    def test_dimension_four_stability(self, relu_hull_class):
         """Verify stable behavior at dimension 4 (upper test limit)."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.full(4, -1.0)
         ub = np.full(4, 1.0)
 
@@ -452,9 +431,9 @@ class TestAsymptoticBehavior:
         assert np.all(np.isfinite(result)), "Non-finite values in 4D result"
         assert result.shape[0] > 0, "No constraints in 4D"
 
-    def test_sigmoid_4d_stability(self):
+    def test_sigmoid_4d_stability(self, sigmoid_hull_class):
         """Verify Sigmoid handles 4D input stably."""
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.full(4, -2.0)
         ub = np.full(4, 2.0)
 

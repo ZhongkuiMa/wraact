@@ -1,3 +1,5 @@
+"""Base class for S-shaped activation hull computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["SShapeHull"]
 
@@ -47,6 +49,15 @@ class SShapeHull(ActHull, ABC):
         ub: ndarray | None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, 2*d-1)
+        """Compute S-shaped hull constraints combining single and multi-neuron constraints.
+
+        :param c: Input constraints in H-representation. Shape: (n, d).
+        :param v: Vertices of input polytope. Shape: (m, d).
+        :param lb: Lower bounds per dimension. Shape: (d-1,).
+        :param ub: Upper bounds per dimension. Shape: (d-1,).
+        :param dtype_cdd: Data type for pycddlib. Default: "float".
+        :return: Tuple of (constraints, dtype_cdd). Constraints shape: (_, 2*d+1).
+        """
         d = c.shape[1] - 1
         c = np.array(c, dtype=np.float64)
         lb = np.array(lb, dtype=np.float64)
@@ -68,6 +79,12 @@ class SShapeHull(ActHull, ABC):
         lb: ndarray,  # (d,)
         ub: ndarray,  # (d,)
     ) -> ndarray:  # (_, 1+2*d)
+        """Compute single-neuron constraints for S-shaped activation via DLP construction.
+
+        :param lb: Lower bounds per input dimension. Shape: (d,).
+        :param ub: Upper bounds per input dimension. Shape: (d,).
+        :return: Single-neuron constraints. Shape: (_, 1+2*d).
+        """
         d = lb.shape[0]
         cc = np.empty((0, 1 + d), dtype=np.float64)
 
@@ -94,6 +111,18 @@ class SShapeHull(ActHull, ABC):
         lb: ndarray | None,  # (d-1,)
         ub: ndarray | None,  # (d-1,)
     ) -> ndarray:  # (_, 2*d-1) | (_, d+1)
+        """Compute multi-neuron constraints for S-shaped activation via DLP.
+
+        Constructs lower and upper DLP bounds for each output dimension
+        and generates sound over-approximation constraints.
+
+        :param c: Input constraints in H-representation. Shape: (n, d).
+        :param v: Vertices of input polytope. Shape: (m, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :return: Multi-neuron constraints. Shape: (_, 2*d+1).
+        :raises ValueError: If bounds are not provided.
+        """
         if lb is None or ub is None:
             raise ValueError(
                 "Both lower and upper bounds are required for the S-shape activation function."

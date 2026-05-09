@@ -1,3 +1,5 @@
+"""Single-output ReLU activation hull computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["ReLUHullWithOneY"]
 
@@ -25,6 +27,18 @@ class ReLUHullWithOneY(ReLULikeHullWithOneY, ReLUHull):
         ub: ndarray | None = None,  # (d-1,)
         n_output_constrs: int = 1,
     ) -> ndarray:  # (_, d+1)
+        """Compute multi-neuron constraints for single-output ReLU.
+
+        Uses the WraLU algorithm on the first input dimension only,
+        then selects the top-k constraints.
+
+        :param c: Input constraints. Shape: (_, d).
+        :param v: Vertices. Shape: (_, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :param n_output_constrs: Number of output constraints to return.
+        :return: Top-k multi-neuron constraints. Shape: (_, d+1).
+        """
         v = np.transpose(v)
         mask_xp, mask_xn = (v > TOLERANCE), (v < -TOLERANCE)
         if not np.any(mask_xp) and not np.any(mask_xn):

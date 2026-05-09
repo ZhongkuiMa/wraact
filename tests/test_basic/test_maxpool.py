@@ -29,6 +29,7 @@ approach may need custom adaptation.
 __docformat__ = "restructuredtext"
 
 import numpy as np
+import pytest
 
 
 def maxpool_np(x):
@@ -46,11 +47,9 @@ def maxpool_np(x):
 class TestMaxPoolBasicFunctionality:
     """Basic functionality tests for MaxPoolHull."""
 
-    def test_cal_hull_returns_ndarray(self):
+    def test_cal_hull_returns_ndarray(self, maxpool_hull_class):
         """Verify cal_hull() returns an ndarray."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -59,37 +58,26 @@ class TestMaxPoolBasicFunctionality:
         assert isinstance(result, np.ndarray)
         assert result.ndim == 2  # 2D array
 
-    def test_cal_hull_output_shape_2d(self):
-        """Verify output shape follows formula: d + 2 = 4 for 2D input."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
-        result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        # For 2D input to MaxPool: d + 2 = 4 columns [b | x1 | x2 | y]
-        assert result.shape[1] == 4
-
-    def test_cal_hull_output_shape_3d(self):
-        """Verify output shape follows formula: d + 2 = 5 for 3D input."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
-        lb = np.array([-1.0, -1.0, -1.0])
-        ub = np.array([1.0, 1.0, 1.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(2, 4, id="2d"),
+            pytest.param(3, 5, id="3d"),
+        ],
+    )
+    def test_cal_hull_output_shape(self, dim, expected_cols, maxpool_hull_class):
+        """Verify output shape follows formula: d + 2."""
+        hull = maxpool_hull_class()
+        lb = -np.ones(dim)
+        ub = np.ones(dim)
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        # For 3D input: d + 2 = 5 columns [b | x1 | x2 | x3 | y]
-        assert result.shape[1] == 5
+        assert result.shape[1] == expected_cols
 
-    def test_cal_hull_output_finite(self):
+    def test_cal_hull_output_finite(self, maxpool_hull_class):
         """Verify output contains no inf or nan values."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -177,11 +165,9 @@ class TestMaxPoolBasicFunctionality:
 class TestMaxPoolSoundnessBasic:
     """Basic soundness tests for MaxPoolHull (non-template version)."""
 
-    def test_soundness_2d_single_point(self):
+    def test_soundness_2d_single_point(self, maxpool_hull_class):
         """Test that a single point (x, max(x)) satisfies hull constraints."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -203,20 +189,21 @@ class TestMaxPoolSoundnessBasic:
             f"Point outside hull. Min constraint: {np.min(constraint_values)}"
         )
 
-    def test_soundness_2d_monte_carlo(self):
-        """Verify soundness with Monte Carlo sampling for 2D MaxPool."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
+    @pytest.mark.parametrize(
+        ("dim", "lb", "ub"),
+        [
+            pytest.param(2, np.array([-1.0, -1.0]), np.array([1.0, 1.0]), id="2d"),
+            pytest.param(3, np.array([-1.0, -1.0, -1.0]), np.array([1.0, 1.0, 1.0]), id="3d"),
+        ],
+    )
+    def test_soundness_monte_carlo(self, dim, lb, ub, maxpool_hull_class):
+        """Verify soundness with Monte Carlo sampling for MaxPool."""
+        hull = maxpool_hull_class()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        # Random sampling
         num_samples = 1000
         rng = np.random.default_rng()
-        samples = rng.uniform(lb, ub, (num_samples, 2))
+        samples = rng.uniform(lb, ub, (num_samples, dim))
 
         violations = 0
         for x in samples:
@@ -235,43 +222,9 @@ class TestMaxPoolSoundnessBasic:
             f"Soundness violation: {satisfaction_rate:.2f}% ({violations}/{num_samples})"
         )
 
-    def test_soundness_3d_monte_carlo(self):
-        """Verify soundness with Monte Carlo sampling for 3D MaxPool."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
-        lb = np.array([-1.0, -1.0, -1.0])
-        ub = np.array([1.0, 1.0, 1.0])
-
-        result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        # Random sampling
-        num_samples = 1000
-        rng = np.random.default_rng()
-        samples = rng.uniform(lb, ub, (num_samples, 3))
-
-        violations = 0
-        for x in samples:
-            y = maxpool_np(x)
-            point = np.concatenate([x, [y]])
-
-            b = result[:, 0]
-            A = result[:, 1:]
-            constraint_values = b + A @ point
-
-            if not np.all(constraint_values >= -1e-8):
-                violations += 1
-
-        satisfaction_rate = 100.0 * (num_samples - violations) / num_samples
-        assert satisfaction_rate >= 99.0, (
-            f"Soundness violation: {satisfaction_rate:.2f}% ({violations}/{num_samples})"
-        )
-
-    def test_maxpool_deterministic(self):
+    def test_maxpool_deterministic(self, maxpool_hull_class):
         """Verify hull computation is deterministic."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull()
+        hull = maxpool_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -285,60 +238,45 @@ class TestMaxPoolSoundnessBasic:
 class TestMaxPoolBoundEdgeCases:
     """Test MaxPool with edge case bounds (trivial cases)."""
 
-    def test_cal_hull_all_positive_bounds(self):
-        """Test MaxPool with all-positive bounds (lb >= 0)."""
-        from wraact.acthull import MaxPoolHull
-
-        lb = np.array([0.5, 0.5])
-        ub = np.array([1.0, 1.0])
-
-        hull = MaxPoolHull()
+    @pytest.mark.parametrize(
+        ("lb", "ub", "expected_cols", "scenario"),
+        [
+            pytest.param(
+                np.array([0.5, 0.5]), np.array([1.0, 1.0]), 4, "all_positive_2d", id="all_positive"
+            ),
+            pytest.param(
+                np.array([-1.0, -1.0]),
+                np.array([-0.5, -0.5]),
+                4,
+                "all_negative_2d",
+                id="all_negative",
+            ),
+            pytest.param(
+                np.array([-0.03, -0.03, -0.03]),
+                np.array([0.03, 0.03, 0.03]),
+                5,
+                "small_range_3d",
+                id="small_range_3d",
+            ),
+            pytest.param(
+                np.array([-100.0, -50.0, -1.0]),
+                np.array([1.0, 50.0, 100.0]),
+                5,
+                "wide_asymmetric_3d",
+                id="wide_asymmetric",
+            ),
+        ],
+    )
+    def test_cal_hull_bound_configurations(
+        self, lb, ub, expected_cols, scenario, maxpool_hull_class
+    ):
+        """Test MaxPool with various bound configurations."""
+        hull = maxpool_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
-
-    def test_cal_hull_all_negative_bounds(self):
-        """Test MaxPool with all-negative bounds (ub <= 0)."""
-        from wraact.acthull import MaxPoolHull
-
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([-0.5, -0.5])
-
-        hull = MaxPoolHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
-    def test_cal_hull_very_small_range_3d(self):
-        """Test MaxPool with small 3D input range (just above minimum threshold)."""
-        from wraact.acthull import MaxPoolHull
-
-        # Minimum range threshold is 0.05, so we use range 0.06
-        lb = np.array([-0.03, -0.03, -0.03])
-        ub = np.array([0.03, 0.03, 0.03])
-
-        hull = MaxPoolHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-        # MaxPool uses d+2 format: 3+2 = 5 columns
-        assert constraints.shape[1] == 5
-
-    def test_cal_hull_wide_range_asymmetric(self):
-        """Test MaxPool with wide asymmetric range."""
-        from wraact.acthull import MaxPoolHull
-
-        lb = np.array([-100.0, -50.0, -1.0])
-        ub = np.array([1.0, 50.0, 100.0])
-
-        hull = MaxPoolHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
+        assert constraints.shape[1] == expected_cols
 
 
 class TestMaxPoolSingleNeuronMode:
@@ -348,44 +286,36 @@ class TestMaxPoolSingleNeuronMode:
     normally disabled in default ActHull initialization.
     """
 
-    def test_cal_hull_single_neuron_2d_dlp(self):
-        """Test single-neuron constraints for 2D MaxPool (DLP variant)."""
-        from wraact.acthull import MaxPoolHull
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(2, 4, id="2d"),
+            pytest.param(3, 5, id="3d"),
+        ],
+    )
+    def test_cal_hull_single_neuron(self, dim, expected_cols, maxpool_hull_class):
+        """Test single-neuron constraints for MaxPool with given dimension."""
+        lb = -np.ones(dim)
+        ub = np.ones(dim)
 
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0])
-
-        hull = MaxPoolHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 4  # d + 2 = 2 + 2 = 4 for 2D
-        assert np.all(np.isfinite(constraints))
-
-    def test_cal_hull_single_neuron_3d_dlp(self):
-        """Test single-neuron constraints for 3D MaxPool (DLP variant)."""
-        from wraact.acthull import MaxPoolHull
-
-        lb = np.array([-1.0, -1.0, -1.0])
-        ub = np.array([1.0, 1.0, 1.0])
-
-        hull = MaxPoolHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = maxpool_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 5  # d + 2 = 3 + 2 = 5 for 3D
+        assert constraints.shape[1] == expected_cols
         assert np.all(np.isfinite(constraints))
 
-    def test_cal_hull_single_neuron_soundness(self):
+    def test_cal_hull_single_neuron_soundness(self, maxpool_hull_class):
         """Verify soundness of single-neuron constraints with Monte Carlo."""
-        from wraact.acthull import MaxPoolHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = MaxPoolHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = maxpool_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
@@ -408,11 +338,11 @@ class TestMaxPoolSingleNeuronMode:
         satisfaction_rate = 100.0 * (1000 - violations) / 1000
         assert satisfaction_rate >= 95.0
 
-    def test_cal_hull_single_neuron_cache_behavior(self):
+    def test_cal_hull_single_neuron_cache_behavior(self, maxpool_hull_class):
         """Test caching behavior in single-neuron mode."""
-        from wraact.acthull import MaxPoolHull
-
-        hull = MaxPoolHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = maxpool_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         # First call
         lb1 = np.array([-1.0, -1.0])
@@ -427,29 +357,29 @@ class TestMaxPoolSingleNeuronMode:
         # Same dimension should have same number of constraints
         assert c1.shape == c2.shape
 
-    def test_cal_sn_constrs_upper_bounds(self):
+    def test_cal_sn_constrs_upper_bounds(self, maxpool_hull_class):
         """Test upper bounds constraint calculation in single-neuron mode."""
-        from wraact.acthull import MaxPoolHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = MaxPoolHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = maxpool_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         # Verify constraints include upper bound constraints
-        assert constraints is not None
+        assert isinstance(constraints, np.ndarray)
         assert constraints.shape[0] > 0
 
-    def test_cal_sn_constrs_lower_bounds(self):
+    def test_cal_sn_constrs_lower_bounds(self, maxpool_hull_class):
         """Test lower bounds constraint calculation in single-neuron mode."""
-        from wraact.acthull import MaxPoolHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = MaxPoolHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = maxpool_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
@@ -457,14 +387,14 @@ class TestMaxPoolSingleNeuronMode:
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_cal_hull_single_neuron_output_shape(self):
+    def test_cal_hull_single_neuron_output_shape(self, maxpool_hull_class):
         """Verify single-neuron constraint output shape for 2D."""
-        from wraact.acthull import MaxPoolHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = MaxPoolHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = maxpool_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
@@ -473,14 +403,14 @@ class TestMaxPoolSingleNeuronMode:
         # Should have at least some constraints
         assert constraints.shape[0] > 0
 
-    def test_cal_hull_single_neuron_finite(self):
+    def test_cal_hull_single_neuron_finite(self, maxpool_hull_class):
         """Verify single-neuron constraints contain no inf or nan."""
-        from wraact.acthull import MaxPoolHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = MaxPoolHull(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        hull = maxpool_hull_class(
+            if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False
+        )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 

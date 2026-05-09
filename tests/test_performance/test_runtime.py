@@ -19,30 +19,23 @@ import time
 import numpy as np
 import pytest
 
-from wraact.acthull import (
-    ELUHull,
-    LeakyReLUHull,
-    MaxPoolHull,
-    MaxPoolHullDLP,
-    ReLUHull,
-    SigmoidHull,
-    TanhHull,
-)
+from wraact.acthull import MaxPoolHull, MaxPoolHullDLP
 from wraact.oney import (
     ELUHullWithOneY,
     LeakyReLUHullWithOneY,
+    MaxPoolHullDLPWithOneY,
+    MaxPoolHullWithOneY,
     ReLUHullWithOneY,
     SigmoidHullWithOneY,
     TanhHullWithOneY,
 )
 
 
-@pytest.mark.slow
 class TestRuntimeScaling:
     """Test runtime scaling with dimension."""
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_relu_runtime_by_dimension(self, dim):
+    def test_relu_runtime_by_dimension(self, relu_hull_class, dim):
         """Measure ReLU hull runtime for different dimensions.
 
         Expected baselines (±150% tolerance):
@@ -52,7 +45,7 @@ class TestRuntimeScaling:
 
         Uses 10 warmup iterations + 20 measurements with percentile-based threshold.
         """
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -80,13 +73,12 @@ class TestRuntimeScaling:
         )
 
         # Mark as xfail if performance regressed
-        if elapsed_ms > threshold:
-            pytest.xfail(
-                f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
-            )
+        assert elapsed_ms <= threshold, (
+            f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_sigmoid_runtime_by_dimension(self, dim):
+    def test_sigmoid_runtime_by_dimension(self, sigmoid_hull_class, dim):
         """Measure Sigmoid hull runtime for different dimensions.
 
         Expected baselines (±150% tolerance, S-shaped):
@@ -96,7 +88,7 @@ class TestRuntimeScaling:
 
         Uses 10 warmup iterations + 20 measurements with percentile-based threshold.
         """
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.full(dim, -2.0)
         ub = np.full(dim, 2.0)
 
@@ -124,13 +116,12 @@ class TestRuntimeScaling:
         )
 
         # Mark as xfail if performance regressed
-        if elapsed_ms > threshold:
-            pytest.xfail(
-                f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
-            )
+        assert elapsed_ms <= threshold, (
+            f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_leakyrelu_runtime_by_dimension(self, dim):
+    def test_leakyrelu_runtime_by_dimension(self, leakyrelu_hull_class, dim):
         """Measure LeakyReLU hull runtime for different dimensions.
 
         Expected baselines (±150% tolerance, piecewise linear):
@@ -141,7 +132,7 @@ class TestRuntimeScaling:
         Uses 10 warmup iterations + 20 measurements with percentile-based threshold
         for maximum stability across varying system loads.
         """
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -169,13 +160,12 @@ class TestRuntimeScaling:
         )
 
         # Mark as xfail if performance regressed significantly
-        if elapsed_ms > threshold:
-            pytest.xfail(
-                f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
-            )
+        assert elapsed_ms <= threshold, (
+            f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_elu_runtime_by_dimension(self, dim):
+    def test_elu_runtime_by_dimension(self, elu_hull_class, dim):
         """Measure ELU hull runtime for different dimensions.
 
         Expected baselines (±150% tolerance, piecewise linear):
@@ -185,7 +175,7 @@ class TestRuntimeScaling:
 
         Uses 10 warmup iterations + 20 measurements with percentile-based threshold.
         """
-        hull = ELUHull()
+        hull = elu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -213,13 +203,12 @@ class TestRuntimeScaling:
         )
 
         # Mark as xfail if performance regressed
-        if elapsed_ms > threshold:
-            pytest.xfail(
-                f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
-            )
+        assert elapsed_ms <= threshold, (
+            f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_tanh_runtime_by_dimension(self, dim):
+    def test_tanh_runtime_by_dimension(self, tanh_hull_class, dim):
         """Measure Tanh hull runtime for different dimensions.
 
         Expected baselines (±150% tolerance, S-shaped):
@@ -229,7 +218,7 @@ class TestRuntimeScaling:
 
         Uses 10 warmup iterations + 20 measurements with percentile-based threshold.
         """
-        hull = TanhHull()
+        hull = tanh_hull_class()
         lb = np.full(dim, -2.0)
         ub = np.full(dim, 2.0)
 
@@ -257,10 +246,9 @@ class TestRuntimeScaling:
         )
 
         # Mark as xfail if performance regressed
-        if elapsed_ms > threshold:
-            pytest.xfail(
-                f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
-            )
+        assert elapsed_ms <= threshold, (
+            f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
     def test_maxpooldlp_runtime_by_dimension(self, dim):
@@ -301,33 +289,43 @@ class TestRuntimeScaling:
         )
 
         # Mark as xfail if performance regressed
-        if elapsed_ms > threshold:
-            pytest.xfail(
-                f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
-            )
+        assert elapsed_ms <= threshold, (
+            f"Performance regression: p90={elapsed_ms:.2f}ms > {threshold:.2f}ms baseline"
+        )
 
 
-@pytest.mark.slow
 class TestActivationComparison:
     """Compare runtime across different activation functions."""
 
-    def test_all_activations_runtime_2d(self):
+    def test_all_activations_runtime_2d(
+        self,
+        relu_hull_class,
+        leakyrelu_hull_class,
+        elu_hull_class,
+        sigmoid_hull_class,
+        tanh_hull_class,
+    ):
         """Compare runtime of all activation functions on 2D input.
 
         Uses 10 warmup iterations + 20 measurements with percentile-based thresholds.
         Marks as xfail if any activation significantly exceeds its expected baseline.
         """
         activations = {
-            "ReLU": (ReLUHull(), np.array([-1.0, -1.0]), np.array([1.0, 1.0]), 0.45 * 2.5),
+            "ReLU": (relu_hull_class(), np.array([-1.0, -1.0]), np.array([1.0, 1.0]), 0.45 * 2.5),
             "LeakyReLU": (
-                LeakyReLUHull(),
+                leakyrelu_hull_class(),
                 np.array([-1.0, -1.0]),
                 np.array([1.0, 1.0]),
                 0.50 * 2.5,
             ),
-            "ELU": (ELUHull(), np.array([-1.0, -1.0]), np.array([1.0, 1.0]), 0.55 * 2.5),
-            "Sigmoid": (SigmoidHull(), np.array([-2.0, -2.0]), np.array([2.0, 2.0]), 1.50 * 2.5),
-            "Tanh": (TanhHull(), np.array([-2.0, -2.0]), np.array([2.0, 2.0]), 1.60 * 2.5),
+            "ELU": (elu_hull_class(), np.array([-1.0, -1.0]), np.array([1.0, 1.0]), 0.55 * 2.5),
+            "Sigmoid": (
+                sigmoid_hull_class(),
+                np.array([-2.0, -2.0]),
+                np.array([2.0, 2.0]),
+                1.50 * 2.5,
+            ),
+            "Tanh": (tanh_hull_class(), np.array([-2.0, -2.0]), np.array([2.0, 2.0]), 1.60 * 2.5),
             "MaxPool": (MaxPoolHull(), np.array([-1.0, -1.0]), np.array([1.0, 1.0]), 0.50 * 2.5),
         }
 
@@ -356,16 +354,14 @@ class TestActivationComparison:
         print(f"2D activation comparison: {runtimes}")
 
         # Mark as xfail if any activation regressed
-        if regressions:
-            pytest.xfail(f"Performance regressions: {', '.join(regressions)}")
+        assert not regressions, f"Performance regressions: {', '.join(regressions)}"
 
 
-@pytest.mark.slow
 class TestWithOneYPerformance:
     """Compare WithOneY variants with full hull performance."""
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_relu_withoney_speedup(self, dim):
+    def test_relu_withoney_speedup(self, relu_hull_class, dim):
         """Measure speedup of ReLU WithOneY vs full hull.
 
         Expected baseline (≥1.0x speedup, ideally 1.3x):
@@ -379,7 +375,7 @@ class TestWithOneYPerformance:
         ub = np.full(dim, 1.0)
 
         # Full hull warmup
-        full_hull = ReLUHull()
+        full_hull = relu_hull_class()
         for _ in range(10):
             full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
@@ -414,13 +410,12 @@ class TestWithOneYPerformance:
         )
 
         # Speedup threshold: ≥0.95x (95% efficiency, no major regression)
-        if speedup < 0.95:
-            pytest.xfail(
-                f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
-            )
+        assert speedup >= 0.95, (
+            f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_leakyrelu_withoney_speedup(self, dim):
+    def test_leakyrelu_withoney_speedup(self, leakyrelu_hull_class, dim):
         """Measure speedup of LeakyReLU WithOneY vs full hull.
 
         Expected baseline (≥1.1x speedup required):
@@ -432,7 +427,7 @@ class TestWithOneYPerformance:
         ub = np.full(dim, 1.0)
 
         # Full hull
-        full_hull = LeakyReLUHull()
+        full_hull = leakyrelu_hull_class()
         full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         start = time.perf_counter()
         _ = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
@@ -452,13 +447,12 @@ class TestWithOneYPerformance:
         )
 
         # Speedup threshold: ≥0.95x (95% efficiency, no major regression)
-        if speedup < 0.95:
-            pytest.xfail(
-                f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
-            )
+        assert speedup >= 0.95, (
+            f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_elu_withoney_speedup(self, dim):
+    def test_elu_withoney_speedup(self, elu_hull_class, dim):
         """Measure speedup of ELU WithOneY vs full hull.
 
         Expected baseline (≥1.1x speedup required):
@@ -470,7 +464,7 @@ class TestWithOneYPerformance:
         ub = np.full(dim, 1.0)
 
         # Full hull
-        full_hull = ELUHull()
+        full_hull = elu_hull_class()
         full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         start = time.perf_counter()
         _ = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
@@ -490,13 +484,12 @@ class TestWithOneYPerformance:
         )
 
         # Speedup threshold: ≥0.95x (95% efficiency, no major regression)
-        if speedup < 0.95:
-            pytest.xfail(
-                f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
-            )
+        assert speedup >= 0.95, (
+            f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_tanh_withoney_speedup(self, dim):
+    def test_tanh_withoney_speedup(self, tanh_hull_class, dim):
         """Measure speedup of Tanh WithOneY vs full hull.
 
         Expected baseline (≥1.1x speedup required):
@@ -508,7 +501,7 @@ class TestWithOneYPerformance:
         ub = np.full(dim, 2.0)
 
         # Full hull
-        full_hull = TanhHull()
+        full_hull = tanh_hull_class()
         full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         start = time.perf_counter()
         _ = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
@@ -528,13 +521,12 @@ class TestWithOneYPerformance:
         )
 
         # Speedup threshold: ≥0.95x (95% efficiency, no major regression)
-        if speedup < 0.95:
-            pytest.xfail(
-                f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
-            )
+        assert speedup >= 0.95, (
+            f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_sigmoid_withoney_speedup(self, dim):
+    def test_sigmoid_withoney_speedup(self, sigmoid_hull_class, dim):
         """Measure speedup of Sigmoid WithOneY vs full hull.
 
         Expected baseline (≥1.1x speedup required):
@@ -546,7 +538,7 @@ class TestWithOneYPerformance:
         ub = np.full(dim, 2.0)
 
         # Full hull
-        full_hull = SigmoidHull()
+        full_hull = sigmoid_hull_class()
         full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         start = time.perf_counter()
         _ = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
@@ -566,10 +558,9 @@ class TestWithOneYPerformance:
         )
 
         # Speedup threshold: ≥0.95x (95% efficiency, no major regression)
-        if speedup < 0.95:
-            pytest.xfail(
-                f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
-            )
+        assert speedup >= 0.95, (
+            f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
     def test_maxpool_withoney_speedup(self, dim):
@@ -592,8 +583,6 @@ class TestWithOneYPerformance:
         full_time = time.perf_counter() - start
 
         # WithOneY
-        from wraact.oney import MaxPoolHullWithOneY
-
         oney_hull = MaxPoolHullWithOneY()
         oney_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         start = time.perf_counter()
@@ -607,10 +596,9 @@ class TestWithOneYPerformance:
         )
 
         # Speedup threshold: ≥0.95x (95% efficiency, no major regression)
-        if speedup < 0.95:
-            pytest.xfail(
-                f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
-            )
+        assert speedup >= 0.95, (
+            f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
     def test_maxpooldlp_withoney_speedup(self, dim):
@@ -633,8 +621,6 @@ class TestWithOneYPerformance:
         full_time = time.perf_counter() - start
 
         # WithOneY
-        from wraact.oney import MaxPoolHullDLPWithOneY
-
         oney_hull = MaxPoolHullDLPWithOneY()
         oney_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         start = time.perf_counter()
@@ -648,23 +634,21 @@ class TestWithOneYPerformance:
         )
 
         # Speedup threshold: ≥0.95x (95% efficiency, no major regression)
-        if speedup < 0.95:
-            pytest.xfail(
-                f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
-            )
+        assert speedup >= 0.95, (
+            f"Speedup {speedup:.2f}x < 0.95x indicates WithOneY is significantly slower"
+        )
 
 
-@pytest.mark.slow
 class TestNumbaCompilation:
     """Test Numba JIT compilation effectiveness."""
 
-    def test_relu_numba_warmup(self):
+    def test_relu_numba_warmup(self, relu_hull_class):
         """Verify Numba JIT warmup effect.
 
         Expects first call to have ~5-10x overhead from JIT compilation,
         with deterministic results across calls.
         """
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -693,12 +677,11 @@ class TestNumbaCompilation:
             pytest.xfail(f"Unusually high JIT compilation overhead: {ratio:.2f}x")
 
 
-@pytest.mark.slow
 class TestMemoryUsage:
     """Test memory usage and constraint growth."""
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_constraint_count_growth(self, dim):
+    def test_constraint_count_growth(self, relu_hull_class, sigmoid_hull_class, dim):
         """Measure constraint count growth with dimension.
 
         Expected baselines (±20% tolerance):
@@ -706,8 +689,8 @@ class TestMemoryUsage:
         - Sigmoid: 6·d constraints
         """
         activations = {
-            "ReLU": (ReLUHull(), 2 * dim),  # 2·d constraints
-            "Sigmoid": (SigmoidHull(), 6 * dim),  # 6·d constraints
+            "ReLU": (relu_hull_class(), 2 * dim),  # 2·d constraints
+            "Sigmoid": (sigmoid_hull_class(), 6 * dim),  # 6·d constraints
         }
 
         for name, (hull, expected_count) in activations.items():
@@ -728,8 +711,8 @@ class TestMemoryUsage:
                 f"{name} dim {dim}: {num_constraints} constraints (expected {expected_count}), {result.nbytes} bytes"
             )
 
-            # Mark as xfail if constraint count deviates beyond ±20%
-            if num_constraints < threshold_low or num_constraints > threshold_high:
-                pytest.xfail(
-                    f"{name} constraint count regression: {num_constraints} outside range [{threshold_low:.0f}, {threshold_high:.0f}]"
-                )
+            # Assert constraint count is within ±20% of expected baseline
+            assert threshold_low <= num_constraints <= threshold_high, (
+                f"{name} constraint count regression: {num_constraints} outside range "
+                f"[{threshold_low:.0f}, {threshold_high:.0f}]"
+            )

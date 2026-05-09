@@ -14,14 +14,14 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
+from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
+
 
 class TestCalMnConstrsWithOneYDLP:
     """Tests for cal_mn_constrs_with_one_y_dlp utility function."""
 
     def test_returns_tuple_of_two_arrays(self):
         """Verify function returns tuple (constraints, vertices)."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         # Simple box polytope
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]])  # 4 constraints for 2D box
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])  # 4 vertices
@@ -40,8 +40,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_trivial_case_output_shape(self):
         """Verify output shape for trivial case (single line, no aux_point)."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]])
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
         aux_lines = np.array([[0.15, 0, 0]])  # [slope_x, slope_y, intercept]
@@ -57,8 +55,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_trivial_case_adds_line_constraint(self):
         """Verify trivial case adds the auxiliary line as constraint."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=float)
         aux_lines = np.array([[0.15, 0.1, 1.0]])
@@ -74,8 +70,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_trivial_case_output_vertices_are_extended(self):
         """Verify output vertices are extended with computed output dimension."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=float)
         aux_lines = np.array([[0.15, 0.1, 1.0]])
@@ -90,8 +84,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_trivial_case_raises_error_with_multiple_lines(self):
         """Verify error raised when aux_point is None but multiple auxiliary lines provided."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=float)
         aux_lines = np.array(
@@ -105,8 +97,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_non_trivial_case_requires_aux_point(self):
         """Verify that DLP case with two auxiliary lines requires aux_point."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0.0, 0.0], [0.3, 0.0], [0.0, 1.0], [0.3, 1.0]], dtype=float)
         # Two lines for DLP with different slopes
@@ -126,8 +116,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_non_trivial_case_output_shape(self):
         """Verify output shape for non-trivial DLP case."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0.0, 0.0], [0.3, 0.0], [0.0, 1.0], [0.3, 1.0]], dtype=float)
         aux_lines = np.array([[0.0, 0.2, 1.0], [0.0, 0.8, 1.0]])
@@ -148,8 +136,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_error_when_aux_point_divides_vertices_unevenly(self):
         """Verify error when all vertices are on one side of auxiliary point."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=float)
         aux_lines = np.array([[0.1, 0.0, 1.0], [0.2, 0.5, 1.0]])
@@ -162,8 +148,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_convex_vs_non_convex(self):
         """Verify is_convex parameter changes constraint sign."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=float)
         aux_lines = np.array([[0.1, 0.0, 1.0]])
@@ -184,8 +168,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_vertices_extended_with_output_dimension(self):
         """Verify vertices are properly extended with output dimension."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=float)
         slope = 0.2
@@ -203,8 +185,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_constraints_extended_with_output_dimension(self):
         """Verify constraints are properly extended with output dimension."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=float)
         aux_lines = np.array([[0.1, 0.2, 1.0]])
@@ -224,8 +204,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_output_is_finite(self):
         """Verify output constraints and vertices contain finite values."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=float)
         aux_lines = np.array([[0.1, 0.2, 1.0]])
@@ -240,8 +218,6 @@ class TestCalMnConstrsWithOneYDLP:
 
     def test_different_index_values(self):
         """Verify different index values work correctly."""
-        from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
-
         c = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], dtype=float)
         v = np.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=float)
         aux_lines = np.array([[0.1, 0.2, 1.0]])

@@ -1,3 +1,5 @@
+"""ReLU activation hull computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["ReLUHull"]
 
@@ -132,10 +134,6 @@ class ReLUHull(ReLULikeHull):
             if np.any(mask_xn_i):
                 temp = cv[:, mask_xn_i] / v[i, mask_xn_i]
                 beta2[:, 0] = np.max(temp, axis=1)
-
-            # Eliminate tiny positive values
-            # beta1 = np.minimum(beta1, 0)
-            # beta2 = np.minimum(beta2, 0)
 
             c = np.hstack((c, beta1 + beta2))
             c[:, [i]] -= beta2

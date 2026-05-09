@@ -1,3 +1,5 @@
+"""Tanh activation hull computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["TanhHull"]
 

@@ -1,3 +1,5 @@
+"""Utility functions for activation hull constraint computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["cal_mn_constrs_with_one_y_dlp"]
 
@@ -75,13 +77,6 @@ def cal_mn_constrs_with_one_y_dlp(
     if np.any(h1 == 0) or np.any(h2 == 0):
         raise RuntimeError("Zero values will be in denominators.")
 
-    # if is_convex:
-    #     assert np.all(h1 <= 0), f"{h1}"
-    #     assert np.all(h2 <= 0), f"{h2}"
-    # else:
-    #     assert np.all(h1 >= 0), f"{h1}"
-    #     assert np.all(h2 >= 0), f"{h2}"
-
     d1 /= h1
     d2 /= h2
 
@@ -92,12 +87,7 @@ def cal_mn_constrs_with_one_y_dlp(
         beta1 = np.min(d1, axis=1, keepdims=True)
         beta2 = np.min(d2, axis=1, keepdims=True)
 
-    # beta1 = np.maximum(beta1, 0)
-    # beta2 = np.maximum(beta2, 0)
-
     c -= beta1 * ll
     c -= beta2 * lr
-
-    # assert np.all(c @ vl.T >= -_TOL)
 
     return c, v

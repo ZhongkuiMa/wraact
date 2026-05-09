@@ -1,3 +1,5 @@
+"""Base class for single-output ReLU-like activation hull computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["ReLULikeHullWithOneY"]
 
@@ -27,6 +29,16 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
         ub: ndarray | None = None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, d+1)
+        """Compute single-output ReLU-like hull constraints.
+
+        :param c: Input constraints. Shape: (_, d).
+        :param v: Vertices. Shape: (_, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :param dtype_cdd: Data type for pycddlib. Default: "float".
+        :return: Tuple of (constraints, dtype_cdd).
+        :raises ValueError: If polytope bounds range is too small.
+        """
         c = np.array(c, dtype=np.float64)
 
         # Type narrowing for bounds
@@ -62,6 +74,12 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
         lb: ndarray,  # (d,)
         ub: ndarray,  # (d,)
     ) -> ndarray:  # (_, d+2)
+        """Compute single-neuron upper bound for the first input dimension.
+
+        :param lb: Lower bounds per dimension. Shape: (d,).
+        :param ub: Upper bounds per dimension. Shape: (d,).
+        :return: Upper bound constraint. Shape: (1, d+2).
+        """
         dim = lb.shape[0]
         c = np.zeros((1, dim + 2), dtype=np.float64)
 
@@ -86,6 +104,15 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
         ub: ndarray | None = None,  # (d-1,)
         n_output_constrs: int = 1,
     ) -> ndarray:  # (_, d+1)
+        """Compute multi-neuron constraints for single-output ReLU-like activation.
+
+        :param c: Input constraints. Shape: (_, d).
+        :param v: Vertices. Shape: (_, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :param n_output_constrs: Number of output constraints to return.
+        :return: Top-k multi-neuron constraints. Shape: (_, d+1).
+        """
         d = c.shape[1] - 1
 
         # Type assertion: l and u are expected to be ndarrays if this code path is reached

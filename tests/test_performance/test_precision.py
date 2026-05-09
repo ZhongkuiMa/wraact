@@ -18,26 +18,18 @@ import numpy as np
 import pytest
 
 from wraact._functions import elu_np, leakyrelu_np, relu_np, sigmoid_np, tanh_np
-from wraact.acthull import (
-    ELUHull,
-    LeakyReLUHull,
-    ReLUHull,
-    SigmoidHull,
-    TanhHull,
-)
 from wraact.oney import ReLUHullWithOneY
 
 
-@pytest.mark.slow
 class TestMonteCarloVolume:
     """Test volume estimation using Monte Carlo sampling."""
 
-    def test_relu_volume_2d(self):
+    def test_relu_volume_2d(self, relu_hull_class):
         """Estimate ReLU hull volume on 2D input.
 
         Expected: >95% satisfaction rate for piecewise linear activation.
         """
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -65,15 +57,16 @@ class TestMonteCarloVolume:
         print(f"ReLU 2D volume: {satisfaction_rate:.2f}% of sampled points inside hull")
 
         # Piecewise linear threshold: >95% required
-        if satisfaction_rate < 95.0:
-            pytest.xfail(f"Precision regression: {satisfaction_rate:.2f}% < 95% threshold")
+        assert satisfaction_rate >= 95.0, (
+            f"Precision regression: {satisfaction_rate:.2f}% < 95% threshold"
+        )
 
-    def test_sigmoid_volume_2d(self):
+    def test_sigmoid_volume_2d(self, sigmoid_hull_class):
         """Estimate Sigmoid hull volume on 2D input.
 
         Expected: >85% satisfaction rate for S-shaped activation.
         """
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -101,15 +94,15 @@ class TestMonteCarloVolume:
         print(f"Sigmoid 2D volume: {satisfaction_rate:.2f}% of sampled points inside hull")
 
         # S-shaped threshold: >85% required
-        if satisfaction_rate < 85.0:
-            pytest.xfail(f"Precision regression: {satisfaction_rate:.2f}% < 85% threshold")
+        assert satisfaction_rate >= 85.0, (
+            f"Precision regression: {satisfaction_rate:.2f}% < 85% threshold"
+        )
 
 
-@pytest.mark.slow
 class TestMethodComparison:
     """Compare precision across different methods."""
 
-    def test_full_vs_withoney_precision(self):
+    def test_full_vs_withoney_precision(self, relu_hull_class):
         """Compare precision of full ReLU hull vs WithOneY variant.
 
         Expected: Both should maintain >95% precision for piecewise linear.
@@ -118,7 +111,7 @@ class TestMethodComparison:
         ub = np.array([1.0, 1.0])
 
         # Full hull
-        full_hull = ReLUHull()
+        full_hull = relu_hull_class()
         full_result = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         # WithOneY
@@ -157,35 +150,41 @@ class TestMethodComparison:
         print(f"Full: {full_rate:.2f}%, WithOneY: {oney_rate:.2f}%")
 
         # Both should maintain precision
-        if full_rate < 95.0:
-            pytest.xfail(f"Full hull precision {full_rate:.2f}% < 95%")
-        if oney_rate < 95.0:
-            pytest.xfail(f"WithOneY precision {oney_rate:.2f}% < 95%")
+        assert full_rate >= 95.0, f"Full hull precision {full_rate:.2f}% < 95%"
+        assert oney_rate >= 95.0, f"WithOneY precision {oney_rate:.2f}% < 95%"
 
-    def test_activation_function_comparison(self):
+    def test_activation_function_comparison(
+        self, relu_hull_class, leakyrelu_hull_class, elu_hull_class, sigmoid_hull_class
+    ):
         """Compare precision across different activation functions.
 
         Piecewise linear (ReLU, LeakyReLU, ELU): expect >95% precision
         S-shaped (Sigmoid): expect >85% precision
         """
         activations = {
-            "ReLU": (ReLUHull(), np.array([-1.0, -1.0]), np.array([1.0, 1.0]), relu_np, 95.0),
+            "ReLU": (
+                relu_hull_class(),
+                np.array([-1.0, -1.0]),
+                np.array([1.0, 1.0]),
+                relu_np,
+                95.0,
+            ),
             "LeakyReLU": (
-                LeakyReLUHull(),
+                leakyrelu_hull_class(),
                 np.array([-1.0, -1.0]),
                 np.array([1.0, 1.0]),
                 lambda x: leakyrelu_np(x, negative_slope=0.01),
                 95.0,
             ),
             "ELU": (
-                ELUHull(),
+                elu_hull_class(),
                 np.array([-1.0, -1.0]),
                 np.array([1.0, 1.0]),
                 elu_np,
                 95.0,
             ),
             "Sigmoid": (
-                SigmoidHull(),
+                sigmoid_hull_class(),
                 np.array([-2.0, -2.0]),
                 np.array([2.0, 2.0]),
                 sigmoid_np,
@@ -222,21 +221,19 @@ class TestMethodComparison:
         print(f"Precision by activation: {precision_results}")
 
         # Mark as xfail if any activation falls below threshold
-        if regressions:
-            pytest.xfail(f"Precision regressions: {', '.join(regressions)}")
+        assert not regressions, f"Precision regressions: {', '.join(regressions)}"
 
 
-@pytest.mark.slow
 class TestVolumeScaling:
     """Test how hull volume scales with dimension."""
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_relu_volume_scaling(self, dim):
+    def test_relu_volume_scaling(self, relu_hull_class, dim):
         """Measure ReLU hull volume (via satisfaction rate) across dimensions.
 
         Expected baseline (piecewise linear): >95% precision across all dimensions.
         """
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -262,16 +259,17 @@ class TestVolumeScaling:
         print(f"ReLU dim {dim}: {satisfaction_rate:.2f}% satisfaction ({num_samples} samples)")
 
         # Piecewise linear threshold: >95% required
-        if satisfaction_rate < 95.0:
-            pytest.xfail(f"Precision regression: {satisfaction_rate:.2f}% < 95% threshold")
+        assert satisfaction_rate >= 95.0, (
+            f"Precision regression: {satisfaction_rate:.2f}% < 95% threshold"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_sigmoid_volume_scaling(self, dim):
+    def test_sigmoid_volume_scaling(self, sigmoid_hull_class, dim):
         """Measure Sigmoid hull volume across dimensions.
 
         Expected baseline (S-shaped): >85% precision across all dimensions.
         """
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.full(dim, -2.0)
         ub = np.full(dim, 2.0)
 
@@ -297,18 +295,19 @@ class TestVolumeScaling:
         print(f"Sigmoid dim {dim}: {satisfaction_rate:.2f}% satisfaction ({num_samples} samples)")
 
         # S-shaped threshold: >85% required
-        if satisfaction_rate < 85.0:
-            pytest.xfail(f"Precision regression: {satisfaction_rate:.2f}% < 85% threshold")
+        assert satisfaction_rate >= 85.0, (
+            f"Precision regression: {satisfaction_rate:.2f}% < 85% threshold"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_tanh_volume_scaling(self, dim):
+    def test_tanh_volume_scaling(self, tanh_hull_class, dim):
         """Measure Tanh hull volume (via satisfaction rate) across dimensions.
 
         Expected baselines:
         - S-shaped threshold: >85% precision
         - Dimension scaling: 6·d constraints
         """
-        hull = TanhHull()
+        hull = tanh_hull_class()
         lb = np.full(dim, -2.0)
         ub = np.full(dim, 2.0)
 
@@ -334,20 +333,19 @@ class TestVolumeScaling:
         print(f"Tanh dim {dim}: {satisfaction_rate:.2f}% satisfaction ({num_samples} samples)")
 
         # S-shaped threshold: >85% precision required
-        if satisfaction_rate < 85.0:
-            pytest.xfail(
-                f"Precision regression: {satisfaction_rate:.2f}% < 85% threshold for S-shaped activation"
-            )
+        assert satisfaction_rate >= 85.0, (
+            f"Precision regression: {satisfaction_rate:.2f}% < 85% threshold for S-shaped activation"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_leakyrelu_volume_scaling(self, dim):
+    def test_leakyrelu_volume_scaling(self, leakyrelu_hull_class, dim):
         """Measure LeakyReLU hull volume across dimensions.
 
         Expected baselines:
         - Piecewise linear threshold: >95% precision
         - Dimension scaling: 2·d constraints
         """
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -373,20 +371,19 @@ class TestVolumeScaling:
         print(f"LeakyReLU dim {dim}: {satisfaction_rate:.2f}% satisfaction ({num_samples} samples)")
 
         # Piecewise linear threshold: >95% precision required
-        if satisfaction_rate < 95.0:
-            pytest.xfail(
-                f"Precision regression: {satisfaction_rate:.2f}% < 95% threshold for piecewise linear activation"
-            )
+        assert satisfaction_rate >= 95.0, (
+            f"Precision regression: {satisfaction_rate:.2f}% < 95% threshold for piecewise linear activation"
+        )
 
     @pytest.mark.parametrize("dim", [2, 3, 4])
-    def test_elu_volume_scaling(self, dim):
+    def test_elu_volume_scaling(self, elu_hull_class, dim):
         """Measure ELU hull volume across dimensions.
 
         Expected baselines:
         - Piecewise linear threshold: >95% precision
         - Dimension scaling: 2·d constraints
         """
-        hull = ELUHull()
+        hull = elu_hull_class()
         lb = np.full(dim, -1.0)
         ub = np.full(dim, 1.0)
 
@@ -412,22 +409,20 @@ class TestVolumeScaling:
         print(f"ELU dim {dim}: {satisfaction_rate:.2f}% satisfaction ({num_samples} samples)")
 
         # Piecewise linear threshold: >95% precision required
-        if satisfaction_rate < 95.0:
-            pytest.xfail(
-                f"Precision regression: {satisfaction_rate:.2f}% < 95% threshold for piecewise linear activation"
-            )
+        assert satisfaction_rate >= 95.0, (
+            f"Precision regression: {satisfaction_rate:.2f}% < 95% threshold for piecewise linear activation"
+        )
 
 
-@pytest.mark.slow
 class TestNumericalStability:
     """Test numerical stability of volume estimation."""
 
-    def test_very_small_constraint_margins(self):
+    def test_very_small_constraint_margins(self, relu_hull_class):
         """Test precision when constraint margins are very small.
 
         Polytope with range 0.002 < MIN_BOUNDS_RANGE (0.05) triggers ValueError.
         """
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-1e-3, -1e-3])
         ub = np.array([1e-3, 1e-3])
 
@@ -435,9 +430,9 @@ class TestNumericalStability:
         with pytest.raises(ValueError, match="Polytope too small"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-    def test_very_large_constraint_bounds(self):
+    def test_very_large_constraint_bounds(self, relu_hull_class):
         """Test precision with very large input bounds."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-1e6, -1e6])
         ub = np.array([1e6, 1e6])
 

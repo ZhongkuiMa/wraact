@@ -1,3 +1,7 @@
+"""Activation hull classes for multi-output convex hull computation."""
+
+__docformat__ = "restructuredtext"
+
 from wraact.acthull._act import ActHull
 from wraact.acthull._elu import ELUHull
 from wraact.acthull._leakyrelu import LeakyReLUHull

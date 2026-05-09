@@ -75,21 +75,21 @@ def test_fuzzing_edge_case_regression(name, edge_case):
 
     # Test that the expected exception is raised
     if expected_exception == "RuntimeError":
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError, match=r".+"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     elif expected_exception == "DegeneratedError":
-        with pytest.raises(DegeneratedError):
+        with pytest.raises(DegeneratedError, match=r"degenerated"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     elif expected_exception == "NotConvergedError":
-        with pytest.raises(NotConvergedError):
+        with pytest.raises(NotConvergedError, match=r"converged"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     elif expected_exception == "TypeError":
         # These are expected - the code has a bug with catching cdd.Error
         # This test documents the issue
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match=r".+"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     elif expected_exception == "ValueError":

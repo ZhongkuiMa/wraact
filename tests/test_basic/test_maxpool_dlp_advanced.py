@@ -11,6 +11,8 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
+from wraact.acthull import ELUHull, MaxPoolHull, MaxPoolHullDLP, ReLUHull, SigmoidHull, TanhHull
+
 
 def maxpool_np(x):
     """NumPy implementation of MaxPool for testing."""
@@ -27,8 +29,6 @@ class TestMaxPoolDLPCoreAlgorithm:
         - _find_nontrivial_idxs() call
         - DLP construction with beta calculation
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         lb = np.array([-1.0, -0.8, -0.9])
         ub = np.array([1.0, 0.9, 0.8])
 
@@ -49,8 +49,6 @@ class TestMaxPoolDLPCoreAlgorithm:
         - DLP construction with odd/even index splitting
         - 2-piece DLP generation
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         # Create vertices with varied ranges
         v = np.array(
             [
@@ -75,8 +73,6 @@ class TestMaxPoolDLPCoreAlgorithm:
         - Beta calculation for constraint tightening
         - Numerical stability checks
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         # Create a case that exercises beta calculation
         lb = np.array([-2.0, -1.5, -1.0])
         ub = np.array([2.0, 1.5, 1.0])
@@ -94,8 +90,6 @@ class TestMaxPoolDLPCoreAlgorithm:
         Tests line 147 in acthull/_maxpool.py:
         - Identification of dimensions that can be maximum
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         # Create vertices where all dimensions are non-trivial
         v = np.array(
             [
@@ -117,8 +111,6 @@ class TestMaxPoolDLPCoreAlgorithm:
 
         Tests complete DLP algorithm execution with higher dimensions.
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         lb = np.array([-1.0, -1.0, -1.0, -1.0])
         ub = np.array([1.0, 1.0, 1.0, 1.0])
 
@@ -136,8 +128,6 @@ class TestMaxPoolDLPCoreAlgorithm:
 
         Tests multi-neuron constraint calculation via standard path.
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         # Use cal_hull to properly initialize and call cal_mn_constrs
         lb = np.array([-1.0, -1.0, -1.0])
         ub = np.array([1.0, 1.0, 1.0])
@@ -146,7 +136,8 @@ class TestMaxPoolDLPCoreAlgorithm:
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        assert constraints is not None
+        assert isinstance(constraints, np.ndarray)
+        assert constraints.shape[0] > 0
         assert np.all(np.isfinite(constraints))
 
     def test_maxpool_dlp_versus_standard_maxpool(self):
@@ -154,8 +145,6 @@ class TestMaxPoolDLPCoreAlgorithm:
 
         Tests that both implementations produce valid constraints.
         """
-        from wraact.acthull import MaxPoolHull, MaxPoolHullDLP
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -174,8 +163,6 @@ class TestMaxPoolDLPCoreAlgorithm:
 
         Tests algorithm behavior with symmetric input bounds.
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         lb = np.array([-2.0, -2.0, -2.0])
         ub = np.array([2.0, 2.0, 2.0])
 
@@ -195,8 +182,6 @@ class TestMaxPoolCacheAndDegenerate:
         - Verifies deterministic behavior (consistent with cache hits)
         - Multiple calls should produce identical results
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -214,8 +199,6 @@ class TestMaxPoolCacheAndDegenerate:
 
         Tests class variable behavior of _lower_constraints.
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         # Clear cache
         MaxPoolHullDLP._lower_constraints.clear()  # noqa: SLF001
 
@@ -237,8 +220,6 @@ class TestMaxPoolCacheAndDegenerate:
         Tests lines 215-223 in acthull/_maxpool.py:
         - _handle_case_of_one_vertex path
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         hull = MaxPoolHullDLP()
 
         # Very narrow bounds (near-constant)
@@ -260,8 +241,6 @@ class TestMaxPoolCacheAndDegenerate:
         Tests line 141 in acthull/_maxpool.py:
         - Early return for trivial multi-neuron cases
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         hull = MaxPoolHullDLP(if_cal_single_neuron_constrs=False, if_cal_multi_neuron_constrs=True)
 
         # Very large positive bounds (trivial case where max is always ub)
@@ -279,8 +258,6 @@ class TestMaxPoolCacheAndDegenerate:
 
         Tests edge case where multiple dimensions have same bounds.
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         # All dimensions have identical bounds
         lb = np.array([-1.0, -1.0, -1.0])
         ub = np.array([1.0, 1.0, 1.0])
@@ -295,8 +272,6 @@ class TestMaxPoolCacheAndDegenerate:
 
         Tests that constraints are generated correctly for different input dimensions.
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         # Test with 2D input
         lb2 = np.array([-1.0, -1.0])
         ub2 = np.array([1.0, 1.0])
@@ -332,8 +307,6 @@ class TestMaxPoolErrorHandling:
         - RuntimeError for _f method
         - RuntimeError for _df method
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         # Lines 278, 319, 323
         with pytest.raises(RuntimeError, match=r"should not be called"):
             MaxPoolHullDLP._cal_mn_constrs_with_one_y(0, None, None, None, 0.0, True)  # noqa: SLF001, FBT003
@@ -351,8 +324,6 @@ class TestMaxPoolErrorHandling:
         - RuntimeError for _construct_dlp
         - RuntimeError for _cal_mn_constrs_with_one_y
         """
-        from wraact.acthull import MaxPoolHull
-
         # Lines 428, 440
         with pytest.raises(RuntimeError, match=r"should not be called"):
             MaxPoolHull._construct_dlp(None, None)  # noqa: SLF001
@@ -366,8 +337,6 @@ class TestMaxPoolErrorHandling:
         Tests line 370 in acthull/_maxpool.py:
         - Detection and handling of trivial constraints
         """
-        from wraact.acthull import MaxPoolHull
-
         # Create a case that might trigger trivial handling
         lb = np.array([0.0, 0.0])
         ub = np.array([1.0, 1.0])
@@ -384,8 +353,6 @@ class TestMaxPoolErrorHandling:
 
         Tests that invalid inputs are caught.
         """
-        from wraact.acthull import MaxPoolHull
-
         hull = MaxPoolHull()
 
         lb = np.array([-1.0, -1.0])  # 2D
@@ -399,8 +366,6 @@ class TestMaxPoolErrorHandling:
 
         Tests input validation.
         """
-        from wraact.acthull import MaxPoolHull
-
         hull = MaxPoolHull()
 
         lb = np.array([1.0, 1.0])
@@ -425,8 +390,6 @@ class TestMaxPoolDegenerateEdgeCases:
         - Detection of single nontrivial piece
         - Simplified constraint generation
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         # Create bounds where only one dimension can be maximum
         # This forces all vertices to have only one dimension as the maximum
         # The key is to use very asymmetric bounds where one dimension clearly dominates
@@ -446,8 +409,6 @@ class TestMaxPoolDegenerateEdgeCases:
         Creates vertices where only dimension 0 is ever the maximum,
         forcing the algorithm to simplify to a single piece constraint.
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         # Extreme asymmetry: x0 always much larger than others
         # Bounds need to satisfy MIN_BOUNDS_RANGE_ACTHULL (0.05 minimum)
         lb = np.array([0.0, -0.2, -0.2])
@@ -466,8 +427,6 @@ class TestMaxPoolDegenerateEdgeCases:
         This creates a degenerate polytope where only one dimension varies,
         simplifying the MaxPool to essentially a linear function.
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         lb = np.array([-10.0, -1e-6, -1e-6, -1e-6])
         ub = np.array([10.0, 1e-6, 1e-6, 1e-6])
 
@@ -487,8 +446,6 @@ class TestMaxPoolDegenerateEdgeCases:
 
         Tests the algorithm with smallest non-trivial dimension.
         """
-        from wraact.acthull import MaxPoolHullDLP
-
         lb = np.array([-1.0, -0.5])
         ub = np.array([1.0, 0.5])
 
@@ -517,8 +474,6 @@ class TestActHullDoubleOrdersFeature:
 
         Tests that double orders can be enabled and produces valid constraints.
         """
-        from wraact.acthull import ReLUHull
-
         lb = np.array([-1.0, -1.0, -1.0])
         ub = np.array([1.0, 1.0, 1.0])
 
@@ -537,8 +492,6 @@ class TestActHullDoubleOrdersFeature:
 
         Verifies that reversing dimension order produces additional constraints.
         """
-        from wraact.acthull import ReLUHull
-
         lb = np.array([-1.5, -1.0, -0.5])
         ub = np.array([1.5, 1.0, 0.5])
 
@@ -561,8 +514,6 @@ class TestActHullDoubleOrdersFeature:
 
         Tests S-shape activation with double orders enhancement.
         """
-        from wraact.acthull import SigmoidHull
-
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -578,8 +529,6 @@ class TestActHullDoubleOrdersFeature:
 
         Verifies feature works with different S-shape activation.
         """
-        from wraact.acthull import TanhHull
-
         lb = np.array([-1.0, -1.0, -1.0])
         ub = np.array([1.0, 1.0, 1.0])
 
@@ -594,8 +543,6 @@ class TestActHullDoubleOrdersFeature:
 
         Ensures reversed constraint computation doesn't break soundness.
         """
-        from wraact.acthull import ELUHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 

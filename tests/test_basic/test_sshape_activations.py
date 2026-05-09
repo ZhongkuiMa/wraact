@@ -22,6 +22,9 @@ Testing Strategy:
 __docformat__ = "restructuredtext"
 
 import numpy as np
+import pytest
+
+from wraact.acthull import SigmoidHull, TanhHull
 
 
 def sigmoid_np(x):
@@ -53,8 +56,6 @@ class TestSigmoidHullBasic:
 
     def test_sigmoid_hull_returns_ndarray(self):
         """Verify cal_hull() returns an ndarray."""
-        from wraact.acthull import SigmoidHull
-
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -64,36 +65,25 @@ class TestSigmoidHullBasic:
         assert isinstance(result, np.ndarray)
         assert result.ndim == 2
 
-    def test_sigmoid_hull_output_shape_2d(self):
-        """Verify output shape for 2D input."""
-        from wraact.acthull import SigmoidHull
-
-        lb = np.array([-2.0, -2.0])
-        ub = np.array([2.0, 2.0])
-
-        hull = SigmoidHull()
-        result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        # 2D input: 2*2 + 1 = 5 columns
-        assert result.shape[1] == 5
-
-    def test_sigmoid_hull_output_shape_3d(self):
-        """Verify output shape for 3D input."""
-        from wraact.acthull import SigmoidHull
-
-        lb = np.array([-2.0, -2.0, -2.0])
-        ub = np.array([2.0, 2.0, 2.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(2, 5, id="2d"),
+            pytest.param(3, 7, id="3d"),
+        ],
+    )
+    def test_sigmoid_hull_output_shape(self, dim, expected_cols):
+        """Verify output shape for given input dimension."""
+        lb = -2.0 * np.ones(dim)
+        ub = 2.0 * np.ones(dim)
 
         hull = SigmoidHull()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        # 3D input: 2*3 + 1 = 7 columns
-        assert result.shape[1] == 7
+        assert result.shape[1] == expected_cols
 
     def test_sigmoid_hull_finite_values(self):
         """Verify output contains no inf or nan."""
-        from wraact.acthull import SigmoidHull
-
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -127,30 +117,17 @@ class TestSigmoidHullBasic:
 class TestSigmoidHullSingleNeuron:
     """Test SigmoidHull with single-neuron constraint mode."""
 
-    def test_sigmoid_single_neuron_2d(self):
-        """Test single-neuron constraints for 2D sigmoid."""
-        from wraact.acthull import SigmoidHull
-
-        lb = np.array([-2.0, -2.0])
-        ub = np.array([2.0, 2.0])
-
-        hull = SigmoidHull(
-            if_cal_single_neuron_constrs=True,
-            if_cal_multi_neuron_constrs=False,
-        )
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 5
-        assert np.all(np.isfinite(constraints))
-
-    def test_sigmoid_single_neuron_3d(self):
-        """Test single-neuron constraints for 3D sigmoid."""
-        from wraact.acthull import SigmoidHull
-
-        lb = np.array([-2.0, -2.0, -2.0])
-        ub = np.array([2.0, 2.0, 2.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(2, 5, id="2d"),
+            pytest.param(3, 7, id="3d"),
+        ],
+    )
+    def test_sigmoid_single_neuron(self, dim, expected_cols):
+        """Test single-neuron constraints for sigmoid with given dimension."""
+        lb = -2.0 * np.ones(dim)
+        ub = 2.0 * np.ones(dim)
 
         hull = SigmoidHull(
             if_cal_single_neuron_constrs=True,
@@ -160,13 +137,11 @@ class TestSigmoidHullSingleNeuron:
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 7
+        assert constraints.shape[1] == expected_cols
         assert np.all(np.isfinite(constraints))
 
     def test_sigmoid_both_modes_enabled(self):
         """Test sigmoid with both constraint modes enabled."""
-        from wraact.acthull import SigmoidHull
-
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -183,8 +158,6 @@ class TestSigmoidHullSingleNeuron:
 
     def test_sigmoid_deterministic(self):
         """Verify sigmoid constraints are deterministic."""
-        from wraact.acthull import SigmoidHull
-
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -204,8 +177,6 @@ class TestTanhHullBasic:
 
     def test_tanh_hull_returns_ndarray(self):
         """Verify cal_hull() returns an ndarray."""
-        from wraact.acthull import TanhHull
-
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -215,36 +186,25 @@ class TestTanhHullBasic:
         assert isinstance(result, np.ndarray)
         assert result.ndim == 2
 
-    def test_tanh_hull_output_shape_2d(self):
-        """Verify output shape for 2D input."""
-        from wraact.acthull import TanhHull
-
-        lb = np.array([-2.0, -2.0])
-        ub = np.array([2.0, 2.0])
-
-        hull = TanhHull()
-        result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        # 2D input: 2*2 + 1 = 5 columns
-        assert result.shape[1] == 5
-
-    def test_tanh_hull_output_shape_3d(self):
-        """Verify output shape for 3D input."""
-        from wraact.acthull import TanhHull
-
-        lb = np.array([-2.0, -2.0, -2.0])
-        ub = np.array([2.0, 2.0, 2.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(2, 5, id="2d"),
+            pytest.param(3, 7, id="3d"),
+        ],
+    )
+    def test_tanh_hull_output_shape(self, dim, expected_cols):
+        """Verify output shape for given input dimension."""
+        lb = -2.0 * np.ones(dim)
+        ub = 2.0 * np.ones(dim)
 
         hull = TanhHull()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        # 3D input: 2*3 + 1 = 7 columns
-        assert result.shape[1] == 7
+        assert result.shape[1] == expected_cols
 
     def test_tanh_hull_finite_values(self):
         """Verify output contains no inf or nan."""
-        from wraact.acthull import TanhHull
-
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -277,30 +237,17 @@ class TestTanhHullBasic:
 class TestTanhHullSingleNeuron:
     """Test TanhHull with single-neuron constraint mode."""
 
-    def test_tanh_single_neuron_2d(self):
-        """Test single-neuron constraints for 2D tanh."""
-        from wraact.acthull import TanhHull
-
-        lb = np.array([-2.0, -2.0])
-        ub = np.array([2.0, 2.0])
-
-        hull = TanhHull(
-            if_cal_single_neuron_constrs=True,
-            if_cal_multi_neuron_constrs=False,
-        )
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 5
-        assert np.all(np.isfinite(constraints))
-
-    def test_tanh_single_neuron_3d(self):
-        """Test single-neuron constraints for 3D tanh."""
-        from wraact.acthull import TanhHull
-
-        lb = np.array([-2.0, -2.0, -2.0])
-        ub = np.array([2.0, 2.0, 2.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(2, 5, id="2d"),
+            pytest.param(3, 7, id="3d"),
+        ],
+    )
+    def test_tanh_single_neuron(self, dim, expected_cols):
+        """Test single-neuron constraints for tanh with given dimension."""
+        lb = -2.0 * np.ones(dim)
+        ub = 2.0 * np.ones(dim)
 
         hull = TanhHull(
             if_cal_single_neuron_constrs=True,
@@ -310,13 +257,11 @@ class TestTanhHullSingleNeuron:
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 7
+        assert constraints.shape[1] == expected_cols
         assert np.all(np.isfinite(constraints))
 
     def test_tanh_both_modes_enabled(self):
         """Test tanh with both constraint modes enabled."""
-        from wraact.acthull import TanhHull
-
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -333,8 +278,6 @@ class TestTanhHullSingleNeuron:
 
     def test_tanh_deterministic(self):
         """Verify tanh constraints are deterministic."""
-        from wraact.acthull import TanhHull
-
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -352,78 +295,56 @@ class TestTanhHullSingleNeuron:
 class TestSShapeEdgeCases:
     """Test S-shaped activations with edge cases."""
 
-    def test_sigmoid_asymmetric_bounds(self):
-        """Test sigmoid with asymmetric bounds."""
-        from wraact.acthull import SigmoidHull
-
-        lb = np.array([-5.0, -1.0])
-        ub = np.array([0.5, 3.0])
-
+    @pytest.mark.parametrize(
+        ("lb", "ub", "scenario"),
+        [
+            pytest.param(
+                np.array([-5.0, -1.0]), np.array([0.5, 3.0]), "asymmetric", id="sigmoid_asymmetric"
+            ),
+            pytest.param(
+                np.array([-100.0, -100.0]),
+                np.array([100.0, 100.0]),
+                "large_range",
+                id="sigmoid_large_range",
+            ),
+            pytest.param(
+                np.array([-0.03, -0.03]),
+                np.array([0.03, 0.03]),
+                "small_range",
+                id="sigmoid_small_range",
+            ),
+        ],
+    )
+    def test_sigmoid_bound_configurations(self, lb, ub, scenario):
+        """Test sigmoid with various bound configurations."""
         hull = SigmoidHull()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_sigmoid_large_range(self):
-        """Test sigmoid with large input range."""
-        from wraact.acthull import SigmoidHull
-
-        lb = np.array([-100.0, -100.0])
-        ub = np.array([100.0, 100.0])
-
-        hull = SigmoidHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
-    def test_sigmoid_small_range(self):
-        """Test sigmoid with small input range."""
-        from wraact.acthull import SigmoidHull
-
-        lb = np.array([-0.03, -0.03])
-        ub = np.array([0.03, 0.03])
-
-        hull = SigmoidHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
-    def test_tanh_asymmetric_bounds(self):
-        """Test tanh with asymmetric bounds."""
-        from wraact.acthull import TanhHull
-
-        lb = np.array([-5.0, -1.0])
-        ub = np.array([0.5, 3.0])
-
-        hull = TanhHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
-    def test_tanh_large_range(self):
-        """Test tanh with large input range."""
-        from wraact.acthull import TanhHull
-
-        lb = np.array([-100.0, -100.0])
-        ub = np.array([100.0, 100.0])
-
-        hull = TanhHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert np.all(np.isfinite(constraints))
-
-    def test_tanh_small_range(self):
-        """Test tanh with small input range."""
-        from wraact.acthull import TanhHull
-
-        lb = np.array([-0.03, -0.03])
-        ub = np.array([0.03, 0.03])
-
+    @pytest.mark.parametrize(
+        ("lb", "ub", "scenario"),
+        [
+            pytest.param(
+                np.array([-5.0, -1.0]), np.array([0.5, 3.0]), "asymmetric", id="tanh_asymmetric"
+            ),
+            pytest.param(
+                np.array([-100.0, -100.0]),
+                np.array([100.0, 100.0]),
+                "large_range",
+                id="tanh_large_range",
+            ),
+            pytest.param(
+                np.array([-0.03, -0.03]),
+                np.array([0.03, 0.03]),
+                "small_range",
+                id="tanh_small_range",
+            ),
+        ],
+    )
+    def test_tanh_bound_configurations(self, lb, ub, scenario):
+        """Test tanh with various bound configurations."""
         hull = TanhHull()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
@@ -434,117 +355,81 @@ class TestSShapeEdgeCases:
 class TestSShapeMultiDimensional:
     """Test S-shaped activations with various dimensions."""
 
-    def test_sigmoid_1d(self):
-        """Test sigmoid with 1D input."""
-        from wraact.acthull import SigmoidHull
-
-        lb = np.array([-2.0])
-        ub = np.array([2.0])
-
-        hull = SigmoidHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert constraints.shape[1] == 3  # 2*1 + 1
-        assert np.all(np.isfinite(constraints))
-
-    def test_sigmoid_4d(self):
-        """Test sigmoid with 4D input."""
-        from wraact.acthull import SigmoidHull
-
-        lb = np.array([-2.0, -2.0, -2.0, -2.0])
-        ub = np.array([2.0, 2.0, 2.0, 2.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(1, 3, id="1d"),
+            pytest.param(4, 9, id="4d"),
+        ],
+    )
+    def test_sigmoid_various_dimensions(self, dim, expected_cols):
+        """Test sigmoid with various input dimensions."""
+        lb = -2.0 * np.ones(dim)
+        ub = 2.0 * np.ones(dim)
 
         hull = SigmoidHull()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        assert constraints.shape[1] == 9  # 2*4 + 1
+        assert constraints.shape[1] == expected_cols
         assert np.all(np.isfinite(constraints))
 
-    def test_tanh_1d(self):
-        """Test tanh with 1D input."""
-        from wraact.acthull import TanhHull
-
-        lb = np.array([-2.0])
-        ub = np.array([2.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(1, 3, id="1d"),
+            pytest.param(4, 9, id="4d"),
+        ],
+    )
+    def test_tanh_various_dimensions(self, dim, expected_cols):
+        """Test tanh with various input dimensions."""
+        lb = -2.0 * np.ones(dim)
+        ub = 2.0 * np.ones(dim)
 
         hull = TanhHull()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        assert constraints.shape[1] == 3  # 2*1 + 1
-        assert np.all(np.isfinite(constraints))
-
-    def test_tanh_4d(self):
-        """Test tanh with 4D input."""
-        from wraact.acthull import TanhHull
-
-        lb = np.array([-2.0, -2.0, -2.0, -2.0])
-        ub = np.array([2.0, 2.0, 2.0, 2.0])
-
-        hull = TanhHull()
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert constraints.shape[1] == 9  # 2*4 + 1
+        assert constraints.shape[1] == expected_cols
         assert np.all(np.isfinite(constraints))
 
 
 class TestSShapeConstraintModes:
     """Test constraint mode combinations for S-shaped activations."""
 
-    def test_sigmoid_single_only(self):
-        """Test sigmoid with single-neuron mode only."""
-        from wraact.acthull import SigmoidHull
-
+    @pytest.mark.parametrize(
+        ("single_neuron", "multi_neuron", "mode"),
+        [
+            pytest.param(True, False, "single_only", id="sigmoid_single_only"),
+            pytest.param(False, True, "multi_only", id="sigmoid_multi_only"),
+        ],
+    )
+    def test_sigmoid_constraint_modes(self, single_neuron, multi_neuron, mode):
+        """Test sigmoid with different constraint mode combinations."""
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
         hull = SigmoidHull(
-            if_cal_single_neuron_constrs=True,
-            if_cal_multi_neuron_constrs=False,
+            if_cal_single_neuron_constrs=single_neuron,
+            if_cal_multi_neuron_constrs=multi_neuron,
         )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         assert constraints.shape[0] > 0
 
-    def test_sigmoid_multi_only(self):
-        """Test sigmoid with multi-neuron mode only."""
-        from wraact.acthull import SigmoidHull
-
-        lb = np.array([-2.0, -2.0])
-        ub = np.array([2.0, 2.0])
-
-        hull = SigmoidHull(
-            if_cal_single_neuron_constrs=False,
-            if_cal_multi_neuron_constrs=True,
-        )
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-        assert constraints.shape[0] > 0
-
-    def test_tanh_single_only(self):
-        """Test tanh with single-neuron mode only."""
-        from wraact.acthull import TanhHull
-
+    @pytest.mark.parametrize(
+        ("single_neuron", "multi_neuron", "mode"),
+        [
+            pytest.param(True, False, "single_only", id="tanh_single_only"),
+            pytest.param(False, True, "multi_only", id="tanh_multi_only"),
+        ],
+    )
+    def test_tanh_constraint_modes(self, single_neuron, multi_neuron, mode):
+        """Test tanh with different constraint mode combinations."""
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
         hull = TanhHull(
-            if_cal_single_neuron_constrs=True,
-            if_cal_multi_neuron_constrs=False,
-        )
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-        assert constraints.shape[0] > 0
-
-    def test_tanh_multi_only(self):
-        """Test tanh with multi-neuron mode only."""
-        from wraact.acthull import TanhHull
-
-        lb = np.array([-2.0, -2.0])
-        ub = np.array([2.0, 2.0])
-
-        hull = TanhHull(
-            if_cal_single_neuron_constrs=False,
-            if_cal_multi_neuron_constrs=True,
+            if_cal_single_neuron_constrs=single_neuron,
+            if_cal_multi_neuron_constrs=multi_neuron,
         )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)

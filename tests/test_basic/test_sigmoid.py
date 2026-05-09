@@ -94,11 +94,9 @@ class TestSigmoidSoundness(BaseSoundnessTest):
 class TestSigmoidBasicFunctionality:
     """Basic functionality tests for SigmoidHull."""
 
-    def test_cal_hull_returns_ndarray(self):
+    def test_cal_hull_returns_ndarray(self, sigmoid_hull_class):
         """Verify cal_hull() returns an ndarray."""
-        from wraact.acthull import SigmoidHull
-
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         # Sigmoid is symmetric around 0, use symmetric bounds
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
@@ -108,37 +106,26 @@ class TestSigmoidBasicFunctionality:
         assert isinstance(result, np.ndarray)
         assert result.ndim == 2  # 2D array
 
-    def test_cal_hull_output_shape_2d(self):
-        """Verify output shape follows formula: 2*dim + 1 = 5 for 2D."""
-        from wraact.acthull import SigmoidHull
-
-        hull = SigmoidHull()
-        lb = np.array([-2.0, -2.0])
-        ub = np.array([2.0, 2.0])
-
-        result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        # For 2D input: 2*2 + 1 = 5 columns
-        assert result.shape[1] == 5
-
-    def test_cal_hull_output_shape_3d(self):
-        """Verify output shape follows formula: 2*dim + 1 = 7 for 3D."""
-        from wraact.acthull import SigmoidHull
-
-        hull = SigmoidHull()
-        lb = np.array([-2.0, -2.0, -2.0])
-        ub = np.array([2.0, 2.0, 2.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(2, 5, id="2d"),
+            pytest.param(3, 7, id="3d"),
+        ],
+    )
+    def test_cal_hull_output_shape(self, sigmoid_hull_class, dim, expected_cols):
+        """Verify output shape follows formula: 2*dim + 1."""
+        hull = sigmoid_hull_class()
+        lb = -2.0 * np.ones(dim)
+        ub = 2.0 * np.ones(dim)
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        # For 3D input: 2*3 + 1 = 7 columns
-        assert result.shape[1] == 7
+        assert result.shape[1] == expected_cols
 
-    def test_cal_hull_output_finite(self):
+    def test_cal_hull_output_finite(self, sigmoid_hull_class):
         """Verify output contains no inf or nan values."""
-        from wraact.acthull import SigmoidHull
-
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 

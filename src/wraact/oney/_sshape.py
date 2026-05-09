@@ -1,3 +1,5 @@
+"""Base class for single-output S-shaped activation hull computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["SShapeHullWithOneY"]
 
@@ -26,6 +28,15 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
         ub: ndarray | None = None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, d+1)
+        """Compute single-output S-shaped hull constraints.
+
+        :param c: Input constraints. Shape: (_, d).
+        :param v: Vertices. Shape: (_, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :param dtype_cdd: Data type for pycddlib. Default: "float".
+        :return: Tuple of (constraints, dtype_cdd).
+        """
         c = np.array(c, dtype=np.float64)
 
         c_mn = self.cal_mn_constrs(c, v, lb, ub, self._n_output_constrs)
@@ -40,6 +51,19 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
         ub: ndarray | None = None,  # (d-1,)
         n_output_constrs: int = 1,
     ) -> ndarray:  # (_, d+1)
+        """Compute multi-neuron constraints for single-output S-shaped activation.
+
+        Constructs lower and upper DLP bounds, then selects the top-k
+        constraints from each side.
+
+        :param c: Input constraints. Shape: (_, d).
+        :param v: Vertices. Shape: (_, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :param n_output_constrs: Number of output constraints per side.
+        :return: Combined upper and lower multi-neuron constraints.
+        :raises ValueError: If bounds are not provided.
+        """
         if lb is None and ub is None:
             raise ValueError(
                 "The lower and upper bounds should be provided for the S-shape activation function."

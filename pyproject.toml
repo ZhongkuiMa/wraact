@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wraact"
-version = "2026.2.0"
+version = "2026.5.0"
 description = "Precise Activation Function Over-Approximation for Neural Network Verification"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -61,37 +61,39 @@ exclude = [
 [tool.ruff.lint]
 # Comprehensive rule set (matches propdag standard)
 select = [
-    "E",     # pycodestyle errors
-    "W",     # pycodestyle warnings
-    "F",     # pyflakes
-    "I",     # isort
-    "N",     # pep8-naming
-    "UP",    # pyupgrade
-    "B",     # flake8-bugbear
-    "C4",    # flake8-comprehensions
-    "PIE",   # flake8-pie
-    "RET",   # flake8-return
-    "SIM",   # flake8-simplify
-    "TID",   # flake8-tidy-imports
     "A",     # flake8-builtins
+    "B",     # flake8-bugbear
     "BLE",   # flake8-blind-except
+    "C4",    # flake8-comprehensions
     "C90",   # mccabe
-    "FBT",   # flake8-boolean-trap
-    "ICN",   # flake8-import-conventions
-    "ISC",   # flake8-implicit-str-concat
-    "PGH",   # pygrep-hooks
-    "Q",     # flake8-quotes
-    "RSE",   # flake8-raise
-    "SLF",   # flake8-self
-    "TD",    # flake8-todos
     "D",     # pydocstyle
-    "PERF",  # perflint
+    "DOC",   # pydoclint
+    "E",     # pycodestyle errors
+    "F",     # pyflakes
+    "FBT",   # flake8-boolean-trap
     "FURB",  # refurb
-    "PT",    # flake8-pytest-style
-    "T10",   # flake8-debugger
-    "PTH",   # flake8-use-pathlib
+    "I",     # isort
+    "ICN",   # flake8-import-conventions
     "INP",   # flake8-no-pep420
+    "ISC",   # flake8-implicit-str-concat
+    "N",     # pep8-naming
+    "NPY",   # numpy-specific rules
+    "PERF",  # perflint
+    "PGH",   # pygrep-hooks
+    "PIE",   # flake8-pie
+    "PT",    # flake8-pytest-style
+    "PTH",   # flake8-use-pathlib
+    "Q",     # flake8-quotes
+    "RET",   # flake8-return
+    "RSE",   # flake8-raise
     "RUF",   # Ruff-specific rules (includes non-ASCII detection)
+    "SIM",   # flake8-simplify
+    "SLF",   # flake8-self
+    "T10",   # flake8-debugger
+    "TD",    # flake8-todos
+    "TID",   # flake8-tidy-imports
+    "UP",    # pyupgrade
+    "W",     # pycodestyle warnings
 ]
 
 ignore = [
@@ -158,6 +160,7 @@ source = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = ["test_performance"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -168,9 +171,6 @@ addopts = [
     "--tb=short",
     "-ra",
     "--strict-markers",
-]
-markers = [
-    "benchmark: Slow benchmark tests for manual runs",
 ]
 
 [project.urls]

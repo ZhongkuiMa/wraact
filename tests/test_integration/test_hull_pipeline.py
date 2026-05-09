@@ -16,15 +16,15 @@ __docformat__ = "restructuredtext"
 import numpy as np
 
 from wraact._functions import relu_np, sigmoid_np
-from wraact.acthull import MaxPoolHull, ReLUHull, SigmoidHull
+from wraact.acthull import MaxPoolHull
 
 
 class TestReLUPipeline:
     """Test complete ReLU hull computation pipeline."""
 
-    def test_relu_full_pipeline_2d(self):
+    def test_relu_full_pipeline_2d(self, relu_hull_class):
         """Test full cal_hull() pipeline for 2D ReLU."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -42,9 +42,9 @@ class TestReLUPipeline:
         assert np.all(np.isfinite(constraints)), "Constraints contain inf/nan"
         assert constraints.shape[0] > 0, "No constraints generated"
 
-    def test_relu_pipeline_deterministic(self):
+    def test_relu_pipeline_deterministic(self, relu_hull_class):
         """Verify ReLU pipeline is deterministic."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -55,9 +55,9 @@ class TestReLUPipeline:
         for i in range(1, len(results)):
             np.testing.assert_array_equal(results[0], results[i])
 
-    def test_sigmoid_pipeline_3d(self):
+    def test_sigmoid_pipeline_3d(self, sigmoid_hull_class):
         """Test complete Sigmoid hull computation pipeline for 3D."""
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.array([-2.0, -2.0, -2.0])
         ub = np.array([2.0, 2.0, 2.0])
 
@@ -79,10 +79,10 @@ class TestReLUPipeline:
 class TestMultiLayerComposition:
     """Test composing multiple activation layers."""
 
-    def test_relu_then_sigmoid_composition(self):
+    def test_relu_then_sigmoid_composition(self, relu_hull_class, sigmoid_hull_class):
         """Test composing ReLU output as Sigmoid input."""
         # Layer 1: ReLU
-        relu_hull = ReLUHull()
+        relu_hull = relu_hull_class()
         lb_layer1 = np.array([-1.0, -1.0])
         ub_layer1 = np.array([1.0, 1.0])
         relu_constraints = relu_hull.cal_hull(
@@ -95,7 +95,7 @@ class TestMultiLayerComposition:
         ub_layer2 = np.array([1.0, 1.0])
 
         # Layer 2: Sigmoid
-        sigmoid_hull = SigmoidHull()
+        sigmoid_hull = sigmoid_hull_class()
         sigmoid_constraints = sigmoid_hull.cal_hull(
             input_lower_bounds=lb_layer2, input_upper_bounds=ub_layer2
         )
@@ -106,9 +106,9 @@ class TestMultiLayerComposition:
         assert np.all(np.isfinite(relu_constraints)), "ReLU constraints contain inf/nan"
         assert np.all(np.isfinite(sigmoid_constraints)), "Sigmoid constraints contain inf/nan"
 
-    def test_relu_multi_layer_stack(self):
+    def test_relu_multi_layer_stack(self, relu_hull_class):
         """Test stacking multiple ReLU layers."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
 
         # First layer
         lb1 = np.array([-1.0, -1.0])
@@ -135,9 +135,9 @@ class TestMultiLayerComposition:
 class TestConstraintVectorConsistency:
     """Test consistency of constraint vectors across formats."""
 
-    def test_constraint_format_consistency(self):
+    def test_constraint_format_consistency(self, relu_hull_class):
         """Verify constraint vector format is consistent."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -154,9 +154,9 @@ class TestConstraintVectorConsistency:
         bias_terms = result[:, 0]
         assert np.all(np.abs(bias_terms) < 1e6), "Bias terms too large"
 
-    def test_multioutput_constraints(self):
+    def test_multioutput_constraints(self, relu_hull_class):
         """Test that constraints properly account for multiple outputs."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-1.0, -1.0, -1.0])
         ub = np.array([1.0, 1.0, 1.0])
 
@@ -173,9 +173,9 @@ class TestConstraintVectorConsistency:
 class TestSoundnessAcrossPipeline:
     """Test that soundness is maintained through the pipeline."""
 
-    def test_relu_soundness_pipeline(self):
+    def test_relu_soundness_pipeline(self, relu_hull_class):
         """Verify soundness throughout ReLU pipeline."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -194,9 +194,9 @@ class TestSoundnessAcrossPipeline:
 
             assert np.all(constraint_values >= -1e-8), f"Soundness violated at {x}"
 
-    def test_sigmoid_soundness_pipeline(self):
+    def test_sigmoid_soundness_pipeline(self, sigmoid_hull_class):
         """Verify soundness throughout Sigmoid pipeline."""
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -219,9 +219,9 @@ class TestSoundnessAcrossPipeline:
 class TestBoundaryConditions:
     """Test behavior at boundary conditions during pipeline."""
 
-    def test_pipeline_at_zero_bounds(self):
+    def test_pipeline_at_zero_bounds(self, relu_hull_class):
         """Test pipeline with bounds at origin."""
-        hull = ReLUHull()
+        hull = relu_hull_class()
         lb = np.array([0.0, 0.0])
         ub = np.array([0.0, 0.0])
 
@@ -231,9 +231,9 @@ class TestBoundaryConditions:
         assert result.shape[0] > 0, "No constraints at origin"
         assert np.all(np.isfinite(result)), "Constraints at origin contain inf/nan"
 
-    def test_pipeline_at_extreme_point(self):
+    def test_pipeline_at_extreme_point(self, sigmoid_hull_class):
         """Test pipeline at extreme input point."""
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         lb = np.array([-100.0, -100.0])
         ub = np.array([-100.0, -100.0])
 

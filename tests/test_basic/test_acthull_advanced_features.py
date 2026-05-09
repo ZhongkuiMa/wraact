@@ -12,6 +12,9 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
+from wraact import _constants
+from wraact.acthull._act import ActHull
+
 
 class TestActHullDoubleOrders:
     """Test ActHull with double orders mode for enhanced precision."""
@@ -21,8 +24,6 @@ class TestActHullDoubleOrders:
 
         Tests the _get_reversed_order static method which supports double orders.
         """
-        from wraact.acthull._act import ActHull
-
         # Test for various dimensions
         for dim in [2, 3, 4, 5]:
             order = ActHull._get_reversed_order(dim)  # noqa: SLF001
@@ -41,8 +42,6 @@ class TestActHullDoubleOrders:
         - Lazy initialization of reversed order cache
         - Cache retrieval on subsequent calls
         """
-        from wraact.acthull._act import ActHull
-
         # Clear cache
         ActHull._reversed_orders.clear()  # noqa: SLF001
 
@@ -62,8 +61,6 @@ class TestActHullDoubleOrders:
 
         Verifies that the reversed order produces indices in reverse fashion.
         """
-        from wraact.acthull._act import ActHull
-
         # Clear cache to ensure fresh computation
         ActHull._reversed_orders.clear()  # noqa: SLF001
 
@@ -84,8 +81,6 @@ class TestActHullDoubleOrders:
 
         Ensures the reversed order method is robust across different input dimensions.
         """
-        from wraact.acthull._act import ActHull
-
         # Clear cache
         ActHull._reversed_orders.clear()  # noqa: SLF001
 
@@ -109,8 +104,6 @@ class TestActHullDoubleOrders:
 
         Verifies that the cache is properly maintained across repeated calls.
         """
-        from wraact.acthull._act import ActHull
-
         # Clear cache
         ActHull._reversed_orders.clear()  # noqa: SLF001
 
@@ -143,8 +136,6 @@ class TestActHullDoubleOrders:
 
         Tests reproducibility of reversed order calculation across repeated calls.
         """
-        from wraact.acthull._act import ActHull
-
         # Clear cache to start fresh
         ActHull._reversed_orders.clear()  # noqa: SLF001
 
@@ -160,16 +151,13 @@ class TestActHullDoubleOrders:
 class TestActHullDEBUGMode:
     """Test ActHull with DEBUG mode enabled."""
 
-    def test_debug_mode_vertex_calculation(self):
+    def test_debug_mode_vertex_calculation(self, relu_hull_class):
         """Test ActHull with DEBUG=True for vertex calculation.
 
         Tests lines 339-341 in acthull/_act.py:
         - Direct vertex calculation without exception handling
         - Errors propagate immediately when DEBUG=True
         """
-        from wraact import _constants
-        from wraact.acthull import ReLUHull
-
         # Save original DEBUG state
         original_debug = _constants.DEBUG
 
@@ -179,7 +167,7 @@ class TestActHullDEBUGMode:
             lb = np.array([-1.0, -1.0])
             ub = np.array([1.0, 1.0])
 
-            hull = ReLUHull()
+            hull = relu_hull_class()
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
             # Should execute lines 339-341 (DEBUG vertex path)
@@ -188,15 +176,12 @@ class TestActHullDEBUGMode:
         finally:
             _constants.DEBUG = original_debug
 
-    def test_debug_mode_constraint_calculation(self):
+    def test_debug_mode_constraint_calculation(self, relu_hull_class):
         """Test ActHull with DEBUG=True for constraint calculation.
 
         Tests lines 378-379 in acthull/_act.py:
         - Direct constraint calculation without exception handling
         """
-        from wraact import _constants
-        from wraact.acthull import ReLUHull
-
         original_debug = _constants.DEBUG
 
         try:
@@ -205,7 +190,7 @@ class TestActHullDEBUGMode:
             lb = np.array([-1.0, -1.0])
             ub = np.array([1.0, 1.0])
 
-            hull = ReLUHull(if_cal_multi_neuron_constrs=True)
+            hull = relu_hull_class(if_cal_multi_neuron_constrs=True)
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
             # Should execute lines 378-379 (DEBUG constraint path)
@@ -214,11 +199,8 @@ class TestActHullDEBUGMode:
         finally:
             _constants.DEBUG = original_debug
 
-    def test_debug_mode_multiple_activations(self):
+    def test_debug_mode_multiple_activations(self, elu_hull_class, leakyrelu_hull_class):
         """Test DEBUG mode with different activation functions."""
-        from wraact import _constants
-        from wraact.acthull import ELUHull, LeakyReLUHull
-
         original_debug = _constants.DEBUG
 
         try:
@@ -228,12 +210,12 @@ class TestActHullDEBUGMode:
             ub = np.array([1.0, 1.0])
 
             # Test ELU
-            hull_elu = ELUHull()
+            hull_elu = elu_hull_class()
             c_elu = hull_elu.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             assert np.all(np.isfinite(c_elu))
 
             # Test LeakyReLU
-            hull_lrelu = LeakyReLUHull()
+            hull_lrelu = leakyrelu_hull_class()
             c_lrelu = hull_lrelu.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             assert np.all(np.isfinite(c_lrelu))
 
@@ -245,8 +227,6 @@ class TestActHullDEBUGMode:
 
         Tests proper state management of DEBUG flag.
         """
-        from wraact import _constants
-
         original_debug = _constants.DEBUG
 
         try:
@@ -267,75 +247,65 @@ class TestActHullDEBUGMode:
 class TestActHullInputValidation:
     """Test ActHull input validation and error handling."""
 
-    def test_missing_bounds_error(self):
+    def test_missing_bounds_error(self, relu_hull_class):
         """Test error when bounds are not provided.
 
         Tests basic input validation for None bounds.
         """
-        from wraact.acthull import ReLUHull
-
-        hull = ReLUHull()
+        hull = relu_hull_class()
 
         # Both bounds None
         with pytest.raises((ValueError, TypeError)):
             hull.cal_hull(input_lower_bounds=None, input_upper_bounds=None)
 
-    def test_dimension_mismatch_error(self):
+    def test_dimension_mismatch_error(self, relu_hull_class):
         """Test error when c, lb, ub have different dimensions.
 
         Tests line 489 in acthull/_act.py:
         - Dimension consistency check
         """
-        from wraact.acthull import ReLUHull
-
         c_3d = np.array([[0.0, 1.0, 0.0, 0.0]])  # 3D
         lb_2d = np.array([-1.0, -1.0])  # 2D
         ub_4d = np.array([1.0, 1.0, 1.0, 1.0])  # 4D
 
-        hull = ReLUHull()
+        hull = relu_hull_class()
 
         # Should trigger line 489
         with pytest.raises((ValueError, RuntimeError)):
             hull.cal_hull(input_constrs=c_3d, input_lower_bounds=lb_2d, input_upper_bounds=ub_4d)
 
-    def test_lb_ub_dimension_mismatch(self):
+    def test_lb_ub_dimension_mismatch(self, relu_hull_class):
         """Test error when lb and ub have different dimensions."""
-        from wraact.acthull import ReLUHull
-
         lb = np.array([-1.0, -1.0])  # 2D
         ub = np.array([1.0, 1.0, 1.0])  # 3D
 
-        hull = ReLUHull()
+        hull = relu_hull_class()
 
         with pytest.raises((ValueError, RuntimeError)):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-    def test_reversed_bounds_error(self):
+    def test_reversed_bounds_error(self, relu_hull_class):
         """Test error when lb > ub.
 
         Tests bound validation.
         """
-        from wraact.acthull import ReLUHull
-
         lb = np.array([1.0, 1.0])
         ub = np.array([-1.0, -1.0])  # Reversed!
 
-        hull = ReLUHull()
+        hull = relu_hull_class()
 
         with pytest.raises((ValueError, RuntimeError)):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-    def test_missing_constraints_multi_neuron_error(self):
+    def test_missing_constraints_multi_neuron_error(self, relu_hull_class):
         """Test error when multi-neuron mode requires constraints.
 
         Tests that multi-neuron constraint mode needs valid configuration.
         """
-        from wraact.acthull import ReLUHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = ReLUHull(if_cal_single_neuron_constrs=False, if_cal_multi_neuron_constrs=True)
+        hull = relu_hull_class(if_cal_single_neuron_constrs=False, if_cal_multi_neuron_constrs=True)
 
         # With both constraint modes, should generate valid result or raise
         try:
@@ -355,28 +325,24 @@ class TestActHullExceptionRecovery:
     Note: Some paths may be difficult to reach naturally.
     """
 
-    def test_normal_computation_path(self):
+    def test_normal_computation_path(self, relu_hull_class):
         """Test normal computation without triggering exceptions.
 
         Baseline test to ensure normal path works.
         """
-        from wraact.acthull import ReLUHull
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        hull = ReLUHull()
+        hull = relu_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert np.all(np.isfinite(constraints))
 
-    def test_various_polytope_configurations(self):
+    def test_various_polytope_configurations(self, relu_hull_class):
         """Test with various polytope configurations.
 
         Tests robustness with different bound configurations (avoid MIN_BOUNDS_RANGE).
         """
-        from wraact.acthull import ReLUHull
-
         test_cases = [
             (np.array([-0.5, -0.5]), np.array([0.5, 0.5])),  # Moderate
             (np.array([-10.0, -10.0]), np.array([10.0, 10.0])),  # Very large
@@ -384,20 +350,18 @@ class TestActHullExceptionRecovery:
             (np.array([-100.0, -1.0]), np.array([1.0, 100.0])),  # Asymmetric
         ]
 
-        hull = ReLUHull()
+        hull = relu_hull_class()
 
         for lb, ub in test_cases:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             assert np.all(np.isfinite(constraints))
 
-    def test_multidimensional_robustness(self):
+    def test_multidimensional_robustness(self, elu_hull_class):
         """Test exception recovery robustness with multiple dimensions.
 
         Tests that exception handling works across dimensions.
         """
-        from wraact.acthull import ELUHull
-
-        hull = ELUHull()
+        hull = elu_hull_class()
 
         for d in [2, 3, 4, 5]:
             lb = -np.ones(d)
@@ -406,14 +370,12 @@ class TestActHullExceptionRecovery:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             assert np.all(np.isfinite(constraints))
 
-    def test_exception_recovery_with_edge_bounds(self):
+    def test_exception_recovery_with_edge_bounds(self, sigmoid_hull_class):
         """Test exception recovery with edge case bounds.
 
         Tests behavior near boundaries of numerical stability.
         """
-        from wraact.acthull import SigmoidHull
-
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
 
         # Very large bounds (might trigger numerical issues)
         lb = -np.array([1e3, 1e3])
@@ -422,30 +384,29 @@ class TestActHullExceptionRecovery:
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         assert np.all(np.isfinite(constraints))
 
-    def test_all_activation_types_stability(self):
+    def test_all_activation_types_stability(
+        self,
+        relu_hull_class,
+        leakyrelu_hull_class,
+        elu_hull_class,
+        sigmoid_hull_class,
+        tanh_hull_class,
+        maxpool_hull_class,
+    ):
         """Test exception recovery stability across all activation types.
 
         Tests robustness across different activation functions.
         """
-        from wraact.acthull import (
-            ELUHull,
-            LeakyReLUHull,
-            MaxPoolHull,
-            ReLUHull,
-            SigmoidHull,
-            TanhHull,
-        )
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
         activations = [
-            ReLUHull,
-            LeakyReLUHull,
-            ELUHull,
-            SigmoidHull,
-            TanhHull,
-            MaxPoolHull,
+            relu_hull_class,
+            leakyrelu_hull_class,
+            elu_hull_class,
+            sigmoid_hull_class,
+            tanh_hull_class,
+            maxpool_hull_class,
         ]
 
         for hull_class in activations:

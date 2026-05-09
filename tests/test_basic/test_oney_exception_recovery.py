@@ -9,9 +9,16 @@ Tests for:
 
 __docformat__ = "restructuredtext"
 
-import contextlib
-
 import numpy as np
+
+from wraact.oney import (
+    ELUHullWithOneY,
+    LeakyReLUHullWithOneY,
+    MaxPoolHullWithOneY,
+    ReLUHullWithOneY,
+    SigmoidHullWithOneY,
+    TanhHullWithOneY,
+)
 
 
 class TestOneYExceptionHandling:
@@ -19,8 +26,6 @@ class TestOneYExceptionHandling:
 
     def test_oney_relu_valid_bounds(self):
         """Test that OneY ReLU works with valid bounds."""
-        from wraact.oney import ReLUHullWithOneY
-
         hull = ReLUHullWithOneY()
 
         lb = np.array([-1.0, -1.0])
@@ -33,8 +38,6 @@ class TestOneYExceptionHandling:
 
     def test_oney_sigmoid_valid_bounds(self):
         """Test that OneY Sigmoid works with valid bounds."""
-        from wraact.oney import SigmoidHullWithOneY
-
         hull = SigmoidHullWithOneY()
 
         lb = np.array([-1.0, -1.0])
@@ -47,8 +50,6 @@ class TestOneYExceptionHandling:
 
     def test_oney_tanh_valid_bounds(self):
         """Test that OneY Tanh works with valid bounds."""
-        from wraact.oney import TanhHullWithOneY
-
         hull = TanhHullWithOneY()
 
         lb = np.array([-2.0, -2.0])
@@ -65,8 +66,6 @@ class TestOneYDegenerateRecovery:
 
     def test_oney_relu_degenerate_tolerance(self):
         """Test OneY ReLU with very small but valid bounds."""
-        from wraact.oney import ReLUHullWithOneY
-
         hull = ReLUHullWithOneY()
 
         # Small bounds but still above minimum threshold
@@ -80,8 +79,6 @@ class TestOneYDegenerateRecovery:
 
     def test_oney_leakyrelu_degenerate_with_suppression(self):
         """Test OneY LeakyReLU handles near-degenerate cases gracefully."""
-        from wraact.oney import LeakyReLUHullWithOneY
-
         hull = LeakyReLUHullWithOneY()
 
         # Create potentially problematic but valid bounds
@@ -92,24 +89,19 @@ class TestOneYDegenerateRecovery:
         ]
 
         for lb, ub in test_cases:
-            with contextlib.suppress(ValueError, RuntimeError):
-                constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-                if constraints is not None:
-                    assert np.all(np.isfinite(constraints))
+            constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert np.all(np.isfinite(constraints))
 
     def test_oney_maxpool_degenerate_recovery(self):
         """Test OneY MaxPool with potentially degenerate cases."""
-        from wraact.oney import MaxPoolHullWithOneY
-
         hull = MaxPoolHullWithOneY()
 
         lb = np.array([-0.5, -0.5, -0.5])
         ub = np.array([0.5, 0.5, 0.5])
 
-        with contextlib.suppress(ValueError, RuntimeError):
-            constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-            if constraints is not None:
-                assert isinstance(constraints, np.ndarray)
+        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert isinstance(constraints, np.ndarray)
+        assert np.all(np.isfinite(constraints))
 
 
 class TestOneYDoubleOrders:
@@ -117,8 +109,6 @@ class TestOneYDoubleOrders:
 
     def test_oney_relu_with_various_output_constraints(self):
         """Test OneY ReLU with different n_output_constraints."""
-        from wraact.oney import ReLUHullWithOneY
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -131,8 +121,6 @@ class TestOneYDoubleOrders:
 
     def test_oney_sigmoid_dtype_combinations(self):
         """Test OneY Sigmoid with different dtype_cdd values."""
-        from wraact.oney import SigmoidHullWithOneY
-
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
@@ -145,8 +133,6 @@ class TestOneYDoubleOrders:
 
     def test_oney_tanh_return_vertices_parameter(self):
         """Test OneY Tanh with if_return_input_bounds_by_vertices parameter."""
-        from wraact.oney import TanhHullWithOneY
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -163,15 +149,6 @@ class TestOneYConsistency:
 
     def test_oney_all_variants_produce_finite_constraints(self):
         """Test all OneY variants produce finite constraints."""
-        from wraact.oney import (
-            ELUHullWithOneY,
-            LeakyReLUHullWithOneY,
-            MaxPoolHullWithOneY,
-            ReLUHullWithOneY,
-            SigmoidHullWithOneY,
-            TanhHullWithOneY,
-        )
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -193,8 +170,6 @@ class TestOneYConsistency:
 
     def test_oney_multi_output_constraints_increase_count(self):
         """Test that increasing n_output_constraints affects result shape."""
-        from wraact.oney import ReLUHullWithOneY
-
         lb = np.array([-1.0, -1.0, -1.0])
         ub = np.array([1.0, 1.0, 1.0])
 
@@ -209,8 +184,6 @@ class TestOneYConsistency:
 
     def test_oney_dtype_cdd_does_not_affect_output(self):
         """Test that dtype_cdd choice doesn't affect final shape."""
-        from wraact.oney import LeakyReLUHullWithOneY
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -229,12 +202,6 @@ class TestOneYEdgeCases:
 
     def test_oney_1d_input_all_variants(self):
         """Test OneY variants with 1D input."""
-        from wraact.oney import (
-            ELUHullWithOneY,
-            ReLUHullWithOneY,
-            SigmoidHullWithOneY,
-        )
-
         lb = np.array([-1.0])
         ub = np.array([1.0])
 
@@ -250,8 +217,6 @@ class TestOneYEdgeCases:
 
     def test_oney_high_dimension_input(self):
         """Test OneY with high-dimensional input."""
-        from wraact.oney import ReLUHullWithOneY
-
         d = 8
         lb = -np.ones(d)
         ub = np.ones(d)
@@ -265,8 +230,6 @@ class TestOneYEdgeCases:
 
     def test_oney_symmetric_bounds(self):
         """Test OneY with perfectly symmetric bounds."""
-        from wraact.oney import TanhHullWithOneY
-
         for magnitude in [0.5, 1.0, 2.0, 5.0]:
             lb = -magnitude * np.ones(3)
             ub = magnitude * np.ones(3)
@@ -278,8 +241,6 @@ class TestOneYEdgeCases:
 
     def test_oney_asymmetric_bounds(self):
         """Test OneY with asymmetric bounds."""
-        from wraact.oney import LeakyReLUHullWithOneY
-
         test_cases = [
             (np.array([-10.0, -1.0]), np.array([1.0, 10.0])),
             (np.array([-5.0, -0.5]), np.array([0.1, 5.0])),
@@ -299,8 +260,6 @@ class TestOneYParameterCombinations:
 
     def test_oney_relu_all_parameter_combinations(self):
         """Test ReLU OneY with all parameter combinations."""
-        from wraact.oney import ReLUHullWithOneY
-
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -324,8 +283,6 @@ class TestOneYParameterCombinations:
 
     def test_oney_sigmoid_parameter_combinations(self):
         """Test Sigmoid OneY with various parameter combinations."""
-        from wraact.oney import SigmoidHullWithOneY
-
         lb = np.array([-2.0, -2.0, -2.0])
         ub = np.array([2.0, 2.0, 2.0])
 
@@ -348,8 +305,6 @@ class TestOneYReproducibility:
 
     def test_oney_relu_deterministic(self):
         """Test OneY ReLU produces deterministic results."""
-        from wraact.oney import ReLUHullWithOneY
-
         hull = ReLUHullWithOneY()
         lb = np.array([-1.0, -1.0, -1.0])
         ub = np.array([1.0, 1.0, 1.0])
@@ -365,8 +320,6 @@ class TestOneYReproducibility:
 
     def test_oney_tanh_deterministic_various_dimensions(self):
         """Test OneY Tanh determinism across dimensions."""
-        from wraact.oney import TanhHullWithOneY
-
         for d in [2, 3, 4]:
             hull = TanhHullWithOneY()
             lb = -np.ones(d)
@@ -381,8 +334,6 @@ class TestOneYReproducibility:
 
     def test_oney_maxpool_deterministic(self):
         """Test OneY MaxPool is deterministic."""
-        from wraact.oney import MaxPoolHullWithOneY
-
         hull = MaxPoolHullWithOneY()
         lb = np.array([-2.0, -2.0, -2.0])
         ub = np.array([2.0, 2.0, 2.0])

@@ -12,12 +12,15 @@ These tests push coverage from 91% to 95-96%.
 
 __docformat__ = "restructuredtext"
 
-
 import numpy as np
 import pytest
 
 from wraact._exceptions import DegeneratedError, NotConvergedError
-from wraact.acthull import LeakyReLUHull, MaxPoolHullDLP, ReLUHull, SigmoidHull, TanhHull
+from wraact._tangent_lines import (
+    get_second_tangent_line_sigmoid_np,
+    get_second_tangent_line_tanh_np,
+)
+from wraact.acthull import MaxPoolHullDLP
 
 
 class TestDegeneratePolytopeExceptions:
@@ -26,7 +29,7 @@ class TestDegeneratePolytopeExceptions:
     Triggers float->fraction fallback and DegeneratedError detection.
     """
 
-    def test_single_point_polytope_degenerate(self):
+    def test_single_point_polytope_degenerate(self, relu_hull_class):
         """Test handling of single point polytope (all bounds equal).
 
         Single points are actually valid - library handles them correctly
@@ -35,13 +38,13 @@ class TestDegeneratePolytopeExceptions:
         # All bounds equal = single point
         lb = ub = np.array([1.0, 1.0, 1.0])
 
-        hull = ReLUHull()
+        hull = relu_hull_class()
         # Single points should be handled successfully
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_collapsed_dimension_triggers_fraction_fallback(self):
+    def test_collapsed_dimension_triggers_fraction_fallback(self, sigmoid_hull_class):
         """Test 2D line segment in 3D space (one dimension collapsed).
 
         Triggers:
@@ -52,12 +55,12 @@ class TestDegeneratePolytopeExceptions:
         lb = np.array([-1.0, -1.0, 0.5])
         ub = np.array([1.0, 1.0, 0.5])  # z-axis collapsed
 
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         # Should trigger float→fraction fallback or DegeneratedError
         with pytest.raises((DegeneratedError, ValueError)):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-    def test_extreme_aspect_ratio_numerical_instability(self):
+    def test_extreme_aspect_ratio_numerical_instability(self, tanh_hull_class):
         """Test polytope with one very large, one very small dimension.
 
         Triggers:
@@ -68,7 +71,7 @@ class TestDegeneratePolytopeExceptions:
         lb = np.array([-1e10, -1e-10])
         ub = np.array([1e10, 1e-10])
 
-        hull = TanhHull()
+        hull = tanh_hull_class()
         # Should handle or raise appropriate error
         try:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
@@ -78,14 +81,14 @@ class TestDegeneratePolytopeExceptions:
             # Both are acceptable for extreme aspect ratio
             pass
 
-    def test_point_polytope_all_zero(self):
+    def test_point_polytope_all_zero(self, leakyrelu_hull_class):
         """Test single point at origin.
 
         Tests that single point at origin is handled correctly.
         """
         lb = ub = np.array([0.0, 0.0])
 
-        hull = LeakyReLUHull()
+        hull = leakyrelu_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
@@ -97,7 +100,7 @@ class TestInfeasibleConstraintsLogging:
     These tests verify that the library handles edge cases gracefully.
     """
 
-    def test_input_bounds_validation_catches_conflicts(self):
+    def test_input_bounds_validation_catches_conflicts(self, relu_hull_class):
         """Test that input validation catches conflicting bounds early.
 
         Validates that the bounds check (line 534) works properly.
@@ -105,20 +108,20 @@ class TestInfeasibleConstraintsLogging:
         lb = np.array([1.0, 2.0])  # Lower > Upper!
         ub = np.array([0.0, 1.0])
 
-        hull = ReLUHull()
+        hull = relu_hull_class()
         with pytest.raises(ValueError, match="lower bounds"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-    def test_conflicting_bounds_multiple_dimensions_validation(self):
+    def test_conflicting_bounds_multiple_dimensions_validation(self, sigmoid_hull_class):
         """Test bounds validation with 3D polytope."""
         lb = np.array([2.0, 3.0, 1.0])  # All lower > upper
         ub = np.array([1.0, 1.0, 0.0])
 
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         with pytest.raises(ValueError, match="bounds"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-    def test_bounds_validation_with_mixed_scales(self):
+    def test_bounds_validation_with_mixed_scales(self, relu_hull_class):
         """Test bounds validation with mixed magnitude values.
 
         Ensures validation works correctly across different value ranges.
@@ -127,7 +130,7 @@ class TestInfeasibleConstraintsLogging:
         ub = np.array([1e5, 1.0, 1.0])
 
         # Test with ReLU - extremely asymmetric bounds but within minimum range
-        hull = ReLUHull()
+        hull = relu_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         assert isinstance(constraints, np.ndarray)
 
@@ -245,43 +248,40 @@ class TestMaxPoolEdgeCases:
 class TestExceptionStringMethods:
     """Test __str__ methods for custom exceptions."""
 
-    def test_degenerated_error_str_default_message(self):
-        """Test DegeneratedError.__str__ with default message.
-
-        Triggers:
-        - Line 16 in _exceptions.py: DegeneratedError.__str__()
-        """
-        err = DegeneratedError()
+    @pytest.mark.parametrize(
+        ("err_class", "err_name", "expected_text"),
+        [
+            pytest.param(
+                DegeneratedError, "DegeneratedError", "degenerated", id="degenerated_default"
+            ),
+            pytest.param(
+                DegeneratedError,
+                "DegeneratedError",
+                "Custom degeneration message",
+                id="degenerated_custom",
+            ),
+            pytest.param(
+                NotConvergedError, "NotConvergedError", "converge", id="not_converged_default"
+            ),
+            pytest.param(
+                NotConvergedError,
+                "NotConvergedError",
+                "Failed to converge in 100 iterations",
+                id="not_converged_custom",
+            ),
+        ],
+    )
+    def test_exception_str(self, err_class, err_name, expected_text):
+        """Test exception __str__ method."""
+        if expected_text in ("degenerated", "converge"):
+            # Default message
+            err = err_class()
+        else:
+            # Custom message
+            err = err_class(expected_text)
         s = str(err)
-        assert "DegeneratedError" in s
-        assert "degenerated" in s.lower()
-
-    def test_degenerated_error_str_custom_message(self):
-        """Test DegeneratedError.__str__ with custom message."""
-        msg = "Custom degeneration message"
-        err = DegeneratedError(msg)
-        s = str(err)
-        assert "DegeneratedError" in s
-        assert msg in s
-
-    def test_not_converged_error_str_default_message(self):
-        """Test NotConvergedError.__str__ with default message.
-
-        Triggers:
-        - Line 30 in _exceptions.py: NotConvergedError.__str__()
-        """
-        err = NotConvergedError()
-        s = str(err)
-        assert "NotConvergedError" in s
-        assert "converge" in s.lower()
-
-    def test_not_converged_error_str_custom_message(self):
-        """Test NotConvergedError.__str__ with custom message."""
-        msg = "Failed to converge in 100 iterations"
-        err = NotConvergedError(msg)
-        s = str(err)
-        assert "NotConvergedError" in s
-        assert msg in s
+        assert err_name in s
+        assert expected_text.lower() in s.lower()
 
     def test_exception_repr_includes_class_name(self):
         """Test that exception representation includes class name."""
@@ -301,8 +301,6 @@ class TestConvergencePaths:
         This test verifies the convergence works, even though
         NotConvergedError path may be hard to trigger.
         """
-        from wraact._tangent_lines import get_second_tangent_line_sigmoid_np
-
         # Normal input values
         x1 = np.array([0.5, 1.0, -1.0])
 
@@ -318,8 +316,6 @@ class TestConvergencePaths:
 
     def test_tangent_line_tanh_convergence(self):
         """Test tanh tangent line convergence with normal inputs."""
-        from wraact._tangent_lines import get_second_tangent_line_tanh_np
-
         # Normal input
         x1 = np.array([0.1, 0.5])
 
@@ -337,8 +333,6 @@ class TestConvergencePaths:
         Attempts to find inputs that stress the convergence algorithm
         without actually triggering NotConvergedError.
         """
-        from wraact._tangent_lines import get_second_tangent_line_sigmoid_np
-
         # Large positive values
         x1_large = np.array([10.0, 20.0, 30.0])
         try:

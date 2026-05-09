@@ -1,3 +1,5 @@
+"""Single-output LeakyReLU activation hull computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["LeakyReLUHullWithOneY"]
 

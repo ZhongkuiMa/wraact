@@ -328,59 +328,30 @@ class TestReLUHullOnRandomPolytopes:
         # Results should be identical for deterministic implementation
         np.testing.assert_array_equal(result1, result2)
 
-    def test_cal_hull_on_feasible_random_2d(self, relu_hull_class):
-        """Test cal_hull() on feasible random 2D polytope with margin control."""
-        # Generate with dimension-scaled margin (1.0 + 0.5*2 = 2.0)
-        constraints, lb, ub = generate_feasible_random_polytope(dim=2, seed=42)
+    @pytest.mark.parametrize(
+        ("dim", "seed", "expected_cols"),
+        [
+            (2, 42, 5),
+            (3, 43, 7),
+            (4, 44, 9),
+        ],
+        ids=["2d", "3d", "4d"],
+    )
+    def test_cal_hull_on_feasible_random(self, relu_hull_class, dim, seed, expected_cols):
+        """Test cal_hull() on feasible random polytope with margin control."""
+        constraints, lb, ub = generate_feasible_random_polytope(dim=dim, seed=seed)
 
         # Adjust bounds to ensure ReLU requirement: lb < 0 < ub
-        lb = np.minimum(lb, -0.5)  # Ensure lb <= -0.5
-        ub = np.maximum(ub, 0.5)  # Ensure ub >= 0.5
+        lb = np.minimum(lb, -0.5)
+        ub = np.maximum(ub, 0.5)
 
         hull = relu_hull_class()
-        # Should always succeed with margin-controlled generation
         result = hull.cal_hull(constraints, lb, ub)
 
         assert isinstance(result, np.ndarray)
         assert result.shape[0] > 0
         assert np.all(np.isfinite(result))
-        assert result.shape[1] == 5  # 2D: [b | x1 | x2 | y1 | y2]
-
-    def test_cal_hull_on_feasible_random_3d(self, relu_hull_class):
-        """Test cal_hull() on feasible random 3D polytope with margin control."""
-        # Generate with dimension-scaled margin (1.0 + 0.5*3 = 2.5)
-        constraints, lb, ub = generate_feasible_random_polytope(dim=3, seed=43)
-
-        # Adjust bounds to ensure ReLU requirement: lb < 0 < ub
-        lb = np.minimum(lb, -0.5)  # Ensure lb <= -0.5
-        ub = np.maximum(ub, 0.5)  # Ensure ub >= 0.5
-
-        hull = relu_hull_class()
-        # Should always succeed with margin-controlled generation
-        result = hull.cal_hull(constraints, lb, ub)
-
-        assert isinstance(result, np.ndarray)
-        assert result.shape[0] > 0
-        assert np.all(np.isfinite(result))
-        assert result.shape[1] == 7  # 3D: [b | x1 | x2 | x3 | y1 | y2 | y3]
-
-    def test_cal_hull_on_feasible_random_4d(self, relu_hull_class):
-        """Test cal_hull() on feasible random 4D polytope with margin control."""
-        # Generate with dimension-scaled margin (1.0 + 0.5*4 = 3.0)
-        constraints, lb, ub = generate_feasible_random_polytope(dim=4, seed=44)
-
-        # Adjust bounds to ensure ReLU requirement: lb < 0 < ub
-        lb = np.minimum(lb, -0.5)  # Ensure lb <= -0.5
-        ub = np.maximum(ub, 0.5)  # Ensure ub >= 0.5
-
-        hull = relu_hull_class()
-        # Should always succeed with margin-controlled generation
-        result = hull.cal_hull(constraints, lb, ub)
-
-        assert isinstance(result, np.ndarray)
-        assert result.shape[0] > 0
-        assert np.all(np.isfinite(result))
-        assert result.shape[1] == 9  # 4D: [b | x1 | x2 | x3 | x4 | y1 | y2 | y3 | y4]
+        assert result.shape[1] == expected_cols
 
 
 class TestReLUSingleNeuronMode:

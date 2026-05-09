@@ -14,6 +14,7 @@ Key Tests:
 __docformat__ = "restructuredtext"
 
 import numpy as np
+import pytest
 
 from wraact._functions import elu_np, leakyrelu_np, relu_np, sigmoid_np
 from wraact.acthull import ELUHull, LeakyReLUHull, MaxPoolHull, ReLUHull, SigmoidHull, TanhHull
@@ -79,17 +80,21 @@ class TestReLUSoundness:
 class TestSigmoidSoundness:
     """Test soundness of Sigmoid hull over-approximation."""
 
-    def test_sigmoid_soundness_2d(self):
-        """Verify Sigmoid hull contains all sigmoid outputs on 2D polytope."""
+    @pytest.mark.parametrize(
+        ("lb", "ub", "num_samples", "threshold"),
+        [
+            pytest.param(np.array([-2.0, -2.0]), np.array([2.0, 2.0]), 1000, 99.9, id="2d"),
+            pytest.param(
+                np.array([-2.0, -2.0, -2.0]), np.array([2.0, 2.0, 2.0]), 500, 99.0, id="3d"
+            ),
+        ],
+    )
+    def test_sigmoid_soundness(self, lb, ub, num_samples, threshold):
+        """Verify Sigmoid hull contains all sigmoid outputs on polytope."""
         hull = SigmoidHull()
-        lb = np.array([-2.0, -2.0])
-        ub = np.array([2.0, 2.0])
-
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        # Sample many points and verify all satisfy constraints
         rng = np.random.default_rng(42)
-        num_samples = 1000
         violations = 0
 
         for _ in range(num_samples):
@@ -105,34 +110,9 @@ class TestSigmoidSoundness:
                 violations += 1
 
         satisfaction_rate = 100.0 * (num_samples - violations) / num_samples
-        assert satisfaction_rate >= 99.9, f"Sigmoid soundness: {satisfaction_rate:.2f}%"
-
-    def test_sigmoid_soundness_3d(self):
-        """Test Sigmoid soundness on 3D polytope."""
-        hull = SigmoidHull()
-        lb = np.array([-2.0, -2.0, -2.0])
-        ub = np.array([2.0, 2.0, 2.0])
-
-        result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        rng = np.random.default_rng(42)
-        num_samples = 500
-        violations = 0
-
-        for _ in range(num_samples):
-            x = rng.uniform(lb, ub)
-            y = sigmoid_np(x)
-            point = np.concatenate([x, y])
-
-            b = result[:, 0]
-            a = result[:, 1:]
-            constraint_values = b + a @ point
-
-            if not np.all(constraint_values >= -1e-8):
-                violations += 1
-
-        satisfaction_rate = 100.0 * (num_samples - violations) / num_samples
-        assert satisfaction_rate >= 99.0, f"Sigmoid 3D soundness: {satisfaction_rate:.2f}%"
+        assert satisfaction_rate >= threshold, (
+            f"Sigmoid soundness ({lb.shape[0]}d): {satisfaction_rate:.2f}%"
+        )
 
 
 class TestTanhSoundness:

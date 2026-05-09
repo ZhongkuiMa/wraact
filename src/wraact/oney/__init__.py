@@ -1,3 +1,7 @@
+"""Single-output activation hull classes for optimized constraint computation."""
+
+__docformat__ = "restructuredtext"
+
 from wraact.oney._act import ActHullWithOneY
 from wraact.oney._elu import ELUHullWithOneY
 from wraact.oney._leakyrelu import LeakyReLUHullWithOneY

@@ -1,3 +1,5 @@
+"""Base class for activation function convex hull computation."""
+
 __docformat__ = "restructuredtext"
 __all__ = ["ActHull"]
 
@@ -80,6 +82,19 @@ class ActHull(ABC):
         dtype_cdd: Literal["float", "fraction"] = "float",
         if_return_input_bounds_by_vertices: bool = False,
     ):
+        """Initialize the activation hull calculator.
+
+        :param if_cal_single_neuron_constrs: Whether to calculate single-neuron
+            constraints.
+        :param if_cal_multi_neuron_constrs: Whether to calculate multi-neuron
+            constraints.
+        :param if_use_double_orders: Whether to use reversed input dimension
+            order for improved precision.
+        :param dtype_cdd: Data type for pycddlib library.
+        :param if_return_input_bounds_by_vertices: Whether to return tightened
+            input bounds derived from polytope vertices.
+        :raises ValueError: If parameter combination is invalid.
+        """
         if if_use_double_orders and not if_cal_multi_neuron_constrs:
             raise ValueError(
                 "if_use_double_orders should be True if if_cal_multi_neuron_constrs is "
@@ -264,6 +279,13 @@ class ActHull(ABC):
         lb: ndarray | None,  # (d,)
         ub: ndarray | None,  # (d,)
     ) -> ndarray:  # (_, 2*d+1) | (_, d+1)
+        """Compute hull using only single-neuron constraints from bounds.
+
+        :param lb: Lower bounds per input dimension.
+        :param ub: Upper bounds per input dimension.
+        :return: Single-neuron hull constraints.
+        :raises ValueError: If bounds are not provided.
+        """
         if lb is None or ub is None:
             raise ValueError(
                 "The lower and upper bounds of the input variables should be provided."
@@ -277,6 +299,19 @@ class ActHull(ABC):
         lb: ndarray | None = None,  # (d-1,)
         ub: ndarray | None = None,  # (d-1,)
     ) -> ndarray | None:  # (_, 2*d-1) | (_, d+1)
+        """Compute hull using multi-neuron constraints from input polytope.
+
+        Computes vertices from the input constraints, updates bounds, and
+        generates sound over-approximation constraints. Falls back to
+        fractional arithmetic on degenerate polytopes.
+
+        :param c: Input constraints in H-representation. Shape: (n, d).
+        :param lb: Lower bounds per dimension. Shape: (d-1,).
+        :param ub: Upper bounds per dimension. Shape: (d-1,).
+        :return: Multi-neuron hull constraints, or ``None`` on failure.
+        :raises ValueError: If input constraints are not provided or
+            polytope is too small.
+        """
         if c is None:  # pragma: no cover - defensive check, validated by caller in cal_hull
             raise ValueError("The input constraints should be provided.")
 
@@ -327,14 +362,6 @@ class ActHull(ABC):
             raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
         cc, dtype_cdd = result
 
-        # ====================CHECK====================
-        # Check if all vertices satisfy the constraints.
-        # v_y = self._f(v[:, 1:])
-        # vertices = np.hstack((v, v_y))
-        # check = np.matmul(cc, vertices.T)
-        # if not np.all(check >= -_TOL):
-        #     raise RuntimeError("Not all vertices satisfy the constraints.")
-
         if self._use_double_orders:
             # Here we reverse the order of input dimensions to calculate the function
             # hull because our algorithm is a progressive algorithm that calculates the
@@ -372,6 +399,16 @@ class ActHull(ABC):
         ub: ndarray | None = None,  # (d-1,)
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (m, d)
+        """Compute polytope vertices with automatic fallback to fractional arithmetic.
+
+        :param c: Input constraints. Shape: (n, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :param dtype_cdd: Initial data type for pycddlib.
+        :return: Tuple of (vertices, dtype_cdd used).
+        :raises RuntimeError: If vertex computation fails with both float
+            and fractional arithmetic.
+        """
         v: ndarray | None = None
         if DEBUG:
             # When debugging, we directly calculate the vertices and check the
@@ -412,6 +449,17 @@ class ActHull(ABC):
         ]
         | None
     ):
+        """Compute hull constraints with automatic fallback to fractional arithmetic.
+
+        :param c: Input constraints. Shape: (n, d).
+        :param v: Vertices of input polytope. Shape: (m, d).
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :param dtype_cdd: Initial data type for pycddlib.
+        :return: Tuple of (hull constraints, dtype_cdd used), or ``None``.
+        :raises RuntimeError: If constraint computation fails with both float
+            and fractional arithmetic.
+        """
         if DEBUG:
             # When debugging, we directly calculate the constraints and check the
             # correctness without exception handling to see the error message.
@@ -473,6 +521,8 @@ class ActHull(ABC):
 
         :param lb: The lower bounds of the input variables.
         :param ub: The upper bounds of the input variables.
+
+        :return: The single-neuron constraints of the function hull.
         """
 
     @classmethod
@@ -601,6 +651,15 @@ class ActHull(ABC):
     def _record_and_raise_exception(
         self, e: Exception, c: ndarray, v: ndarray | None, l: ndarray | None, u: ndarray | None
     ) -> NoReturn:
+        """Log error details to a file and re-raise as RuntimeError.
+
+        :param e: The original exception.
+        :param c: Input constraints at the time of failure.
+        :param v: Vertices at the time of failure, or ``None``.
+        :param l: Lower bounds, or ``None``.
+        :param u: Upper bounds, or ``None``.
+        :raises RuntimeError: Always raised with path to the error log file.
+        """
         current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
         Path(".temp").mkdir(parents=True, exist_ok=True)
         error_log = f".temp/acthull_{current_time}.log"
