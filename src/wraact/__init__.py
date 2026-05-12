@@ -12,7 +12,7 @@ Main classes:
 """
 
 __docformat__ = "restructuredtext"
-__version__ = "2026.5.0"
+__version__ = "2026.5.1"
 
 from wraact.acthull import (
     ActHull,
