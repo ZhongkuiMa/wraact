@@ -6,8 +6,13 @@ Tests verify that the wrapped NumPy implementations match expected behavior.
 __docformat__ = "restructuredtext"
 
 import numpy as np
+import pytest
 
 from wraact._functions import (
+    ddsigmoid_np,
+    ddtanh_np,
+    delu_np,
+    dleakyrelu_np,
     drelu_np,
     dsigmoid_np,
     dtanh_np,
@@ -294,3 +299,160 @@ class TestFunctionCompositionProperties:
         assert np.all(y_relu == 0.0)
         # ELU allows negative (in range [-1, 0)), ReLU only gives 0
         assert np.all(y_elu <= y_relu)
+
+
+class TestELUDerivative:
+    """Tests for ELU first derivative (delu_np)."""
+
+    def test_delu_positive_inputs_equal_one(self):
+        """ELU derivative should be 1 for all positive inputs."""
+        x = np.array([0.1, 0.5, 1.0, 2.0, 5.0])
+        dy = delu_np(x)
+
+        np.testing.assert_array_almost_equal(dy, np.ones_like(x))
+
+    def test_delu_negative_inputs_equal_exp(self):
+        """ELU derivative should be exp(x) for negative inputs."""
+        x = np.array([-3.0, -1.0, -0.5, -0.1])
+        dy = delu_np(x)
+        expected = np.exp(x)
+
+        np.testing.assert_array_almost_equal(dy, expected)
+
+    def test_delu_scalar_positive(self):
+        """delu_np should return 1.0 for a positive scalar."""
+        assert delu_np(2.0) == 1.0
+
+    def test_delu_scalar_negative(self):
+        """delu_np should return exp(x) for a negative scalar."""
+        x = -1.0
+        result = delu_np(x)
+        assert np.isclose(result, np.exp(x))
+
+    def test_delu_positive_everywhere(self):
+        """ELU derivative should be strictly positive for all inputs."""
+        x = np.linspace(-5.0, 5.0, 100)
+        dy = delu_np(x)
+
+        assert np.all(dy > 0.0)
+
+    def test_delu_continuous_at_zero(self):
+        """ELU derivative should approach 1 from both sides at x=0."""
+        dy_pos = delu_np(1e-6)
+        dy_neg = delu_np(-1e-6)
+
+        assert np.isclose(dy_pos, 1.0, atol=1e-5)
+        assert np.isclose(dy_neg, np.exp(-1e-6), atol=1e-5)
+
+
+class TestLeakyReLUDerivative:
+    """Tests for Leaky ReLU first derivative (dleakyrelu_np)."""
+
+    @pytest.mark.parametrize(
+        ("x_arr", "negative_slope", "expected"),
+        [
+            (np.array([0.1, 1.0, 2.0]), 0.01, np.array([1.0, 1.0, 1.0])),
+            (np.array([-2.0, -0.5, -0.1]), 0.01, np.array([0.01, 0.01, 0.01])),
+            (np.array([-1.0, 0.5]), 0.1, np.array([0.1, 1.0])),
+        ],
+    )
+    def test_dleakyrelu_output_values(
+        self, x_arr: np.ndarray, negative_slope: float, expected: np.ndarray
+    ):
+        """dleakyrelu_np returns 1 for positive inputs and negative_slope for negative."""
+        dy = dleakyrelu_np(x_arr, negative_slope=negative_slope)
+
+        np.testing.assert_array_almost_equal(dy, expected)
+
+    def test_dleakyrelu_default_slope(self):
+        """dleakyrelu_np default slope is 0.01."""
+        x = np.array([-1.0, 1.0])
+        dy = dleakyrelu_np(x)
+
+        np.testing.assert_array_almost_equal(dy, np.array([0.01, 1.0]))
+
+    def test_dleakyrelu_positive_everywhere(self):
+        """Leaky ReLU derivative should be strictly positive for any positive slope."""
+        x = np.linspace(-5.0, 5.0, 100)
+        dy = dleakyrelu_np(x, negative_slope=0.01)
+
+        assert np.all(dy > 0.0)
+
+
+class TestSecondDerivativeSigmoid:
+    """Tests for sigmoid second derivative (ddsigmoid_np)."""
+
+    def test_ddsigmoid_zero_at_origin(self):
+        """Second derivative of sigmoid should be 0 at x=0."""
+        result = ddsigmoid_np(0.0)
+        assert np.isclose(result, 0.0)
+
+    def test_ddsigmoid_positive_for_negative_x(self):
+        """Second derivative of sigmoid should be positive for x < 0."""
+        x = np.array([-3.0, -2.0, -1.0, -0.5])
+        ddy = ddsigmoid_np(x)
+
+        assert np.all(ddy > 0.0)
+
+    def test_ddsigmoid_negative_for_positive_x(self):
+        """Second derivative of sigmoid should be negative for x > 0."""
+        x = np.array([0.5, 1.0, 2.0, 3.0])
+        ddy = ddsigmoid_np(x)
+
+        assert np.all(ddy < 0.0)
+
+    def test_ddsigmoid_antisymmetric(self):
+        """Second derivative of sigmoid is an odd function: ddsigmoid(-x) = -ddsigmoid(x)."""
+        x = np.array([0.5, 1.0, 1.5, 2.0])
+        ddy_pos = ddsigmoid_np(x)
+        ddy_neg = ddsigmoid_np(-x)
+
+        np.testing.assert_array_almost_equal(ddy_neg, -ddy_pos)
+
+    def test_ddsigmoid_numerical_value_at_one(self):
+        """Second derivative of sigmoid at x=1 matches analytical value."""
+        x = 1.0
+        s = 1.0 / (1.0 + np.exp(-x))
+        expected = s * (1.0 - s) * (1.0 - 2.0 * s)
+        result = ddsigmoid_np(x)
+
+        assert np.isclose(result, expected)
+
+
+class TestSecondDerivativeTanh:
+    """Tests for tanh second derivative (ddtanh_np)."""
+
+    def test_ddtanh_zero_at_origin(self):
+        """Second derivative of tanh should be 0 at x=0."""
+        result = ddtanh_np(0.0)
+        assert np.isclose(result, 0.0)
+
+    def test_ddtanh_negative_for_positive_x(self):
+        """Second derivative of tanh should be negative for x > 0."""
+        x = np.array([0.5, 1.0, 2.0, 3.0])
+        ddy = ddtanh_np(x)
+
+        assert np.all(ddy < 0.0)
+
+    def test_ddtanh_positive_for_negative_x(self):
+        """Second derivative of tanh should be positive for x < 0."""
+        x = np.array([-3.0, -2.0, -1.0, -0.5])
+        ddy = ddtanh_np(x)
+
+        assert np.all(ddy > 0.0)
+
+    def test_ddtanh_antisymmetric(self):
+        """Second derivative of tanh is an odd function: ddtanh(-x) = -ddtanh(x)."""
+        x = np.array([0.5, 1.0, 1.5, 2.0])
+        ddy_pos = ddtanh_np(x)
+        ddy_neg = ddtanh_np(-x)
+
+        np.testing.assert_array_almost_equal(ddy_neg, -ddy_pos)
+
+    def test_ddtanh_numerical_value_at_one(self):
+        """Second derivative of tanh at x=1 matches analytical value."""
+        x = 1.0
+        expected = -2.0 * np.tanh(x) * (1.0 - np.tanh(x) ** 2)
+        result = ddtanh_np(x)
+
+        assert np.isclose(result, expected)

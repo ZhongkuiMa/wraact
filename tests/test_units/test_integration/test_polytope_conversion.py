@@ -123,7 +123,9 @@ class TestRoundtripConversion:
             ),
         ],
     )
-    def test_roundtrip(self, h_rep_orig, min_constraints, max_constraints):
+    def test_consistency_hrep_vrep_hrep_roundtrip(
+        self, h_rep_orig, min_constraints, max_constraints
+    ):
         """Test H→V→H roundtrip preserves polytope structure."""
         # H → V
         mat1 = cdd.Matrix(h_rep_orig, number_type="float")

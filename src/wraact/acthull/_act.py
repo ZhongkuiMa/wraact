@@ -115,10 +115,10 @@ class ActHull(ABC):
 
     def cal_hull(
         self,
-        input_constrs: ndarray | None = None,  # (n, d+1)
-        input_lower_bounds: ndarray | None = None,  # (d,)
-        input_upper_bounds: ndarray | None = None,  # (d,)
-    ) -> ndarray | None:  # (num_constrs, 2*d+1)
+        input_constrs: ndarray | None = None,
+        input_lower_bounds: ndarray | None = None,
+        input_upper_bounds: ndarray | None = None,
+    ) -> ndarray | None:
         """
         Calculate the function hull of an activation function.
 
@@ -241,9 +241,9 @@ class ActHull(ABC):
 
     @staticmethod
     def cal_vertices(
-        c: ndarray,  # (n, d)
+        c: ndarray,
         dtype_cdd: Literal["float", "fraction"],
-    ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (m, d)
+    ) -> tuple[ndarray, Literal["float", "fraction"]]:
         """
         Calculate the vertices of a polytope from the constraints.
 
@@ -276,9 +276,9 @@ class ActHull(ABC):
 
     def _cal_hull_with_sn_constrs(
         self,
-        lb: ndarray | None,  # (d,)
-        ub: ndarray | None,  # (d,)
-    ) -> ndarray:  # (_, 2*d+1) | (_, d+1)
+        lb: ndarray | None,
+        ub: ndarray | None,
+    ) -> ndarray:
         """Compute hull using only single-neuron constraints from bounds.
 
         :param lb: Lower bounds per input dimension.
@@ -295,19 +295,19 @@ class ActHull(ABC):
 
     def _cal_hull_with_mn_constrs(
         self,
-        c: ndarray,  # (n, d)
-        lb: ndarray | None = None,  # (d-1,)
-        ub: ndarray | None = None,  # (d-1,)
-    ) -> ndarray | None:  # (_, 2*d-1) | (_, d+1)
+        c: ndarray,
+        lb: ndarray | None = None,
+        ub: ndarray | None = None,
+    ) -> ndarray | None:
         """Compute hull using multi-neuron constraints from input polytope.
 
         Computes vertices from the input constraints, updates bounds, and
         generates sound over-approximation constraints. Falls back to
         fractional arithmetic on degenerate polytopes.
 
-        :param c: Input constraints in H-representation. Shape: (n, d).
-        :param lb: Lower bounds per dimension. Shape: (d-1,).
-        :param ub: Upper bounds per dimension. Shape: (d-1,).
+        :param c: Input constraints in H-representation. Shape: ``n, d``.
+        :param lb: Lower bounds per dimension. Shape: ``d-1,``.
+        :param ub: Upper bounds per dimension. Shape: ``d-1,``.
         :return: Multi-neuron hull constraints, or ``None`` on failure.
         :raises ValueError: If input constraints are not provided or
             polytope is too small.
@@ -340,8 +340,6 @@ class ActHull(ABC):
             v, dtype_cdd = self.cal_vertices(c, "fraction")
             lb = np.min(v, axis=0)[1:]
             ub = np.max(v, axis=0)[1:]
-        except Exception as e:
-            raise e
 
         if np.min(np.abs(ub - lb)) < MIN_BOUNDS_RANGE_ACTHULL and len(v) > 2:
             # We don't want to remove trivial cases for the maxpool function (one vertex
@@ -394,14 +392,14 @@ class ActHull(ABC):
 
     def _cal_vertices_with_exception(
         self,
-        c: ndarray,  # (n, d)
-        lb: ndarray | None = None,  # (d-1,)
-        ub: ndarray | None = None,  # (d-1,)
+        c: ndarray,
+        lb: ndarray | None = None,
+        ub: ndarray | None = None,
         dtype_cdd: Literal["float", "fraction"] = "float",
-    ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (m, d)
+    ) -> tuple[ndarray, Literal["float", "fraction"]]:
         """Compute polytope vertices with automatic fallback to fractional arithmetic.
 
-        :param c: Input constraints. Shape: (n, d).
+        :param c: Input constraints. Shape: ``n, d``.
         :param lb: Lower bounds per dimension.
         :param ub: Upper bounds per dimension.
         :param dtype_cdd: Initial data type for pycddlib.
@@ -437,22 +435,22 @@ class ActHull(ABC):
 
     def _cal_constrs_with_exception(
         self,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        lb: ndarray | None = None,  # (d-1,)
-        ub: ndarray | None = None,  # (d-1,)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None = None,
+        ub: ndarray | None = None,
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> (
         tuple[
-            ndarray,  # (n, 2*d-1) | (n, d+1)
+            ndarray,
             Literal["float", "fraction"],
         ]
         | None
     ):
         """Compute hull constraints with automatic fallback to fractional arithmetic.
 
-        :param c: Input constraints. Shape: (n, d).
-        :param v: Vertices of input polytope. Shape: (m, d).
+        :param c: Input constraints. Shape: ``n, d``.
+        :param v: Vertices of input polytope. Shape: ``m, d``.
         :param lb: Lower bounds per dimension.
         :param ub: Upper bounds per dimension.
         :param dtype_cdd: Initial data type for pycddlib.
@@ -484,13 +482,13 @@ class ActHull(ABC):
     @abstractmethod
     def cal_constrs(
         self,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        lb: ndarray | None,  # (d-1,)
-        ub: ndarray | None,  # (d-1,)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None,
+        ub: ndarray | None,
         dtype_cdd: Literal["float", "fraction"] = "float",
     ) -> tuple[
-        ndarray,  # (_, 2*d-1) | (_, d+1)
+        ndarray,
         Literal["float", "fraction"],
     ]:
         """
@@ -509,9 +507,9 @@ class ActHull(ABC):
     @abstractmethod
     def cal_sn_constrs(  # type: ignore[override]
         cls,
-        lb: ndarray,  # (d,)
-        ub: ndarray,  # (d,)
-    ) -> ndarray:  # (_, 2*d+1) | (_, d+1)
+        lb: ndarray,
+        ub: ndarray,
+    ) -> ndarray:
         """
         Calculate the single-neuron constraints of the function hull.
 
@@ -529,11 +527,11 @@ class ActHull(ABC):
     @abstractmethod
     def cal_mn_constrs(  # type: ignore[override]
         cls,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        l: ndarray | None,  # (d-1,)
-        u: ndarray | None,  # (d-1,)
-    ) -> ndarray:  # (_, 2*d-1) | (_, d+1)
+        c: ndarray,
+        v: ndarray,
+        l: ndarray | None,
+        u: ndarray | None,
+    ) -> ndarray:
         """
         Calculate the multi-neuron constraints of the function hull.
 
@@ -621,7 +619,7 @@ class ActHull(ABC):
                 )
 
     @staticmethod
-    def _check_vertices(v: ndarray):  # (m, d)
+    def _check_vertices(v: ndarray):
         if len(v) == 0:
             raise RuntimeError(
                 "Zero vertices. The input polytope is infeasible. "

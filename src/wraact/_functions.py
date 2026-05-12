@@ -6,6 +6,8 @@ and their first/second derivatives, used for computing convex hulls.
 
 __docformat__ = "restructuredtext"
 __all__ = [
+    "ddsigmoid_np",
+    "ddtanh_np",
     "delu_np",
     "dleakyrelu_np",
     "drelu_np",

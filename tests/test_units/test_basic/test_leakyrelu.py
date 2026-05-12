@@ -22,7 +22,7 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
-from tests.test_templates import BaseSoundnessTest
+from tests.test_units.test_templates import BaseSoundnessTest
 
 # Import the actual hull class
 from wraact.acthull import LeakyReLUHull

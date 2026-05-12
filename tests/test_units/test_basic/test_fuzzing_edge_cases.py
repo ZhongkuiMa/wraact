@@ -19,7 +19,7 @@ from wraact.acthull import (
 )
 
 # Load all edge cases from fuzzing
-EDGE_CASES_DIR = Path(__file__).parent.parent / "fuzzing" / "edge_cases"
+EDGE_CASES_DIR = Path(__file__).parent.parent.parent / "fuzzing" / "edge_cases"
 
 
 def load_edge_cases():

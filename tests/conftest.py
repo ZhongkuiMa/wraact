@@ -57,14 +57,14 @@ def soundness_satisfaction_threshold():
 def simple_2d_box_constraints():
     """Provide simple 2D box polytope: [0, 1] x [0, 1].
 
-    H-representation: 4 halfspace constraints
+    H-representation: 4 halfspace constraints:
+
     - x >= 0      : [0, 1, 0]
     - x <= 1      : [-1, 1, 0]
     - y >= 0      : [0, 0, 1]
     - y <= 1      : [-1, 0, 1]
 
-    Returns:
-        np.ndarray: Shape (4, 3), H-representation constraints
+    :return: H-representation constraints. Shape: ``(4, 3)``.
     """
     return np.array(
         [
@@ -81,8 +81,7 @@ def simple_2d_box_constraints():
 def simple_2d_box_bounds():
     """Provide bounds for 2D box: [0, 1] x [0, 1].
 
-    Returns:
-        tuple: (lower_bounds, upper_bounds) for 2D input
+    :return: Tuple of (lower_bounds, upper_bounds) for 2D input.
     """
     lb = np.array([0.0, 0.0], dtype=np.float64)
     ub = np.array([1.0, 1.0], dtype=np.float64)
@@ -96,10 +95,8 @@ def simple_3d_octahedron_constraints():
     Octahedron with vertices at (±1, 0, 0), (0, ±1, 0), (0, 0, ±1).
     H-representation with 8 halfspace constraints.
 
-    Returns:
-        np.ndarray: Shape (8, 4), H-representation constraints
+    :return: H-representation constraints. Shape: ``(8, 4)``.
     """
-    # Each constraint is of form: b + a1*x1 + a2*x2 + a3*x3 >= 0
     return np.array(
         [
             [1, 1, 0, 0],  # x >= -1
@@ -117,10 +114,9 @@ def simple_3d_octahedron_constraints():
 
 @pytest.fixture
 def simple_3d_octahedron_bounds():
-    """Bounds for 3D octahedron: [-1, 1]³ (loose bounds).
+    """Bounds for 3D octahedron: [-1, 1]^3 (loose bounds).
 
-    Returns:
-        tuple: (lower_bounds, upper_bounds) for 3D input
+    :return: Tuple of (lower_bounds, upper_bounds) for 3D input.
     """
     lb = np.array([-1.0, -1.0, -1.0], dtype=np.float64)
     ub = np.array([1.0, 1.0, 1.0], dtype=np.float64)
@@ -139,8 +135,7 @@ def tiny_polytope_2d():
     Should trigger ValueError when passed to cal_hull().
     This polytope has dimensions too small to compute meaningful constraints.
 
-    Returns:
-        tuple: (lower_bounds, upper_bounds) where min range = 0.04
+    :return: Tuple of (lower_bounds, upper_bounds) where min range = 0.04.
     """
     lb = np.array([0.0, 0.0], dtype=np.float64)
     ub = np.array([0.04, 0.04], dtype=np.float64)
@@ -151,14 +146,13 @@ def tiny_polytope_2d():
 def extreme_scale_polytope_2d():
     """2D polytope with 500,000x scale difference.
 
-    Dimension 0: range = 0.002 (very small)
-    Dimension 1: range = 999 (very large)
+    Dimension 0: range = 0.002 (very small).
+    Dimension 1: range = 999 (very large).
 
     Should trigger ValueError due to min range < 0.05.
     This tests numerical stability with disparate scales.
 
-    Returns:
-        tuple: (lower_bounds, upper_bounds) with extreme scale mismatch
+    :return: Tuple of (lower_bounds, upper_bounds) with extreme scale mismatch.
     """
     lb = np.array([-1e-3, 1.0], dtype=np.float64)
     ub = np.array([1e-3, 1e3], dtype=np.float64)
@@ -172,11 +166,10 @@ def collapsed_dimension_polytope():
     This is a degenerate polytope where one dimension has zero width.
     Should trigger DegeneratedError during vertex computation.
 
-    Returns:
-        tuple: (lower_bounds, upper_bounds) where dim 0 is collapsed
+    :return: Tuple of (lower_bounds, upper_bounds) where dim 0 is collapsed.
     """
     lb = np.array([1.0, -1.0], dtype=np.float64)
-    ub = np.array([1.0, 1.0], dtype=np.float64)  # First dim collapsed
+    ub = np.array([1.0, 1.0], dtype=np.float64)
     return lb, ub
 
 
@@ -185,16 +178,15 @@ def line_segment_polytope():
     """Line segment polytope in 2D space (degenerate to 1D).
 
     Vertices would define a line from (0,0) to (1,0).
-    This polytope is degenerate: only 2 vertices in 2D space (need 3 for non-degenerate).
+    This polytope is degenerate: only 2 vertices in 2D space
+    (need 3 for non-degenerate).
     Should trigger DegeneratedError due to insufficient vertices.
 
-    Note: This is defined as H-representation constraints that force y = 0
-    and 0 <= x <= 1.
+    Constraints that define y = 0 (y >= 0 AND y <= 0) and 0 <= x <= 1.
 
-    Returns:
-        tuple: (constraints, lower_bounds, upper_bounds) for line segment polytope
+    :return: Tuple of (constraints, lower_bounds, upper_bounds) for line
+        segment polytope.
     """
-    # Constraints that define: y = 0 (y >= 0 AND y <= 0) and 0 <= x <= 1
     constraints = np.array(
         [
             [0, 0, 1],  # y >= 0
@@ -206,7 +198,7 @@ def line_segment_polytope():
     )
 
     lb = np.array([0.0, 0.0], dtype=np.float64)
-    ub = np.array([1.0, 0.0], dtype=np.float64)  # ub[1] = 0 (collapsed)
+    ub = np.array([1.0, 0.0], dtype=np.float64)
 
     return constraints, lb, ub
 
@@ -215,20 +207,19 @@ def line_segment_polytope():
 def infeasible_polytope_relu():
     """Infeasible polytope for ReLU: constraints may contradict bounds.
 
-    Constraints define box [0,1]²:
+    Constraints define box [0,1]^2:
+
     - 0 <= x <= 1
     - 0 <= y <= 1
 
-    Bounds require: x in [-0.5, 0.5], y in [0.5, 1.0]
+    Bounds require: x in [-0.5, 0.5], y in [0.5, 1.0].
 
     Geometric intersection: x in [0, 0.5], y in [0.5, 1.0] is non-empty.
-
     However, ReLU requires mixed signs: lb < 0 < ub for all dimensions.
-    After vertex computation, the algorithm detects this constraint violation
-    and raises RuntimeError.
+    After vertex computation, the algorithm detects this constraint
+    violation and raises RuntimeError.
 
-    Returns:
-        tuple: (constraints, lower_bounds, upper_bounds)
+    :return: Tuple of (constraints, lower_bounds, upper_bounds).
     """
     constraints = np.array(
         [
@@ -256,31 +247,23 @@ def generate_random_polytope_constraints(
 ):
     """Generate random polytope constraints.
 
-    Creates a random polytope by:
-    1. Generating random constraint coefficients
-    2. Ensuring feasibility by setting bounds appropriately
+    Creates a random polytope by generating random constraint coefficients
+    and setting bounds appropriately to ensure feasibility.
 
-    Args:
-        dim: Input dimension (1 means 1D, 2 means 2D, etc.)
-        num_constraints: Number of halfspace constraints. If None, uses 3^dim.
-        seed: Random seed for reproducibility
-
-    Returns:
-        np.ndarray: Shape (num_constraints, dim+1), H-representation constraints
+    :param dim: Input dimension (1 means 1D, 2 means 2D, etc.).
+    :param num_constraints: Number of halfspace constraints. If None,
+        uses 3^dim.
+    :param seed: Random seed for reproducibility.
+    :return: H-representation constraints. Shape: ``(num_constraints, dim+1)``.
     """
     rng = np.random.default_rng(seed)
 
     if num_constraints is None:
         num_constraints = 3**dim
 
-    # Generate random constraint coefficients [-1, 1]
     coeff = rng.uniform(-1, 1, (num_constraints, dim))
-
-    # Generate random offsets to ensure feasibility
-    # Use positive offsets to ensure polytope includes origin region
     offset = rng.uniform(0.5, 2.0, num_constraints)
 
-    # Combine into H-representation [b | A]
     constraints = np.hstack([offset.reshape(-1, 1), coeff])
 
     return constraints.astype(np.float64)
@@ -291,14 +274,10 @@ def generate_random_polytope_bounds(dim: int, seed: int = 42):
 
     Creates bounds as [-R, R]^dim where R scales with dimension.
 
-    Args:
-        dim: Input dimension
-        seed: Random seed for reproducibility
-
-    Returns:
-        tuple: (lower_bounds, upper_bounds)
+    :param dim: Input dimension.
+    :param seed: Random seed for reproducibility.
+    :return: Tuple of (lower_bounds, upper_bounds).
     """
-    # Bounds scale with dimension (larger polytope for higher dimensions)
     radius = 1.0 + 0.5 * dim
 
     lb = -radius * np.ones(dim, dtype=np.float64)
@@ -311,42 +290,34 @@ def generate_feasible_random_polytope(dim: int, num_constraints: int | None = No
     """Generate random polytope with guaranteed feasibility.
 
     Uses dimension-scaled margin to control constraint distance from origin:
+
     - min_offset = 1.0 + 0.5*dim
     - max_offset = 5.0 + 0.5*dim
 
     This ensures constraints stay far enough from origin to remain feasible
-    even with random coefficients. The margin grows with dimension to maintain
-    proportional spacing.
+    even with random coefficients. The margin grows with dimension to
+    maintain proportional spacing.
 
-    Args:
-        dim: Input dimension
-        num_constraints: Number of constraints (default: 3^dim)
-        seed: Random seed for reproducibility
-
-    Returns:
-        tuple: (constraints, lb, ub) where:
-            - constraints: Shape (num_constraints, dim+1), H-representation [b | A]
-            - lb: Lower bounds, shape (dim,)
-            - ub: Upper bounds, shape (dim,)
+    :param dim: Input dimension.
+    :param num_constraints: Number of constraints. Default: 3^dim.
+    :param seed: Random seed for reproducibility.
+    :return: Tuple of (constraints, lb, ub) where constraints has shape
+        ``(num_constraints, dim+1)`` in H-representation [b | A],
+        lb has shape ``(dim,)``, and ub has shape ``(dim,)``.
     """
     if num_constraints is None:
         num_constraints = 3**dim
 
     rng = np.random.default_rng(seed)
 
-    # Random constraint coefficients
     coeff = rng.uniform(-1, 1, (num_constraints, dim))
 
-    # Dimension-scaled offsets to ensure feasibility
-    # User requirement: 1.0 + 0.5*d for margin control
     min_offset = 1.0 + 0.5 * dim
     max_offset = 5.0 + 0.5 * dim
     offset = rng.uniform(min_offset, max_offset, num_constraints)
 
-    # H-representation: [b | A]
     constraints = np.hstack([offset.reshape(-1, 1), coeff])
 
-    # Symmetric bounds scaled with dimension
     radius = 2.0 + 0.5 * dim
     lb = np.full(dim, -radius, dtype=np.float64)
     ub = np.full(dim, radius, dtype=np.float64)
@@ -360,9 +331,6 @@ def random_polytope_constraints(request):
 
     Generates random polytopes for each dimension.
     Uses dimension as random seed for reproducibility.
-
-    Yields:
-        np.ndarray: H-representation constraints
     """
     dim = request.param
     return generate_random_polytope_constraints(dim, seed=42 + dim)
@@ -370,22 +338,14 @@ def random_polytope_constraints(request):
 
 @pytest.fixture(params=[2, 3, 4])
 def random_polytope_bounds(request):
-    """Parametrized random polytope bounds (2D, 3D, 4D).
-
-    Yields:
-        tuple: (lower_bounds, upper_bounds)
-    """
+    """Parametrized random polytope bounds (2D, 3D, 4D)."""
     dim = request.param
     return generate_random_polytope_bounds(dim, seed=42 + dim)
 
 
 @pytest.fixture(params=[2, 3, 4])
 def random_polytope(request):
-    """Parametrized random polytope (constraints + bounds).
-
-    Yields:
-        tuple: (constraints, lower_bounds, upper_bounds)
-    """
+    """Parametrized random polytope (constraints + bounds)."""
     dim = request.param
     constraints = generate_random_polytope_constraints(dim, seed=42 + dim)
     bounds = generate_random_polytope_bounds(dim, seed=42 + dim)
@@ -403,9 +363,6 @@ def dimension(request):
 
     Dimension is limited to 4D due to time constraints of high-dimensional
     polytope operations. Higher dimensions would make tests too slow.
-
-    Yields:
-        int: Dimension (2, 3, or 4)
     """
     return request.param
 
@@ -419,12 +376,11 @@ def dimension(request):
 def activation_functions():
     """Provide dictionary of activation functions for testing.
 
-    Returns:
-        dict: Maps function names to numpy implementations
-              (e.g., {'relu': relu_np, 'sigmoid': sigmoid_np, ...})
+    Maps function names to numpy implementations
+    (e.g., {'relu': relu_np, 'sigmoid': sigmoid_np, ...}).
     """
     try:
-        from wraact.wraact._functions import (
+        from wraact._functions import (
             elu_np,
             leakyrelu_np,
             relu_np,
@@ -522,20 +478,16 @@ def maxpool_hull_class():
 def sample_points_in_box(lb: np.ndarray, ub: np.ndarray, num_samples: int, seed: int | None = None):
     """Generate random points uniformly in a box [lb, ub]^d.
 
-    Args:
-        lb: Lower bounds (shape (d,))
-        ub: Upper bounds (shape (d,))
-        num_samples: Number of points to generate
-        seed: Random seed
-
-    Returns:
-        np.ndarray: Shape (num_samples, d), random points
+    :param lb: Lower bounds. Shape: ``(d,)``.
+    :param ub: Upper bounds. Shape: ``(d,)``.
+    :param num_samples: Number of points to generate.
+    :param seed: Random seed for reproducibility.
+    :return: Random points. Shape: ``(num_samples, d)``.
     """
     rng = np.random.default_rng(seed)
 
     d = len(lb)
     points = rng.uniform(0, 1, (num_samples, d))
-    # Scale to [lb, ub]
     points = points * (ub - lb) + lb
     return points
 
@@ -557,25 +509,18 @@ def check_constraints_satisfied(
     """Check if points satisfy all constraints (H-representation).
 
     For each point p and constraints in H-form [b | A]:
-        Constraint is: b + A @ p >= 0
+    ``b + A @ p >= 0``.
 
-    Args:
-        constraints: Shape (num_constraints, d+1), [b | A]
-        points: Shape (num_points, d), points to check
-        tolerance: Numerical tolerance for >= 0 check
-
-    Returns:
-        np.ndarray: Shape (num_points,), boolean mask of satisfaction
+    :param constraints: H-representation. Shape: ``(num_constraints, d+1)``.
+    :param points: Points to check. Shape: ``(num_points, d)``.
+    :param tolerance: Numerical tolerance for >= 0 check.
+    :return: Boolean mask of satisfaction. Shape: ``(num_points,)``.
     """
     b = constraints[:, :1]  # (num_constraints, 1)
     coeff = constraints[:, 1:]  # (num_constraints, d)
 
-    # Compute: b + coeff @ p^T
-    # Result shape: (num_constraints, num_points)
     ax = b + coeff @ points.T
 
-    # All constraints satisfied for a point if ALL rows > -tolerance
-    # Result shape: (num_points,)
     satisfied = np.all(ax > -tolerance, axis=0)
 
     return satisfied

@@ -274,16 +274,10 @@ class TestActHullInputValidation:
         with pytest.raises((ValueError, RuntimeError)):
             hull.cal_hull(input_constrs=c_3d, input_lower_bounds=lb_2d, input_upper_bounds=ub_4d)
 
-    def test_lb_ub_dimension_mismatch(self, relu_hull_class):
-        """Test error when lb and ub have different dimensions."""
-        lb = np.array([-1.0, -1.0])  # 2D
-        ub = np.array([1.0, 1.0, 1.0])  # 3D
-
-        hull = relu_hull_class()
-
-        with pytest.raises((ValueError, RuntimeError)):
-            hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
+    # [REVIEW]: STR2 cross-file group — same scenario as test_invalid_bound_ordering_error
+    # in test_acthull_advanced.py and test_inconsistent_bounds_raises_error in test_relu.py.
+    # All three use lb > ub to trigger a bounds error. Error variants with different
+    # exception unions; kept in balanced mode.
     def test_reversed_bounds_error(self, relu_hull_class):
         """Test error when lb > ub.
 

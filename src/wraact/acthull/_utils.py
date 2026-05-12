@@ -9,12 +9,12 @@ from numpy import ndarray
 
 def cal_mn_constrs_with_one_y_dlp(
     idx: int,
-    c: ndarray,  # (n, d)
-    v: ndarray,  # (m, d)
-    aux_lines: ndarray,  # (_, d+1)
+    c: ndarray,
+    v: ndarray,
+    aux_lines: ndarray,
     aux_point: float | ndarray | None,
     is_convex: bool = True,
-) -> tuple[ndarray, ndarray]:  # (n, d+1) | (n+1, d+1) , (m, d+1)
+) -> tuple[ndarray, ndarray]:
     """
     Calculate the multi-neuron constraints for one specified input dimension of the function hull for the DLP (double linear pieces) function.
 

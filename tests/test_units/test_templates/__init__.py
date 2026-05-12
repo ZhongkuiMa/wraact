@@ -36,6 +36,6 @@ class TestLeakyReLUSoundness(BaseSoundnessTest):
 
 __docformat__ = "restructuredtext"
 
-from tests.test_templates.base_soundness_template import BaseSoundnessTest
+from tests.test_units.test_templates.base_soundness_template import BaseSoundnessTest
 
 __all__ = ["BaseSoundnessTest"]

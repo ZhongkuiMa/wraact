@@ -54,12 +54,12 @@ def tanh_np(x):
 class TestSigmoidHullBasic:
     """Basic functionality tests for SigmoidHull."""
 
-    def test_sigmoid_hull_returns_ndarray(self):
+    def test_sigmoid_hull_returns_ndarray(self, sigmoid_hull_class):
         """Verify cal_hull() returns an ndarray."""
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(result, np.ndarray)
@@ -72,22 +72,22 @@ class TestSigmoidHullBasic:
             pytest.param(3, 7, id="3d"),
         ],
     )
-    def test_sigmoid_hull_output_shape(self, dim, expected_cols):
+    def test_sigmoid_hull_output_shape(self, dim, expected_cols, sigmoid_hull_class):
         """Verify output shape for given input dimension."""
         lb = -2.0 * np.ones(dim)
         ub = 2.0 * np.ones(dim)
 
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert result.shape[1] == expected_cols
 
-    def test_sigmoid_hull_finite_values(self):
+    def test_sigmoid_hull_finite_values(self, sigmoid_hull_class):
         """Verify output contains no inf or nan."""
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert np.all(np.isfinite(result))
@@ -175,12 +175,12 @@ class TestSigmoidHullSingleNeuron:
 class TestTanhHullBasic:
     """Basic functionality tests for TanhHull."""
 
-    def test_tanh_hull_returns_ndarray(self):
+    def test_tanh_hull_returns_ndarray(self, tanh_hull_class):
         """Verify cal_hull() returns an ndarray."""
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
-        hull = TanhHull()
+        hull = tanh_hull_class()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(result, np.ndarray)
@@ -193,22 +193,22 @@ class TestTanhHullBasic:
             pytest.param(3, 7, id="3d"),
         ],
     )
-    def test_tanh_hull_output_shape(self, dim, expected_cols):
+    def test_tanh_hull_output_shape(self, dim, expected_cols, tanh_hull_class):
         """Verify output shape for given input dimension."""
         lb = -2.0 * np.ones(dim)
         ub = 2.0 * np.ones(dim)
 
-        hull = TanhHull()
+        hull = tanh_hull_class()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert result.shape[1] == expected_cols
 
-    def test_tanh_hull_finite_values(self):
+    def test_tanh_hull_finite_values(self, tanh_hull_class):
         """Verify output contains no inf or nan."""
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
-        hull = TanhHull()
+        hull = tanh_hull_class()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert np.all(np.isfinite(result))
@@ -315,9 +315,9 @@ class TestSShapeEdgeCases:
             ),
         ],
     )
-    def test_sigmoid_bound_configurations(self, lb, ub, scenario):
+    def test_sigmoid_bound_configurations(self, lb, ub, scenario, sigmoid_hull_class):
         """Test sigmoid with various bound configurations."""
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
@@ -343,9 +343,9 @@ class TestSShapeEdgeCases:
             ),
         ],
     )
-    def test_tanh_bound_configurations(self, lb, ub, scenario):
+    def test_tanh_bound_configurations(self, lb, ub, scenario, tanh_hull_class):
         """Test tanh with various bound configurations."""
-        hull = TanhHull()
+        hull = tanh_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
@@ -362,12 +362,12 @@ class TestSShapeMultiDimensional:
             pytest.param(4, 9, id="4d"),
         ],
     )
-    def test_sigmoid_various_dimensions(self, dim, expected_cols):
+    def test_sigmoid_various_dimensions(self, dim, expected_cols, sigmoid_hull_class):
         """Test sigmoid with various input dimensions."""
         lb = -2.0 * np.ones(dim)
         ub = 2.0 * np.ones(dim)
 
-        hull = SigmoidHull()
+        hull = sigmoid_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert constraints.shape[1] == expected_cols
@@ -380,12 +380,12 @@ class TestSShapeMultiDimensional:
             pytest.param(4, 9, id="4d"),
         ],
     )
-    def test_tanh_various_dimensions(self, dim, expected_cols):
+    def test_tanh_various_dimensions(self, dim, expected_cols, tanh_hull_class):
         """Test tanh with various input dimensions."""
         lb = -2.0 * np.ones(dim)
         ub = 2.0 * np.ones(dim)
 
-        hull = TanhHull()
+        hull = tanh_hull_class()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert constraints.shape[1] == expected_cols

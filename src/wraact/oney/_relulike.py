@@ -23,16 +23,16 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
 
     def cal_constrs(
         self,
-        c: ndarray,  # (_, d)
-        v: ndarray,  # (_, d)
-        lb: ndarray | None = None,  # (d-1,)
-        ub: ndarray | None = None,  # (d-1,)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None = None,
+        ub: ndarray | None = None,
         dtype_cdd: Literal["float", "fraction"] = "float",
-    ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, d+1)
+    ) -> tuple[ndarray, Literal["float", "fraction"]]:
         """Compute single-output ReLU-like hull constraints.
 
-        :param c: Input constraints. Shape: (_, d).
-        :param v: Vertices. Shape: (_, d).
+        :param c: Input constraints. Shape: ``_, d``.
+        :param v: Vertices. Shape: ``_, d``.
         :param lb: Lower bounds per dimension.
         :param ub: Upper bounds per dimension.
         :param dtype_cdd: Data type for pycddlib. Default: "float".
@@ -71,14 +71,14 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
     @classmethod
     def cal_sn_constrs(
         cls,
-        lb: ndarray,  # (d,)
-        ub: ndarray,  # (d,)
-    ) -> ndarray:  # (_, d+2)
+        lb: ndarray,
+        ub: ndarray,
+    ) -> ndarray:
         """Compute single-neuron upper bound for the first input dimension.
 
-        :param lb: Lower bounds per dimension. Shape: (d,).
-        :param ub: Upper bounds per dimension. Shape: (d,).
-        :return: Upper bound constraint. Shape: (1, d+2).
+        :param lb: Lower bounds per dimension. Shape: ``d,``.
+        :param ub: Upper bounds per dimension. Shape: ``d,``.
+        :return: Upper bound constraint. Shape: ``1, d+2``.
         """
         dim = lb.shape[0]
         c = np.zeros((1, dim + 2), dtype=np.float64)
@@ -98,20 +98,20 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
     @classmethod
     def cal_mn_constrs(
         cls,
-        c: ndarray,  # (_, d)
-        v: ndarray,  # (_, d)
-        lb: ndarray | None = None,  # (d-1,)
-        ub: ndarray | None = None,  # (d-1,)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None = None,
+        ub: ndarray | None = None,
         n_output_constrs: int = 1,
-    ) -> ndarray:  # (_, d+1)
+    ) -> ndarray:
         """Compute multi-neuron constraints for single-output ReLU-like activation.
 
-        :param c: Input constraints. Shape: (_, d).
-        :param v: Vertices. Shape: (_, d).
+        :param c: Input constraints. Shape: ``_, d``.
+        :param v: Vertices. Shape: ``_, d``.
         :param lb: Lower bounds per dimension.
         :param ub: Upper bounds per dimension.
         :param n_output_constrs: Number of output constraints to return.
-        :return: Top-k multi-neuron constraints. Shape: (_, d+1).
+        :return: Top-k multi-neuron constraints. Shape: ``_, d+1``.
         """
         d = c.shape[1] - 1
 

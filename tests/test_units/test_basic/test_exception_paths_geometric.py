@@ -172,7 +172,7 @@ class TestMaxPoolEdgeCases:
         c4_second = MaxPoolHullDLP.cal_sn_constrs(lb4, ub4)
         np.testing.assert_array_equal(c4_first, c4_second)
 
-    def test_maxpool_single_vertex_constant_function(self):
+    def test_maxpool_single_vertex_constant_function(self, max_pool_hull_dlp):
         """Test MaxPool with single vertex (constant function).
 
         Triggers:
@@ -182,7 +182,7 @@ class TestMaxPoolEdgeCases:
         # Single point = single vertex
         lb = ub = np.array([0.5, 0.5])
 
-        hull = MaxPoolHullDLP(if_cal_multi_neuron_constrs=True)
+        hull = max_pool_hull_dlp
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         # Should produce valid constraints for constant function
@@ -190,17 +190,17 @@ class TestMaxPoolEdgeCases:
         assert constraints.shape[0] >= 2  # At least upper and lower bounds
         assert np.all(np.isfinite(constraints))
 
-    def test_maxpool_single_vertex_3d(self):
+    def test_maxpool_single_vertex_3d(self, max_pool_hull_dlp):
         """Test 3D single vertex case."""
         lb = ub = np.array([1.0, 2.0, 3.0])
 
-        hull = MaxPoolHullDLP(if_cal_multi_neuron_constrs=True)
+        hull = max_pool_hull_dlp
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_maxpool_single_nontrivial_piece_simplification(self):
+    def test_maxpool_single_nontrivial_piece_simplification(self, max_pool_hull_dlp):
         """Test DLP where only one piece is ever maximum.
 
         Triggers:
@@ -210,32 +210,32 @@ class TestMaxPoolEdgeCases:
         lb = np.array([10.0, -0.1, -0.1])
         ub = np.array([20.0, 0.1, 0.1])
 
-        hull = MaxPoolHullDLP(if_cal_multi_neuron_constrs=True)
+        hull = max_pool_hull_dlp
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         # Should successfully simplify to single piece
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_maxpool_single_piece_4d(self):
+    def test_maxpool_single_piece_4d(self, max_pool_hull_dlp):
         """Test 4D case with one dimension clearly dominant."""
         # First dimension always largest
         lb = np.array([100.0, -1.0, -1.0, -1.0])
         ub = np.array([200.0, 1.0, 1.0, 1.0])
 
-        hull = MaxPoolHullDLP(if_cal_multi_neuron_constrs=True)
+        hull = max_pool_hull_dlp
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
-    def test_maxpool_narrow_bounds_many_dimensions(self):
+    def test_maxpool_narrow_bounds_many_dimensions(self, max_pool_hull_dlp):
         """Test MaxPool with many dimensions where most are narrow."""
         # Only first dimension varies significantly
         lb = np.array([-100.0, -1e-6, -1e-6, -1e-6, -1e-6])
         ub = np.array([100.0, 1e-6, 1e-6, 1e-6, 1e-6])
 
-        hull = MaxPoolHullDLP(if_cal_multi_neuron_constrs=True)
+        hull = max_pool_hull_dlp
         try:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             # If it succeeds, verify validity

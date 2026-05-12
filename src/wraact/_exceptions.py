@@ -12,10 +12,6 @@ class DegeneratedError(Exception):
     """
 
     def __init__(self, message="The polytope is degenerated."):
-        """Initialize with an optional error message.
-
-        :param message: The error message. Default: "The polytope is degenerated."
-        """
         super().__init__(message)
 
     def __str__(self):
@@ -27,14 +23,11 @@ class NotConvergedError(Exception):
     """
     An exception for not converged calculation in an algorithm.
 
-    :param message: The shown exception message.
+    It means the iterative solver did not converge within the maximum
+    number of iterations.
     """
 
     def __init__(self, message="The calculation is not converged."):
-        """Initialize with an optional error message.
-
-        :param message: The error message. Default: "The calculation is not converged."
-        """
         super().__init__(message)
 
     def __str__(self):

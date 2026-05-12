@@ -54,18 +54,18 @@ class MaxPoolHullDLP(ReLULikeHull):
 
     def cal_constrs(
         self,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        lb: ndarray | None,  # (d-1,)
-        ub: ndarray | None,  # (d-1,)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None,
+        ub: ndarray | None,
         dtype_cdd: Literal["float", "fraction"] = "float",
-    ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, d+1)
+    ) -> tuple[ndarray, Literal["float", "fraction"]]:
         """Compute MaxPool hull constraints using DLP upper bound construction.
 
-        :param c: Input constraints in H-representation. Shape: (n, d).
-        :param v: Vertices of input polytope. Shape: (m, d).
-        :param lb: Lower bounds per dimension. Shape: (d-1,).
-        :param ub: Upper bounds per dimension. Shape: (d-1,).
+        :param c: Input constraints in H-representation. Shape: ``n, d``.
+        :param v: Vertices of input polytope. Shape: ``m, d``.
+        :param lb: Lower bounds per dimension. Shape: ``d-1,``.
+        :param ub: Upper bounds per dimension. Shape: ``d-1,``.
         :param dtype_cdd: Data type for pycddlib. Default: "float".
         :return: Tuple of (constraints, dtype_cdd). Constraints shape: (_, d+2).
         """
@@ -88,9 +88,9 @@ class MaxPoolHullDLP(ReLULikeHull):
     @classmethod
     def cal_sn_constrs(
         cls,
-        lb: ndarray,  # (d,)
-        ub: ndarray,  # (d,)
-    ) -> ndarray:  # (d+1, d+2)
+        lb: ndarray,
+        ub: ndarray,
+    ) -> ndarray:
         """
         Calculate the single-neuron constraints for the MaxPool function.
 
@@ -134,21 +134,21 @@ class MaxPoolHullDLP(ReLULikeHull):
     @classmethod
     def cal_mn_constrs(
         cls,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        lb: ndarray | None,  # (d-1,)
-        ub: ndarray | None,  # (d-1,)
-    ) -> ndarray:  # (n, d+1)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None,
+        ub: ndarray | None,
+    ) -> ndarray:
         """Compute multi-neuron constraints for MaxPool using DLP construction.
 
         Handles trivial cases (single vertex, single piece) directly,
         then constructs a DLP upper bound for the non-trivial case.
 
-        :param c: Input constraints in H-representation. Shape: (n, d).
-        :param v: Vertices of input polytope. Shape: (m, d).
+        :param c: Input constraints in H-representation. Shape: ``n, d``.
+        :param v: Vertices of input polytope. Shape: ``m, d``.
         :param lb: Lower bounds per dimension.
         :param ub: Upper bounds per dimension.
-        :return: Multi-neuron constraints. Shape: (_, d+2).
+        :return: Multi-neuron constraints. Shape: ``_, d+2``.
         """
         # ------------------------ Trivial case ------------------------
         cc = cls._handle_case_of_one_vertex(v)
@@ -161,11 +161,11 @@ class MaxPoolHullDLP(ReLULikeHull):
         # ------------------------ Non-trivial case ------------------------
         nt_idxs = cls._find_nontrivial_idxs(v)
         # Other degenrate cases are handled in _construct_dlp.
-        pieces = cls._construct_dlp(v, nt_idxs)  # (2, 1+d+1)
+        pieces = cls._construct_dlp(v, nt_idxs)
         # After constructing the DLP function, we still may meet trivial cases due to
         # the construction method.
         # We calculate the maximum value of each piece.
-        pv = pieces[:, :-1] @ v.T  # (2, n_v)
+        pv = pieces[:, :-1] @ v.T
         nt_idxs = sorted(set(np.argmax(pv, axis=0)))
         if len(nt_idxs) == 1:
             idx = nt_idxs.pop()
@@ -178,24 +178,24 @@ class MaxPoolHullDLP(ReLULikeHull):
 
         # Enumerate all vertices and calculate (Ax + b) / (y - x_i) for each vertex.
         # Calculate the Ax + b
-        Axb = c @ v.T  # (n_c, n_v)
-        Axb = np.expand_dims(Axb, 1)  # (n_c, 1, n_v)
+        Axb = c @ v.T
+        Axb = np.expand_dims(Axb, 1)
         if not np.all(Axb >= -TOLERANCE):
             raise RuntimeError(f"Negative beta.\nAxb={Axb}.")
 
         # Calculate y - each piece
-        v_y = np.max(pv, 0, keepdims=True)  # (1, n_v)
-        yx = v_y - pv  # (2, n_v)
-        yx = np.expand_dims(yx, 0)  # (1, 2, n_v)
+        v_y = np.max(pv, 0, keepdims=True)
+        yx = v_y - pv
+        yx = np.expand_dims(yx, 0)
         # Calculate (Ax + b) / (y - \sum x_i)
         with np.errstate(divide="ignore", invalid="ignore"):
-            beta = np.where(yx != 0, Axb / yx, np.inf)  # (n_c, 2, n_v)
+            beta = np.where(yx != 0, Axb / yx, np.inf)
         if not np.all(beta >= -TOLERANCE):
             raise RuntimeError(f"Negative beta.\nbeta={beta}.")
 
         # Find the minimum value of beta for all vertices to maintain the soundness of
         # the function hull.
-        beta = np.min(beta, 2)  # (n_c, 2)
+        beta = np.min(beta, 2)
 
         if np.isinf(np.max(beta)):
             raise RuntimeError(f"Inf beta.\nbeta={beta}.")
@@ -205,17 +205,17 @@ class MaxPoolHullDLP(ReLULikeHull):
         # Theoretically, there is at most one non-zero beta value, so the following is
         # redundant. But we still do this for numerical stability.
         # That means we only accept one non-zero beta value.
-        beta_max = np.max(beta, 1, keepdims=True)  # (n_c, 1)
-        beta = np.where(beta < beta_max, 0.0, beta)  # (n_c, 2)
+        beta_max = np.max(beta, 1, keepdims=True)
+        beta = np.where(beta < beta_max, 0.0, beta)
 
         # \beta * (y - \sum x_i).
-        c2 = np.matmul(beta, pieces)  # (n, 1+d+1)
+        c2 = np.matmul(beta, pieces)
 
         # The final constraints are Ax + b - \beta * (y - \sum x_i) >= 0.
         # Add -\beta * (y - \sum x_i).
-        cc = -c2  # (n, 1+d+1)
+        cc = -c2
         # Add Ax + b
-        cc[:, :-1] += c  # (n, d+1)
+        cc[:, :-1] += c
 
         return cc
 
@@ -282,20 +282,20 @@ class MaxPoolHullDLP(ReLULikeHull):
     def _cal_mn_constrs_with_one_y(
         cls,
         idx: int,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        dlp_lines: ndarray,  # (2, d+1)
+        c: ndarray,
+        v: ndarray,
+        dlp_lines: ndarray,
         dlp_point: float,
         is_convex: bool,
-    ) -> tuple[ndarray, ndarray]:  # (n, d+1) , (m, d+1)
+    ) -> tuple[ndarray, ndarray]:
         raise RuntimeError("This method should not be called.")
 
     @classmethod
     def _construct_dlp(
         cls,
-        v: ndarray,  # (m, d)
+        v: ndarray,
         nt_idxs: list[int],
-    ) -> ndarray:  # (2, d+1)
+    ) -> ndarray:
         # When constructing the DLP function as the upper bound of the MaxPool
         # function, we only need to consider the nontrivial coordinates.
 
@@ -369,21 +369,21 @@ class MaxPoolHull(MaxPoolHullDLP):
     @classmethod
     def cal_mn_constrs(
         cls,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        lb: ndarray | None,  # (d-1,)
-        ub: ndarray | None,  # (d-1,)
-    ) -> ndarray:  # (n, d+1)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None,
+        ub: ndarray | None,
+    ) -> ndarray:
         """Compute multi-neuron constraints for MaxPool without DLP construction.
 
         Computes upper constraints directly from the input polytope
         vertices and constraints, handling trivial cases first.
 
-        :param c: Input constraints in H-representation. Shape: (n, d).
-        :param v: Vertices of input polytope. Shape: (m, d).
+        :param c: Input constraints in H-representation. Shape: ``n, d``.
+        :param v: Vertices of input polytope. Shape: ``m, d``.
         :param lb: Lower bounds per dimension.
         :param ub: Upper bounds per dimension.
-        :return: Multi-neuron constraints. Shape: (_, d+2).
+        :return: Multi-neuron constraints. Shape: ``_, d+2``.
         """
         # This only calculate the upper constraints of the function hull, which are
         # non-trivial constraints.
@@ -401,27 +401,27 @@ class MaxPoolHull(MaxPoolHullDLP):
         # Other degenrate cases are handled in the following calculation.
         # Enumerate all vertices and calculate (Ax + b) / (y - x_i) for each vertex.
         # Calculate the Ax + b
-        Axb = c @ v.T  # (n_c, n_v)
-        Axb = np.expand_dims(Axb, 1)  # (n_c, 1, n_v)
+        Axb = c @ v.T
+        Axb = np.expand_dims(Axb, 1)
         if not np.all(Axb >= -TOLERANCE):
             raise RuntimeError(f"Negative beta.\nAxb={Axb}.")
         Axb = np.maximum(Axb, 0.0)  # Remove tiny negative values
 
         # Calculate y - x_i
-        v_y = np.max(v[:, 1:], 1, keepdims=True)  # (n_v, 1)
-        yx = v_y - v[:, 1:][:, nt_idxs]  # (n_v, d')
-        yx = np.expand_dims(yx.T, 0)  # (1, d', n_v)
+        v_y = np.max(v[:, 1:], 1, keepdims=True)
+        yx = v_y - v[:, 1:][:, nt_idxs]
+        yx = np.expand_dims(yx.T, 0)
 
         # Calculate (Ax + b) / (y - x_i)
         with np.errstate(divide="ignore", invalid="ignore"):
-            beta = np.where(yx != 0, Axb / yx, np.inf)  # (n_c, d', n_v)
+            beta = np.where(yx != 0, Axb / yx, np.inf)
 
         if not np.all(beta >= -TOLERANCE):
             raise RuntimeError(f"Negative beta.\nbeta={beta}.")
 
         # Find the minimum value of beta for all vertices to maintain the soundness of
         # the function hull.
-        beta = np.min(beta, 2)  # (n_c, d')
+        beta = np.min(beta, 2)
         if np.isinf(np.max(beta)):
             raise RuntimeError(f"Inf beta.\nbeta={beta}.")
 
@@ -430,22 +430,22 @@ class MaxPoolHull(MaxPoolHullDLP):
         # Theoretically, there is at most one non-zero beta value, so the following is
         # redundant. But we still do this for numerical stability.
         # That means we only accept one non-zero beta value.
-        beta_max = np.max(beta, 1, keepdims=True)  # (n_c, 1)
-        beta = np.where(beta < beta_max, 0.0, beta)  # (n_c, d')
+        beta_max = np.max(beta, 1, keepdims=True)
+        beta = np.where(beta < beta_max, 0.0, beta)
 
         # The final constraints are Ax + b - \beta * (y - x_i) >= 0.
         # Add Ax + b
         cc = c
         # Add - \beta * (y - x_i)
         cc[:, 1:][:, nt_idxs] += beta
-        cc = np.hstack((cc, -beta_max))  # (n_c, d+2)
+        cc = np.hstack((cc, -beta_max))
 
         return cc
 
     @classmethod
     def _construct_dlp(
         cls,
-        v: ndarray,  # (m, d)
+        v: ndarray,
         nt_idxs: list[int],
     ) -> ndarray:
         raise RuntimeError("This method should not be called.")
@@ -454,10 +454,10 @@ class MaxPoolHull(MaxPoolHullDLP):
     def _cal_mn_constrs_with_one_y(
         cls,
         idx: int,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        dlp_lines: ndarray,  # (2, d+1)
+        c: ndarray,
+        v: ndarray,
+        dlp_lines: ndarray,
         dlp_point: float,
         is_convex: bool,
-    ) -> tuple[ndarray, ndarray]:  # (n, d+1) , (m, d+1)
+    ) -> tuple[ndarray, ndarray]:
         raise RuntimeError("This method should not be called.")

@@ -38,7 +38,7 @@ def get_parallel_tangent_line_sigmoid_np(
     Computes the tangent line y = k*x + b where the slope k is given,
     and the line is tangent to the sigmoid curve.
 
-    :param k: Slope values. Shape: (n,).
+    :param k: Slope values. Shape: ``n,``.
     :param get_big: If True, return upper tangent; else lower tangent.
     :return: Tuple of (b, k, x) where b is intercept, k is slope, x is
         tangent point. Each has shape (n,).
@@ -64,7 +64,7 @@ def get_parallel_tangent_line_tanh_np(
     Computes the tangent line y = k*x + b where the slope k is given,
     and the line is tangent to the tanh curve.
 
-    :param k: Slope values. Shape: (n,).
+    :param k: Slope values. Shape: ``n,``.
     :param get_big: If True, return upper tangent; else lower tangent.
     :return: Tuple of (b, k, x) where b is intercept, k is slope, x is
         tangent point. Each has shape (n,).
@@ -109,7 +109,7 @@ def get_second_tangent_line_sigmoid_np(
     Uses iterative method to find a tangent line that passes through
     the point (x1, sigmoid(x1)) on the sigmoid curve.
 
-    :param x1: First tangent point x-coordinates. Shape: (n,).
+    :param x1: First tangent point x-coordinates. Shape: ``n,``.
     :param get_big: If True, return upper tangent; else lower tangent.
     :return: Tuple of (b, k, x2) where b is intercept, k is slope, x2 is
         second tangent point. Each has shape (n,).
@@ -142,7 +142,7 @@ def get_second_tangent_line_tanh_np(
     Uses iterative method to find a tangent line that passes through
     the point (x1, tanh(x1)) on the tanh curve.
 
-    :param x1: First tangent point x-coordinates. Shape: (n,) or scalar.
+    :param x1: First tangent point x-coordinates. Shape: ``n,`` or scalar.
     :param get_big: If True, return upper tangent; else lower tangent.
     :return: Tuple of (b, k, x2) where b is intercept, k is slope, x2 is
         second tangent point. Each has shape (n,).
@@ -164,7 +164,7 @@ def get_second_tangent_line_tanh_np(
             k = 0.1 if np.isnan(k) else k
         else:
             k = np.where(np.isnan(k), 0.1, k)
-        b, k, x_new = get_parallel_tangent_line_tanh_np(k, get_big)
+        b, k, x_new = get_parallel_tangent_line_tanh_np(k, get_big)  # pyright: ignore[reportArgumentType]
 
         if np.all(np.abs(x2 - x_new) < _CONVERGE_TOL):
             return b, k, x_new

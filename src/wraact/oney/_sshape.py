@@ -22,16 +22,16 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
 
     def cal_constrs(
         self,
-        c: ndarray,  # (_, d)
-        v: ndarray,  # (_, d)
-        lb: ndarray | None = None,  # (d-1,)
-        ub: ndarray | None = None,  # (d-1,)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None = None,
+        ub: ndarray | None = None,
         dtype_cdd: Literal["float", "fraction"] = "float",
-    ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, d+1)
+    ) -> tuple[ndarray, Literal["float", "fraction"]]:
         """Compute single-output S-shaped hull constraints.
 
-        :param c: Input constraints. Shape: (_, d).
-        :param v: Vertices. Shape: (_, d).
+        :param c: Input constraints. Shape: ``_, d``.
+        :param v: Vertices. Shape: ``_, d``.
         :param lb: Lower bounds per dimension.
         :param ub: Upper bounds per dimension.
         :param dtype_cdd: Data type for pycddlib. Default: "float".
@@ -45,19 +45,19 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
 
     def cal_mn_constrs(  # type: ignore[override]
         self,
-        c: ndarray,  # (_, d)
-        v: ndarray,  # (_, d)
-        lb: ndarray | None = None,  # (d-1,)
-        ub: ndarray | None = None,  # (d-1,)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None = None,
+        ub: ndarray | None = None,
         n_output_constrs: int = 1,
-    ) -> ndarray:  # (_, d+1)
+    ) -> ndarray:
         """Compute multi-neuron constraints for single-output S-shaped activation.
 
         Constructs lower and upper DLP bounds, then selects the top-k
         constraints from each side.
 
-        :param c: Input constraints. Shape: (_, d).
-        :param v: Vertices. Shape: (_, d).
+        :param c: Input constraints. Shape: ``_, d``.
+        :param v: Vertices. Shape: ``_, d``.
         :param lb: Lower bounds per dimension.
         :param ub: Upper bounds per dimension.
         :param n_output_constrs: Number of output constraints per side.

@@ -73,11 +73,6 @@ class TestActHullDoubleOrdersMode:
         # Should be identical
         np.testing.assert_array_equal(constraints1, constraints2)
 
-    def test_leakyrelu_double_orders_config_error(self, leakyrelu_hull_class):
-        """Test LeakyReLU double orders configuration error."""
-        with pytest.raises(ValueError, match=r".*"):
-            leakyrelu_hull_class(if_use_double_orders=True, if_cal_multi_neuron_constrs=False)
-
     def test_maxpool_default_mode(self, maxpool_hull_class):
         """Test MaxPool default configuration."""
         lb = np.array([-1.0, -1.0])
@@ -108,24 +103,33 @@ class TestActHullErrorHandling:
                 if_cal_single_neuron_constrs=False, if_cal_multi_neuron_constrs=False
             )
 
-    def test_invalid_bound_ordering_error(self, relu_hull_class):
-        """Test that lb > ub raises ValueError."""
-        lb = np.array([1.0, 1.0])
-        ub = np.array([-1.0, -1.0])  # Reversed!
-
+    @pytest.mark.parametrize(
+        ("lb", "ub", "exc_types"),
+        [
+            pytest.param(
+                np.array([1.0, 1.0]),
+                np.array([-1.0, -1.0]),
+                ValueError,
+                id="reversed_bounds",
+            ),
+            pytest.param(
+                np.array([-1.0, -1.0]),
+                np.array([1.0, 1.0, 1.0]),
+                (ValueError, IndexError, RuntimeError),
+                id="dimension_mismatch",
+            ),
+            pytest.param(
+                np.array([-1.0, np.nan]),
+                np.array([1.0, 1.0]),
+                ValueError,
+                id="nan_bounds",
+            ),
+        ],
+    )
+    def test_invalid_array_input_raises_error(self, lb, ub, exc_types, relu_hull_class):
+        """Test that invalid array inputs raise appropriate errors."""
         hull = relu_hull_class()
-
-        with pytest.raises(ValueError, match=r".*"):
-            hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-    def test_mismatched_bound_dimensions_error(self, relu_hull_class):
-        """Test that mismatched bound dimensions raise error."""
-        lb = np.array([-1.0, -1.0])
-        ub = np.array([1.0, 1.0, 1.0])  # Different dimension!
-
-        hull = relu_hull_class()
-
-        with pytest.raises((ValueError, IndexError)):
+        with pytest.raises(exc_types, match=r".*"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     def test_scalar_bounds_error(self, relu_hull_class):
@@ -137,16 +141,6 @@ class TestActHullErrorHandling:
 
         # Should raise error for scalar bounds (AttributeError on ndim check)
         with pytest.raises((ValueError, TypeError, IndexError, AttributeError)):
-            hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-    def test_nan_bounds_error(self, relu_hull_class):
-        """Test that NaN bounds raise error."""
-        lb = np.array([-1.0, np.nan])
-        ub = np.array([1.0, 1.0])
-
-        hull = relu_hull_class()
-
-        with pytest.raises(ValueError, match=r".*"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     def test_inf_bounds_detected(self, relu_hull_class):
@@ -237,30 +231,24 @@ class TestActHullConstraintCombinations:
 class TestActHullSpecialCases:
     """Test special and edge case scenarios."""
 
-    def test_1d_input_multi_neuron(self, relu_hull_class):
-        """Test multi-neuron mode with 1D input."""
-        lb = np.array([-1.0])
-        ub = np.array([1.0])
+    @pytest.mark.parametrize(
+        ("dim", "expected_cols"),
+        [
+            pytest.param(1, 3, id="1d"),
+            pytest.param(5, 11, id="5d"),
+        ],
+    )
+    def test_input_dimension_multi_neuron(self, dim, expected_cols, relu_hull_class):
+        """Test multi-neuron mode with varying input dimensions."""
+        lb = -np.ones(dim)
+        ub = np.ones(dim)
 
         hull = relu_hull_class(if_use_double_orders=False, if_cal_multi_neuron_constrs=True)
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
         assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 3  # 2*1 + 1
-        assert np.all(np.isfinite(constraints))
-
-    def test_high_dimensional_input_multi_neuron(self, relu_hull_class):
-        """Test multi-neuron mode with high-dimensional input."""
-        lb = np.array([-1.0] * 5)
-        ub = np.array([1.0] * 5)
-
-        hull = relu_hull_class(if_use_double_orders=False, if_cal_multi_neuron_constrs=True)
-
-        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-        assert isinstance(constraints, np.ndarray)
-        assert constraints.shape[1] == 11  # 2*5 + 1
+        assert constraints.shape[1] == expected_cols
         assert np.all(np.isfinite(constraints))
 
     def test_constraint_count_comparison_single_vs_multi(self, relu_hull_class):

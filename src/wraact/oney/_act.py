@@ -56,18 +56,18 @@ class ActHullWithOneY(ActHull, ABC):
 
     def _cal_hull_with_mn_constrs(
         self,
-        c: ndarray,  # (n, d)
-        lb: ndarray | None = None,  # (d-1,)
-        ub: ndarray | None = None,  # (d-1,)
+        c: ndarray,
+        lb: ndarray | None = None,
+        ub: ndarray | None = None,
     ) -> ndarray | None:
         """Compute hull with multi-neuron constraints for single output.
 
         Computes vertices from input constraints, updates bounds, and
         generates multi-neuron constraints extending one output dimension.
 
-        :param c: Input constraints in H-representation. Shape: (n, d).
-        :param lb: Lower bounds per dimension. Shape: (d-1,).
-        :param ub: Upper bounds per dimension. Shape: (d-1,).
+        :param c: Input constraints in H-representation. Shape: ``n, d``.
+        :param lb: Lower bounds per dimension. Shape: ``d-1,``.
+        :param ub: Upper bounds per dimension. Shape: ``d-1,``.
         :return: Hull constraints or None if degenerate.
         :raises ValueError: If input constraints are not provided.
         """
@@ -99,8 +99,6 @@ class ActHullWithOneY(ActHull, ABC):
             v, dtype_cdd = self.cal_vertices(c, "fraction")
             lb = np.min(v, axis=0)[1:]
             ub = np.max(v, axis=0)[1:]
-        except Exception as e:
-            raise e
 
         # Update input bounds constraints
         d = lb.shape[0]
@@ -138,27 +136,27 @@ class ActHullWithOneY(ActHull, ABC):
     @abstractmethod
     def cal_mn_constrs(  # type: ignore[override]
         cls,
-        c: ndarray,  # (_, d)
-        v: ndarray,  # (_, d)
-        lb: ndarray | None = None,  # (d-1,)
-        ub: ndarray | None = None,  # (d-1,)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None = None,
+        ub: ndarray | None = None,
         n_output_constrs: int = 1,
     ) -> ndarray:
         """Compute multi-neuron constraints for single output dimension.
 
         Abstract method to be implemented by subclasses.
 
-        :param c: Input constraints. Shape: (_, d).
-        :param v: Vertices. Shape: (_, d).
-        :param lb: Lower bounds. Shape: (d-1,).
-        :param ub: Upper bounds. Shape: (d-1,).
+        :param c: Input constraints. Shape: ``_, d``.
+        :param v: Vertices. Shape: ``_, d``.
+        :param lb: Lower bounds. Shape: ``d-1,``.
+        :param ub: Upper bounds. Shape: ``d-1,``.
         :param n_output_constrs: Number of output constraints to generate.
-        :return: Multi-neuron constraints. Shape: (_, d+1).
+        :return: Multi-neuron constraints. Shape: ``_, d+1``.
         """
 
     @staticmethod
     def _get_topk_constrs(
-        c: ndarray,  # (_, d)
+        c: ndarray,
         topk: int,
         is_min: bool = True,
     ) -> ndarray:
@@ -167,10 +165,10 @@ class ActHullWithOneY(ActHull, ABC):
         Filters constraints with non-zero output coefficients and returns
         those with smallest (or largest) output coefficient values.
 
-        :param c: Constraints to filter. Shape: (_, d).
+        :param c: Constraints to filter. Shape: ``_, d``.
         :param topk: Number of constraints to return.
         :param is_min: If True, return minimum values; else maximum.
-        :return: Selected constraints. Shape: (topk, d) or fewer.
+        :return: Selected constraints. Shape: ``topk, d`` or fewer.
         """
         # Choose the constraints with non-zero beta values, which is the last column
         # of the constraints.

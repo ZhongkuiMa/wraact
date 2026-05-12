@@ -21,9 +21,9 @@ class LeakyReLUHull(ReLULikeHull):
     @classmethod
     def cal_sn_constrs(
         cls,
-        lb: ndarray,  # (d,)
-        ub: ndarray,  # (d,)
-    ) -> ndarray:  # (3*d, 2*d+1)
+        lb: ndarray,
+        ub: ndarray,
+    ) -> ndarray:
         """
         Calculate the single-neuron constraints of the function hull for LeakyReLU.
 

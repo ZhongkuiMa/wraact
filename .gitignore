@@ -37,10 +37,14 @@ coverage.xml
 
 # === pytest / unittest ===
 .pytest_cache/
+tests/.pytest_cache/
+tests/results/
+tests/__pycache__/
 
-# === mypy, pylint, etc ===
+# === mypy, pylint, ruff ===
 .mypy_cache/
 .dmypy.json
+.ruff_cache/
 .pyre/
 .pytype/
 
@@ -57,22 +61,16 @@ coverage.xml
 .DS_Store
 Thumbs.db
 
-# === Model or data files ===
-#*.onnx
-#*.pt
-#*.pb
-#*.ckpt
-#*.pkl
-#*.pickle
-#*.npz
-#*.npy
-
 # === Logs and temporary files ===
+.tmp/
 *.log
 *.tmp
 *.bak
 
 # === GitHub Codespaces ===
 .devcontainer/
+
 # === Claude Code / Serena tool cache ===
 .serena/
+
+.import_linter_cache/

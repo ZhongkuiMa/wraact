@@ -28,9 +28,9 @@ class ReLUHull(ReLULikeHull):
     @classmethod
     def cal_sn_constrs(
         cls,
-        lb: ndarray,  # (d,)
-        ub: ndarray,  # (d,)
-    ) -> ndarray:  # (3*d, 1+2*d)
+        lb: ndarray,
+        ub: ndarray,
+    ) -> ndarray:
         """
         Calculate the single-neuron constraints of the function hull for ReLU.
 
@@ -83,11 +83,11 @@ class ReLUHull(ReLULikeHull):
     @classmethod
     def cal_mn_constrs(
         cls,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        lb: ndarray | None,  # (d-1,)
-        ub: ndarray | None,  # (d-1,)
-    ) -> ndarray:  # (_, 2*d-1)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None,
+        ub: ndarray | None,
+    ) -> ndarray:
         """
         Calculate the multi-neuron constraints of the function hull.
 
@@ -150,12 +150,12 @@ class ReLUHull(ReLULikeHull):
     def _cal_mn_constrs_with_one_y(
         cls,
         idx: int,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        dlp_lines: ndarray,  # (2, d+1)
+        c: ndarray,
+        v: ndarray,
+        dlp_lines: ndarray,
         dlp_point: float,
         is_convex: bool,
-    ) -> tuple[ndarray, ndarray]:  # (n, d+1) , (m, d+1)
+    ) -> tuple[ndarray, ndarray]:
         raise RuntimeError("The method should not be called.")
 
     @classmethod

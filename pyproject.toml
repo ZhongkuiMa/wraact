@@ -173,6 +173,33 @@ addopts = [
     "--strict-markers",
 ]
 
+[tool.pyright]
+pythonVersion = "3.11"
+pythonPlatform = "Linux"
+typeCheckingMode = "basic"
+include = ["src/wraact"]
+exclude = ["tests", "venv", ".venv", "build", "dist"]
+
+# Suppress false positives from bare ndarray (project convention, also used by mypy)
+reportMissingTypeArgument = false
+reportUnknownParameterType = false
+reportUnknownVariableType = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+
+# numba provides no type stubs
+reportMissingTypeStubs = false
+
+# Cascade from unknown ndarray types
+reportGeneralTypeIssues = false
+
+# False positives from try/except flow where pyright can't track variable assignment
+reportOptionalOperand = false
+reportOptionalMemberAccess = false
+
+# False positives from ndarray|float union — isinstance narrowing not tracked by pyright
+reportIndexIssue = false
+
 [project.urls]
 Homepage = "https://github.com/ZhongkuiMa/wraact"
 Repository = "https://github.com/ZhongkuiMa/wraact.git"

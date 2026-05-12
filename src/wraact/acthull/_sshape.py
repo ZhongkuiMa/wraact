@@ -43,18 +43,18 @@ class SShapeHull(ActHull, ABC):
 
     def cal_constrs(
         self,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        lb: ndarray | None,  # (d-1,)
-        ub: ndarray | None,  # (d-1,)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None,
+        ub: ndarray | None,
         dtype_cdd: Literal["float", "fraction"] = "float",
-    ) -> tuple[ndarray, Literal["float", "fraction"]]:  # (_, 2*d-1)
+    ) -> tuple[ndarray, Literal["float", "fraction"]]:
         """Compute S-shaped hull constraints combining single and multi-neuron constraints.
 
-        :param c: Input constraints in H-representation. Shape: (n, d).
-        :param v: Vertices of input polytope. Shape: (m, d).
-        :param lb: Lower bounds per dimension. Shape: (d-1,).
-        :param ub: Upper bounds per dimension. Shape: (d-1,).
+        :param c: Input constraints in H-representation. Shape: ``n, d``.
+        :param v: Vertices of input polytope. Shape: ``m, d``.
+        :param lb: Lower bounds per dimension. Shape: ``d-1,``.
+        :param ub: Upper bounds per dimension. Shape: ``d-1,``.
         :param dtype_cdd: Data type for pycddlib. Default: "float".
         :return: Tuple of (constraints, dtype_cdd). Constraints shape: (_, 2*d+1).
         """
@@ -76,14 +76,14 @@ class SShapeHull(ActHull, ABC):
 
     def cal_sn_constrs(  # type: ignore[override]
         self,
-        lb: ndarray,  # (d,)
-        ub: ndarray,  # (d,)
-    ) -> ndarray:  # (_, 1+2*d)
+        lb: ndarray,
+        ub: ndarray,
+    ) -> ndarray:
         """Compute single-neuron constraints for S-shaped activation via DLP construction.
 
-        :param lb: Lower bounds per input dimension. Shape: (d,).
-        :param ub: Upper bounds per input dimension. Shape: (d,).
-        :return: Single-neuron constraints. Shape: (_, 1+2*d).
+        :param lb: Lower bounds per input dimension. Shape: ``d,``.
+        :param ub: Upper bounds per input dimension. Shape: ``d,``.
+        :return: Single-neuron constraints. Shape: ``_, 1+2*d``.
         """
         d = lb.shape[0]
         cc = np.empty((0, 1 + d), dtype=np.float64)
@@ -106,21 +106,21 @@ class SShapeHull(ActHull, ABC):
 
     def cal_mn_constrs(  # type: ignore[override]
         self,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        lb: ndarray | None,  # (d-1,)
-        ub: ndarray | None,  # (d-1,)
-    ) -> ndarray:  # (_, 2*d-1) | (_, d+1)
+        c: ndarray,
+        v: ndarray,
+        lb: ndarray | None,
+        ub: ndarray | None,
+    ) -> ndarray:
         """Compute multi-neuron constraints for S-shaped activation via DLP.
 
         Constructs lower and upper DLP bounds for each output dimension
         and generates sound over-approximation constraints.
 
-        :param c: Input constraints in H-representation. Shape: (n, d).
-        :param v: Vertices of input polytope. Shape: (m, d).
+        :param c: Input constraints in H-representation. Shape: ``n, d``.
+        :param v: Vertices of input polytope. Shape: ``m, d``.
         :param lb: Lower bounds per dimension.
         :param ub: Upper bounds per dimension.
-        :return: Multi-neuron constraints. Shape: (_, 2*d+1).
+        :return: Multi-neuron constraints. Shape: ``_, 2*d+1``.
         :raises ValueError: If bounds are not provided.
         """
         if lb is None or ub is None:
@@ -175,12 +175,12 @@ class SShapeHull(ActHull, ABC):
     def _cal_mn_constrs_with_one_y(
         cls,
         idx: int,
-        c: ndarray,  # (n, d)
-        v: ndarray,  # (m, d)
-        dlp_lines: ndarray,  # (2, d+1) | (1, d+1)
+        c: ndarray,
+        v: ndarray,
+        dlp_lines: ndarray,
         dlp_point: float | ndarray | None,
         is_convex: bool,
-    ) -> tuple[ndarray, ndarray]:  # (n, d+1) | (n+1, d+1), (m, d+1)
+    ) -> tuple[ndarray, ndarray]:
         return cast(
             tuple[ndarray, ndarray],
             cal_mn_constrs_with_one_y_dlp(idx, c, v, dlp_lines, dlp_point, is_convex=is_convex),
@@ -198,7 +198,7 @@ class SShapeHull(ActHull, ABC):
         kli: float | ndarray,
         kui: float | ndarray,
         klui: float | ndarray,
-        c: ndarray,  # (n, d)
+        c: ndarray,
         return_single_neuron_constrs: bool,
     ) -> tuple[ndarray, ndarray, float | ndarray | None, float | ndarray | None, ndarray]:
         """
@@ -264,14 +264,14 @@ class SShapeHull(ActHull, ABC):
         kli: float | ndarray,
         kui: float | ndarray,
         klui: float | ndarray,
-        c: ndarray,  # (n, d)
+        c: ndarray,
         return_single_neuron_constrs: bool,
     ) -> tuple[
-        ndarray,  # (1, 1+dim+idx+1)
-        ndarray,  # (2, 1+dim+idx+1)
+        ndarray,
+        ndarray,
         None,
         float | ndarray | None,
-        ndarray,  # (n+4, 1+dim+idx+1)
+        ndarray,
     ]:
         """
         Calculate the auxiliary lines, auxiliary point, and the single-neuron constraints for the case where the slope of the upper linear piece is larger than the slope of the linear piece connecting the lower and upper bounds.
@@ -338,14 +338,14 @@ class SShapeHull(ActHull, ABC):
         kli: float | ndarray,
         kui: float | ndarray,
         klui: float | ndarray,
-        c: ndarray,  # (n, d)
+        c: ndarray,
         return_single_neuron_constrs: bool,
     ) -> tuple[
-        ndarray,  # (2, 1+dim+idx+1)
-        ndarray,  # (1, 1+dim+idx+1)
+        ndarray,
+        ndarray,
         float | ndarray | None,
         None,
-        ndarray,  # (n+4, 1+dim+idx+1)
+        ndarray,
     ]:
         """
         Calculate the auxiliary lines, auxiliary point, and the single-neuron constraints for the case where the slope of the lower linear piece is larger than the slope of the linear piece connecting the lower and upper bounds.
@@ -412,14 +412,14 @@ class SShapeHull(ActHull, ABC):
         kli: float | ndarray,
         kui: float | ndarray,
         klui: float | ndarray,
-        c: ndarray,  # (n, d)
+        c: ndarray,
         return_single_neuron_constrs: bool,
     ) -> tuple[
-        ndarray,  # (2, 1+dim+idx+1)
-        ndarray,  # (2, 1+dim+idx+1)
+        ndarray,
+        ndarray,
         float | ndarray | None,
         float | ndarray | None,
-        ndarray,  # (n+6, 1+dim+idx+1)
+        ndarray,
     ]:
         """
         Calculate the auxiliary lines, auxiliary point, and the single-neuron constraints for the case where (1) the slope of the upper linear piece is smaller than the slope of the linear piece connecting the lower and upper bounds, and (2) the slope of the lower linear piece is smaller than the slope of the linear piece connecting the lower and upper bounds.
@@ -487,7 +487,7 @@ class SShapeHull(ActHull, ABC):
         bp1l: float | ndarray,
         bp2l: float | ndarray,
         bluu: float | ndarray,
-    ) -> tuple[ndarray, float | ndarray | None]:  # (2, {dim}+{idx}+2)
+    ) -> tuple[ndarray, float | ndarray | None]:
         if abs((kp1l - kp2l) / (1 - kp1l * kp2l)) < MIN_DLP_ANGLE:
             aux_lines_l = np.zeros((1, idx + dim + 2), dtype=np.float64)
             aux_lines_l[:, 0] = [bluu]
@@ -516,7 +516,7 @@ class SShapeHull(ActHull, ABC):
         bp1u: float | ndarray,
         bp2u: float | ndarray,
         blul: float | ndarray,
-    ) -> tuple[ndarray, float | ndarray | None]:  # (2, {dim}+{idx}+2)
+    ) -> tuple[ndarray, float | ndarray | None]:
         if abs((kp1u - kp2u) / (1 - kp1u * kp2u)) < MIN_DLP_ANGLE:
             aux_lines_u = np.zeros((1, idx + dim + 2), dtype=np.float64)
             aux_lines_u[:, 0] = [blul]
