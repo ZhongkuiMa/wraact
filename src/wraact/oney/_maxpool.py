@@ -8,6 +8,7 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
+from wraact._enums import TopKSelector
 from wraact.acthull import MaxPoolHull, MaxPoolHullDLP
 from wraact.oney._relulike import ReLULikeHullWithOneY
 
@@ -71,6 +72,7 @@ class MaxPoolHullDLPWithOneY(ReLULikeHullWithOneY, MaxPoolHullDLP):
         lb: ndarray | None = None,
         ub: ndarray | None = None,
         n_output_constrs: int = 1,
+        topk_selector: TopKSelector = TopKSelector.BETA_MIN,
     ) -> ndarray:
         """Compute multi-neuron constraints for single-output MaxPool DLP.
 
@@ -82,7 +84,7 @@ class MaxPoolHullDLPWithOneY(ReLULikeHullWithOneY, MaxPoolHullDLP):
         :return: Top-k multi-neuron constraints. Shape: ``_, d+1``.
         """
         c = MaxPoolHullDLP.cal_mn_constrs(c, v, lb, ub)
-        c = cls._get_topk_constrs(c, n_output_constrs)
+        c = cls._get_topk_constrs(c, n_output_constrs, selector=topk_selector)
         return c
 
 
@@ -101,6 +103,7 @@ class MaxPoolHullWithOneY(MaxPoolHullDLPWithOneY, MaxPoolHull):
         lb: ndarray | None = None,
         ub: ndarray | None = None,
         n_output_constrs: int = 1,
+        topk_selector: TopKSelector = TopKSelector.BETA_MIN,
     ) -> ndarray:
         """Compute multi-neuron constraints for single-output MaxPool (no DLP).
 
@@ -112,5 +115,5 @@ class MaxPoolHullWithOneY(MaxPoolHullDLPWithOneY, MaxPoolHull):
         :return: Top-k multi-neuron constraints. Shape: ``_, d+1``.
         """
         c = MaxPoolHull.cal_mn_constrs(c, v, lb, ub)
-        c = cls._get_topk_constrs(c, n_output_constrs)
+        c = cls._get_topk_constrs(c, n_output_constrs, selector=topk_selector)
         return c

@@ -10,6 +10,7 @@ import numpy as np
 from numpy import ndarray
 
 from wraact._constants import MIN_BOUNDS_RANGE_ONEY
+from wraact._enums import TopKSelector
 from wraact.acthull import ReLULikeHull
 from wraact.oney._act import ActHullWithOneY
 
@@ -55,7 +56,9 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
                 f"Polytope too small: minimum range {min_range:.6f} < "
                 f"threshold {MIN_BOUNDS_RANGE_ONEY}. Cannot compute reliable constraints."
             )
-        c_m = self.cal_mn_constrs(c, v, lb_arr, ub_arr, self._n_output_constrs)
+        c_m = self.cal_mn_constrs(
+            c, v, lb_arr, ub_arr, self._n_output_constrs, topk_selector=self._topk_selector
+        )
 
         # Fill c_m with c_s if constraints number is smaller than n_output_constrs
         if c_m.shape[0] < self._n_output_constrs:
@@ -103,6 +106,7 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
         lb: ndarray | None = None,
         ub: ndarray | None = None,
         n_output_constrs: int = 1,
+        topk_selector: TopKSelector = TopKSelector.BETA_MIN,
     ) -> ndarray:
         """Compute multi-neuron constraints for single-output ReLU-like activation.
 
@@ -111,6 +115,8 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
         :param lb: Lower bounds per dimension.
         :param ub: Upper bounds per dimension.
         :param n_output_constrs: Number of output constraints to return.
+        :param topk_selector: Selection strategy for top-k filter. See
+            :class:`TopKSelector`.
         :return: Top-k multi-neuron constraints. Shape: ``_, d+1``.
         """
         d = c.shape[1] - 1
@@ -120,6 +126,6 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
         ub_arr: ndarray = ub  # type: ignore[assignment]
         aux_lines, aux_point = cls._construct_dlp(0, d, lb_arr[0], ub_arr[0])
         c, v = cls._cal_mn_constrs_with_one_y(0, c, v, aux_lines, aux_point, is_convex=True)
-        c = cls._get_topk_constrs(c, n_output_constrs)
+        c = cls._get_topk_constrs(c, n_output_constrs, selector=topk_selector)
 
         return c

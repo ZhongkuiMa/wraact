@@ -13,9 +13,14 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
+import numpy as np
+
 from wraact._constants import TOLERANCE
+from wraact._enums import TopKSelector
 from wraact._exceptions import DegeneratedError
 from wraact.acthull import ActHull
+
+_TOPK_RNG = np.random.default_rng(0)
 
 
 class ActHullWithOneY(ActHull, ABC):
@@ -28,14 +33,16 @@ class ActHullWithOneY(ActHull, ABC):
     :param n_output_constraints: The number of output constraints.
     """
 
-    __slots__ = [*ActHull.__slots__, "_n_output_constrs"]
+    __slots__ = [*ActHull.__slots__, "_n_output_constrs", "_topk_selector"]
     _n_output_constrs: int
+    _topk_selector: TopKSelector
 
     def __init__(
         self,
         dtype_cdd: Literal["fraction", "float"] = "float",
         n_output_constraints: int = 1,
         if_return_input_bounds_by_vertices: bool = False,
+        topk_selector: TopKSelector = TopKSelector.BETA_MIN,
     ):
         """Initialize the single-output activation hull calculator.
 
@@ -43,6 +50,8 @@ class ActHullWithOneY(ActHull, ABC):
         :param n_output_constraints: Number of output constraints to generate.
         :param if_return_input_bounds_by_vertices: Whether to return tightened
             input bounds derived from polytope vertices.
+        :param topk_selector: Strategy for choosing ``n_output_constraints``
+            constraints from the full hull output. See :class:`TopKSelector`.
         """
         super().__init__(
             if_cal_single_neuron_constrs=True,
@@ -53,6 +62,7 @@ class ActHullWithOneY(ActHull, ABC):
         )
 
         self._n_output_constrs = n_output_constraints
+        self._topk_selector = topk_selector
 
     def _cal_hull_with_mn_constrs(
         self,
@@ -159,26 +169,45 @@ class ActHullWithOneY(ActHull, ABC):
         c: ndarray,
         topk: int,
         is_min: bool = True,
+        selector: TopKSelector = TopKSelector.BETA_MIN,
     ) -> ndarray:
-        """Select top-k constraints by output coefficient magnitude.
+        """Select top-k constraints from the hull output.
 
-        Filters constraints with non-zero output coefficients and returns
-        those with smallest (or largest) output coefficient values.
+        Filters constraints with non-zero output coefficients (``|beta| >
+        TOLERANCE``), then picks ``topk`` rows according to ``selector``.
+        See :class:`TopKSelector` for strategy semantics.
 
-        :param c: Constraints to filter. Shape: ``_, d``.
+        :param c: Constraints to filter. Shape: ``(n_constrs, d)``.
         :param topk: Number of constraints to return.
-        :param is_min: If True, return minimum values; else maximum.
-        :return: Selected constraints. Shape: ``topk, d`` or fewer.
+        :param is_min: When ``selector == BETA_MIN``: ``True`` returns the
+            ``topk`` smallest beta rows, ``False`` returns the largest.
+            Ignored by other selectors.
+        :param selector: Selection strategy. Default ``BETA_MIN`` preserves
+            the legacy behavior.
+        :return: Selected constraints. Shape: ``(<= topk, d)``.
         """
-        # Choose the constraints with non-zero beta values, which is the last column
-        # of the constraints.
+        # Filter near-zero beta (constraints that don't bind the output).
         c = c[(c[:, -1] < -TOLERANCE) | (c[:, -1] > TOLERANCE)]
-        c = c[np.argsort(c[:, -1])]
+        if c.shape[0] == 0:
+            return c
 
-        # Get the topk maximum or minimum beta values.
-        if is_min:
-            c = c[:topk]
-        else:
-            c = c[-topk:]
-
-        return c
+        if selector == TopKSelector.BETA_MIN:
+            order = np.argsort(c[:, -1])
+            return c[order[:topk]] if is_min else c[order[-topk:]]
+        if selector == TopKSelector.BETA_ABS_MAX:
+            order = np.argsort(-np.abs(c[:, -1]))
+            return c[order[:topk]]
+        if selector == TopKSelector.COEF_L1_MAX:
+            l1 = np.abs(c[:, 1:-1]).sum(axis=1)
+            order = np.argsort(-l1)
+            return c[order[:topk]]
+        if selector == TopKSelector.COEF_L1_MIN:
+            l1 = np.abs(c[:, 1:-1]).sum(axis=1)
+            order = np.argsort(l1)
+            return c[order[:topk]]
+        if selector == TopKSelector.FIRST:
+            return c[: min(topk, c.shape[0])]
+        if selector == TopKSelector.RANDOM:
+            picked = _TOPK_RNG.permutation(c.shape[0])[:topk]
+            return c[picked]
+        raise ValueError(f"unknown topk selector {selector}")

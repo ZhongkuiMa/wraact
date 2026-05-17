@@ -7,6 +7,7 @@ import numpy as np
 from numpy import ndarray
 
 from wraact._constants import TOLERANCE
+from wraact._enums import TopKSelector
 from wraact.acthull import ReLUHull
 from wraact.oney._relulike import ReLULikeHullWithOneY
 
@@ -26,6 +27,7 @@ class ReLUHullWithOneY(ReLULikeHullWithOneY, ReLUHull):
         lb: ndarray | None = None,
         ub: ndarray | None = None,
         n_output_constrs: int = 1,
+        topk_selector: TopKSelector = TopKSelector.BETA_MIN,
     ) -> ndarray:
         """Compute multi-neuron constraints for single-output ReLU.
 
@@ -67,6 +69,6 @@ class ReLUHullWithOneY(ReLULikeHullWithOneY, ReLUHull):
         c = np.hstack((c, beta1 + beta2))
         c[:, [1]] -= beta2
 
-        c = cls._get_topk_constrs(c, n_output_constrs)
+        c = cls._get_topk_constrs(c, n_output_constrs, selector=topk_selector)
 
         return c

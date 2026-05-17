@@ -9,6 +9,7 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
+from wraact._enums import TopKSelector
 from wraact.acthull import SShapeHull
 from wraact.oney._act import ActHullWithOneY
 
@@ -39,7 +40,9 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
         """
         c = np.array(c, dtype=np.float64)
 
-        c_mn = self.cal_mn_constrs(c, v, lb, ub, self._n_output_constrs)
+        c_mn = self.cal_mn_constrs(
+            c, v, lb, ub, self._n_output_constrs, topk_selector=self._topk_selector
+        )
 
         return c_mn, dtype_cdd
 
@@ -50,6 +53,7 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
         lb: ndarray | None = None,
         ub: ndarray | None = None,
         n_output_constrs: int = 1,
+        topk_selector: TopKSelector = TopKSelector.BETA_MIN,
     ) -> ndarray:
         """Compute multi-neuron constraints for single-output S-shaped activation.
 
@@ -100,8 +104,12 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
         )
 
         # Fill c_mn with c_sn if constraints number is smaller than n_output_constrs
-        cc_mu = self._get_topk_constrs(cc_mu, n_output_constrs, is_min=True)
-        cc_ml = self._get_topk_constrs(cc_ml, n_output_constrs, is_min=False)
+        cc_mu = self._get_topk_constrs(
+            cc_mu, n_output_constrs, is_min=True, selector=topk_selector
+        )
+        cc_ml = self._get_topk_constrs(
+            cc_ml, n_output_constrs, is_min=False, selector=topk_selector
+        )
 
         if cc_mu.shape[0] < n_output_constrs:
             cc_su = cc_s[cc_s[:, -1] > 0]

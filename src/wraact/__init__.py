@@ -27,6 +27,7 @@ from wraact.acthull import (
     TanhHull,
     cal_mn_constrs_with_one_y_dlp,
 )
+from wraact._enums import TopKSelector
 from wraact.oney import (
     ActHullWithOneY,
     ELUHullWithOneY,
@@ -61,6 +62,7 @@ __all__ = [
     "SigmoidHullWithOneY",
     "TanhHull",
     "TanhHullWithOneY",
+    "TopKSelector",
     "__version__",
     "cal_mn_constrs_with_one_y_dlp",
 ]
