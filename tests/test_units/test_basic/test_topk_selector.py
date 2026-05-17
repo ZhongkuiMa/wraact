@@ -98,9 +98,7 @@ class TestGetTopKConstrs:
 
     def test_first_takes_n_after_filter(self):
         c = _make_constrs(10, 3)
-        out = ActHullWithOneY._get_topk_constrs(
-            c, topk=4, is_min=True, selector=TopKSelector.FIRST
-        )
+        out = ActHullWithOneY._get_topk_constrs(c, topk=4, is_min=True, selector=TopKSelector.FIRST)
         filtered = c[np.abs(c[:, -1]) > 1e-9]
         assert out.shape[0] == min(4, filtered.shape[0])
         assert np.allclose(out, filtered[: out.shape[0]])

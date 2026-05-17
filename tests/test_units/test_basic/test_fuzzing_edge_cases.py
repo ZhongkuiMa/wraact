@@ -53,7 +53,10 @@ def test_fuzzing_edge_case_regression(name, edge_case):
     1. Exception paths are triggered (coverage!)
     2. Error messages are informative
     """
-    hull_map = {
+    hull_map: dict[
+        str,
+        type[ReLUHull | SigmoidHull | TanhHull | ELUHull | LeakyReLUHull | MaxPoolHullDLP],
+    ] = {
         "ReLUHull": ReLUHull,
         "SigmoidHull": SigmoidHull,
         "TanhHull": TanhHull,
@@ -65,6 +68,7 @@ def test_fuzzing_edge_case_regression(name, edge_case):
     hull_name = edge_case.get("hull")
     if hull_name not in hull_map:
         pytest.skip(f"Unknown hull type: {hull_name}")
+    assert hull_name is not None
 
     hull_class = hull_map[hull_name]
     lb = np.array(edge_case["lb"], dtype=np.float64)

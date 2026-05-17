@@ -26,7 +26,7 @@ class TestActHullDoubleOrders:
         """
         # Test for various dimensions
         for dim in [2, 3, 4, 5]:
-            order = ActHull._get_reversed_order(dim)  # noqa: SLF001
+            order = ActHull._get_reversed_order(dim)
 
             # Verify order is a list
             assert isinstance(order, list)
@@ -43,17 +43,17 @@ class TestActHullDoubleOrders:
         - Cache retrieval on subsequent calls
         """
         # Clear cache
-        ActHull._reversed_orders.clear()  # noqa: SLF001
+        ActHull._reversed_orders.clear()
 
         # First call for dimension 3 - populates cache
-        order = ActHull._get_reversed_order(3)  # noqa: SLF001
+        order = ActHull._get_reversed_order(3)
 
         # Lines 324-326
-        assert 3 in ActHull._reversed_orders  # noqa: SLF001
+        assert 3 in ActHull._reversed_orders
         assert order == [0, 3, 2, 1]
 
         # Second call - retrieves from cache
-        order2 = ActHull._get_reversed_order(3)  # noqa: SLF001
+        order2 = ActHull._get_reversed_order(3)
         assert order == order2
 
     def test_reversed_order_symmetry(self):
@@ -62,10 +62,10 @@ class TestActHullDoubleOrders:
         Verifies that the reversed order produces indices in reverse fashion.
         """
         # Clear cache to ensure fresh computation
-        ActHull._reversed_orders.clear()  # noqa: SLF001
+        ActHull._reversed_orders.clear()
 
         for dim in [2, 3, 4]:
-            order = ActHull._get_reversed_order(dim)  # noqa: SLF001
+            order = ActHull._get_reversed_order(dim)
 
             # First element should be 0 (constant term)
             assert order[0] == 0
@@ -82,11 +82,11 @@ class TestActHullDoubleOrders:
         Ensures the reversed order method is robust across different input dimensions.
         """
         # Clear cache
-        ActHull._reversed_orders.clear()  # noqa: SLF001
+        ActHull._reversed_orders.clear()
 
         test_dims = [2, 3, 4, 5, 6, 7, 8]
         for dim in test_dims:
-            order = ActHull._get_reversed_order(dim)  # noqa: SLF001
+            order = ActHull._get_reversed_order(dim)
 
             # Verify properties
             assert len(order) == dim + 1
@@ -105,31 +105,31 @@ class TestActHullDoubleOrders:
         Verifies that the cache is properly maintained across repeated calls.
         """
         # Clear cache
-        ActHull._reversed_orders.clear()  # noqa: SLF001
+        ActHull._reversed_orders.clear()
 
         # First call - populates cache for dimension 4
-        order1 = ActHull._get_reversed_order(4)  # noqa: SLF001
+        order1 = ActHull._get_reversed_order(4)
 
         # Verify cache contains the dimension
-        assert 4 in ActHull._reversed_orders  # noqa: SLF001
+        assert 4 in ActHull._reversed_orders
 
         # Second call - retrieves from cache
-        order2 = ActHull._get_reversed_order(4)  # noqa: SLF001
+        order2 = ActHull._get_reversed_order(4)
 
         # Should be identical (same object or equal)
         assert order1 == order2
 
         # Add another dimension
-        order3 = ActHull._get_reversed_order(5)  # noqa: SLF001
-        assert 5 in ActHull._reversed_orders  # noqa: SLF001
+        order3 = ActHull._get_reversed_order(5)
+        assert 5 in ActHull._reversed_orders
 
         # Both dimensions should still be in cache
-        assert 4 in ActHull._reversed_orders  # noqa: SLF001
-        assert 5 in ActHull._reversed_orders  # noqa: SLF001
+        assert 4 in ActHull._reversed_orders
+        assert 5 in ActHull._reversed_orders
 
         # Verify both are retrievable
-        assert ActHull._get_reversed_order(4) == order1  # noqa: SLF001
-        assert ActHull._get_reversed_order(5) == order3  # noqa: SLF001
+        assert ActHull._get_reversed_order(4) == order1
+        assert ActHull._get_reversed_order(5) == order3
 
     def test_reversed_order_deterministic(self):
         """Verify reversed order computation is deterministic.
@@ -137,11 +137,11 @@ class TestActHullDoubleOrders:
         Tests reproducibility of reversed order calculation across repeated calls.
         """
         # Clear cache to start fresh
-        ActHull._reversed_orders.clear()  # noqa: SLF001
+        ActHull._reversed_orders.clear()
 
         # Multiple calls for same dimension should return same result
         for dim in [2, 3, 4, 5]:
-            results = [ActHull._get_reversed_order(dim) for _ in range(5)]  # noqa: SLF001
+            results = [ActHull._get_reversed_order(dim) for _ in range(5)]
 
             # All results should be identical
             for i in range(1, len(results)):

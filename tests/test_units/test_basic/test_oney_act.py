@@ -51,6 +51,7 @@ class TestActHullWithOneYHighDimensional:
         ub = np.ones(6)
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
 
         assert constraints.shape[1] == 8  # 6 inputs + 1 bias + 1 output
         assert np.all(np.isfinite(constraints))
@@ -62,6 +63,7 @@ class TestActHullWithOneYHighDimensional:
         ub = 2.0 * np.ones(5)
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
 
         assert constraints.shape[1] == 7  # 5 inputs + 1 bias + 1 output
         assert np.all(np.isfinite(constraints))
@@ -73,6 +75,7 @@ class TestActHullWithOneYHighDimensional:
         ub = 1.5 * np.ones(4)
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
 
         assert constraints.shape[1] == 6  # 4 inputs + 1 bias + 1 output
         assert np.all(np.isfinite(constraints))
@@ -162,6 +165,7 @@ class TestActHullWithOneYReproducibility:
         results = []
         for _ in range(3):
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert constraints is not None
             results.append(constraints)
 
         # All should be identical
@@ -177,6 +181,7 @@ class TestActHullWithOneYReproducibility:
         results = []
         for _ in range(3):
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert constraints is not None
             results.append(constraints)
 
         for i in range(1, len(results)):

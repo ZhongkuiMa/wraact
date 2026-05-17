@@ -77,6 +77,7 @@ class TestMaxPoolDLPRemainingCoverage:
         # Standard version
         hull_std = MaxPoolHull(if_cal_multi_neuron_constrs=True)
         constraints_std = hull_std.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints_std is not None
 
         # Should handle this trivial case
         assert np.all(np.isfinite(constraints_std))
@@ -140,6 +141,7 @@ class TestActHullRemainingCoverage:
                 input_constrs=c, input_lower_bounds=lb, input_upper_bounds=ub
             )
             # If it succeeds, constraints should be valid
+            assert constraints is not None
             assert np.all(np.isfinite(constraints))
         except (ValueError, RuntimeError):
             # Unbounded polytope detection - acceptable
@@ -247,6 +249,7 @@ class TestOneYExceptionPathsCoverage:
 
         # Should successfully handle computation
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
         # Should be valid
         assert np.all(np.isfinite(constraints))
 

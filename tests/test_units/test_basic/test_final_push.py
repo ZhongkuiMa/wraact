@@ -8,6 +8,8 @@ Tests for hard-to-reach code paths in:
 
 __docformat__ = "restructuredtext"
 
+from typing import Literal
+
 import numpy as np
 
 from wraact.oney import (
@@ -111,7 +113,8 @@ class TestActHullParameterCombinations:
         ub = np.array([1.0, 1.0])
 
         # Different dtype_cdd
-        for dtype in ["float", "fraction"]:
+        dtype_opts: list[Literal["fraction", "float"]] = ["float", "fraction"]
+        for dtype in dtype_opts:
             hull = LeakyReLUHullWithOneY(dtype_cdd=dtype)
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             assert isinstance(constraints, np.ndarray)
@@ -220,6 +223,8 @@ class TestOneYVariantFinalTests:
         for hull in variants:
             c1 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             c2 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert c1 is not None
+            assert c2 is not None
             np.testing.assert_array_equal(c1, c2)
 
     def test_oney_parameter_combinations(self):
@@ -227,7 +232,8 @@ class TestOneYVariantFinalTests:
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        for dtype_cdd in ["float", "fraction"]:
+        dtype_cdd_opts: list[Literal["fraction", "float"]] = ["float", "fraction"]
+        for dtype_cdd in dtype_cdd_opts:
             for n_out_constrs in [1, 2]:
                 hull = ReLUHullWithOneY(
                     dtype_cdd=dtype_cdd,

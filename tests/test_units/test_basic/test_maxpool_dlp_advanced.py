@@ -8,6 +8,8 @@ Tests for hard-to-reach code paths in MaxPoolHullDLP:
 
 __docformat__ = "restructuredtext"
 
+from typing import cast
+
 import numpy as np
 import pytest
 
@@ -60,7 +62,7 @@ class TestMaxPoolDLPCoreAlgorithm:
         )
 
         nt_idxs = [0, 1, 2]
-        dlp_lines = MaxPoolHullDLP._construct_dlp(v, nt_idxs)  # noqa: SLF001
+        dlp_lines = MaxPoolHullDLP._construct_dlp(v, nt_idxs)
 
         # Should return 2 pieces (odd/even split) - lines 289-315
         assert dlp_lines.shape[0] == 2
@@ -80,6 +82,7 @@ class TestMaxPoolDLPCoreAlgorithm:
         hull = MaxPoolHullDLP(if_cal_single_neuron_constrs=False, if_cal_multi_neuron_constrs=True)
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
 
         # Should have successfully calculated betas
         assert np.all(np.isfinite(constraints))
@@ -100,7 +103,7 @@ class TestMaxPoolDLPCoreAlgorithm:
             ]
         )
 
-        nt_idxs = MaxPoolHullDLP._find_nontrivial_idxs(v)  # noqa: SLF001
+        nt_idxs = MaxPoolHullDLP._find_nontrivial_idxs(v)
 
         # All dimensions should be non-trivial (can be maximum)
         assert len(nt_idxs) > 0
@@ -153,6 +156,8 @@ class TestMaxPoolDLPCoreAlgorithm:
 
         constraints_std = hull_std.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         constraints_dlp = hull_dlp.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints_std is not None
+        assert constraints_dlp is not None
 
         # Both should produce valid constraints
         assert np.all(np.isfinite(constraints_std))
@@ -168,6 +173,7 @@ class TestMaxPoolDLPCoreAlgorithm:
 
         hull = MaxPoolHullDLP(if_cal_multi_neuron_constrs=True)
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
 
         assert np.all(np.isfinite(constraints))
 
@@ -189,9 +195,11 @@ class TestMaxPoolCacheAndDegenerate:
 
         # First call
         c1 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert c1 is not None
 
         # Second call - should be identical (consistent with cache behavior)
         c2 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert c2 is not None
         np.testing.assert_array_equal(c1, c2)
 
     def test_maxpool_cache_persistence_across_instances(self):
@@ -200,7 +208,7 @@ class TestMaxPoolCacheAndDegenerate:
         Tests class variable behavior of _lower_constraints.
         """
         # Clear cache
-        MaxPoolHullDLP._lower_constraints.clear()  # noqa: SLF001
+        MaxPoolHullDLP._lower_constraints.clear()
 
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
@@ -230,6 +238,7 @@ class TestMaxPoolCacheAndDegenerate:
         try:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             # If no error, constraints should be valid
+            assert constraints is not None
             assert np.all(np.isfinite(constraints))
         except ValueError:
             # MIN_BOUNDS_RANGE validation may catch this first - acceptable
@@ -264,6 +273,7 @@ class TestMaxPoolCacheAndDegenerate:
 
         hull = MaxPoolHullDLP(if_cal_multi_neuron_constrs=True)
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
 
         assert np.all(np.isfinite(constraints))
 
@@ -309,13 +319,20 @@ class TestMaxPoolErrorHandling:
         """
         # Lines 278, 319, 323
         with pytest.raises(RuntimeError, match=r"should not be called"):
-            MaxPoolHullDLP._cal_mn_constrs_with_one_y(0, None, None, None, 0.0, True)  # noqa: SLF001, FBT003
+            MaxPoolHullDLP._cal_mn_constrs_with_one_y(
+                0,
+                cast(np.ndarray, None),
+                cast(np.ndarray, None),
+                cast(np.ndarray, None),
+                0.0,
+                True,  # noqa: FBT003
+            )
 
         with pytest.raises(RuntimeError, match=r"should not be called"):
-            MaxPoolHullDLP._f(np.array([1.0]))  # noqa: SLF001
+            MaxPoolHullDLP._f(np.array([1.0]))
 
         with pytest.raises(RuntimeError, match=r"should not be called"):
-            MaxPoolHullDLP._df(np.array([1.0]))  # noqa: SLF001
+            MaxPoolHullDLP._df(np.array([1.0]))
 
     def test_maxpool_prohibited_methods_standard(self):
         """Test that MaxPoolHull raises errors for DLP-specific methods.
@@ -326,10 +343,17 @@ class TestMaxPoolErrorHandling:
         """
         # Lines 428, 440
         with pytest.raises(RuntimeError, match=r"should not be called"):
-            MaxPoolHull._construct_dlp(None, None)  # noqa: SLF001
+            MaxPoolHull._construct_dlp(cast(np.ndarray, None), cast(list[int], None))
 
         with pytest.raises(RuntimeError, match=r"should not be called"):
-            MaxPoolHull._cal_mn_constrs_with_one_y(0, None, None, None, 0.0, True)  # noqa: SLF001, FBT003
+            MaxPoolHull._cal_mn_constrs_with_one_y(
+                0,
+                cast(np.ndarray, None),
+                cast(np.ndarray, None),
+                cast(np.ndarray, None),
+                0.0,
+                True,  # noqa: FBT003
+            )
 
     def test_maxpool_trivial_case_detection(self):
         """Test early return in trivial cases.
@@ -503,6 +527,8 @@ class TestActHullDoubleOrdersFeature:
         hull_double = ReLUHull(if_cal_multi_neuron_constrs=True, if_use_double_orders=True)
         c_double = hull_double.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
+        assert c_single is not None
+        assert c_double is not None
         # Both should be valid
         assert np.all(np.isfinite(c_single))
         assert np.all(np.isfinite(c_double))
@@ -548,6 +574,7 @@ class TestActHullDoubleOrdersFeature:
 
         hull = ELUHull(if_cal_multi_neuron_constrs=True, if_use_double_orders=True)
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
 
         # Verify soundness: all constraints should be finite
         assert np.all(np.isfinite(constraints))

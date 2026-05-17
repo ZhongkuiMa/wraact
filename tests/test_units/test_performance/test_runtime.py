@@ -284,6 +284,7 @@ class TestRuntimeScaling:
         baselines = {2: 0.5, 3: 0.45, 4: 0.50}  # milliseconds
         threshold = baselines[dim] * 2.5  # 150% tolerance
 
+        assert result is not None
         print(
             f"MaxPoolDLP dim {dim}: p90={elapsed_ms:.2f}ms, median={median_ms:.2f}ms, {result.shape[0]} constraints"
         )

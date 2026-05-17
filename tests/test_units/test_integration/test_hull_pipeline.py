@@ -253,6 +253,7 @@ class TestMaxPoolPipeline:
         ub = np.array([1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # Verify output format: [b, a_x1, a_x2, a_y]
         expected_cols = 1 + 2 + 1  # bias + 2 inputs + 1 output (max of inputs)

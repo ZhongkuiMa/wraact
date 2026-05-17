@@ -104,9 +104,7 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
         )
 
         # Fill c_mn with c_sn if constraints number is smaller than n_output_constrs
-        cc_mu = self._get_topk_constrs(
-            cc_mu, n_output_constrs, is_min=True, selector=topk_selector
-        )
+        cc_mu = self._get_topk_constrs(cc_mu, n_output_constrs, is_min=True, selector=topk_selector)
         cc_ml = self._get_topk_constrs(
             cc_ml, n_output_constrs, is_min=False, selector=topk_selector
         )

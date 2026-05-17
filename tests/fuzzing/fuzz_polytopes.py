@@ -87,7 +87,9 @@ def generate_random_polytope(dim: int, strategy: str) -> tuple:
 
 def fuzz_activations() -> list:
     """Fuzz all activation hull types."""
-    hulls = [
+    hulls: list[
+        type[ReLUHull | SigmoidHull | TanhHull | ELUHull | LeakyReLUHull | MaxPoolHullDLP]
+    ] = [
         ReLUHull,
         SigmoidHull,
         TanhHull,
@@ -105,7 +107,7 @@ def fuzz_activations() -> list:
     for i in range(NUM_ITERATIONS):
         dim = rng.choice(dims)
         strategy = rng.choice(strategies)
-        hull_class = rng.choice(hulls)
+        hull_class = hulls[rng.integers(0, len(hulls))]
 
         lb, ub = generate_random_polytope(dim, strategy)
 

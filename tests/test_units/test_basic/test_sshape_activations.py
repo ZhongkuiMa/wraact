@@ -168,6 +168,8 @@ class TestSigmoidHullSingleNeuron:
 
         c1 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         c2 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert c1 is not None
+        assert c2 is not None
 
         np.testing.assert_array_equal(c1, c2)
 
@@ -288,6 +290,8 @@ class TestTanhHullSingleNeuron:
 
         c1 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         c2 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert c1 is not None
+        assert c2 is not None
 
         np.testing.assert_array_equal(c1, c2)
 
@@ -413,6 +417,7 @@ class TestSShapeConstraintModes:
         )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
         assert constraints.shape[0] > 0
 
     @pytest.mark.parametrize(
@@ -433,4 +438,5 @@ class TestSShapeConstraintModes:
         )
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
         assert constraints.shape[0] > 0

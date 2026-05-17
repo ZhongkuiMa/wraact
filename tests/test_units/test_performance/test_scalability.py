@@ -166,6 +166,7 @@ class TestConstraintCountScaling:
         ub = np.full(dim, 1.0)
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         num_constraints = result.shape[0]
         expected = 2 * dim  # 2·d formula
@@ -192,6 +193,7 @@ class TestConstraintCountScaling:
         ub = np.full(dim, 1.0)
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         num_constraints = result.shape[0]
         expected = 2 * dim  # 2·d formula
@@ -289,6 +291,7 @@ class TestMemoryScaling:
         ub = np.full(dim, 1.0)
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         memory_bytes = result.nbytes
         memory_kb = memory_bytes / 1024
@@ -306,6 +309,7 @@ class TestMemoryScaling:
         ub = np.full(dim, 1.0)
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         memory_bytes = result.nbytes
         memory_kb = memory_bytes / 1024

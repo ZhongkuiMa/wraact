@@ -55,6 +55,7 @@ class TestReLUWithOneY:
         ub = np.array([1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # Should have columns for [b | x1 | x2 | y] where y is single output
         assert result.shape[1] == 4  # 2 inputs + 1 bias + 1 output
@@ -69,6 +70,8 @@ class TestReLUWithOneY:
 
         full_result = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         oney_result = oney_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert full_result is not None
+        assert oney_result is not None
 
         # WithOneY should have fewer or equal constraints
         assert oney_result.shape[0] <= full_result.shape[0]
@@ -84,6 +87,7 @@ class TestReLUWithOneY:
         ub = np.array([1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # Random sampling
         num_samples = 500
@@ -130,6 +134,8 @@ class TestLeakyReLUWithOneY:
 
         full_result = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         oney_result = oney_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert full_result is not None
+        assert oney_result is not None
 
         # WithOneY should have fewer or equal constraints
         assert oney_result.shape[0] <= full_result.shape[0]
@@ -158,6 +164,8 @@ class TestELUWithOneY:
 
         full_result = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         oney_result = oney_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert full_result is not None
+        assert oney_result is not None
 
         # WithOneY should have fewer or equal constraints
         assert oney_result.shape[0] <= full_result.shape[0]
@@ -186,6 +194,8 @@ class TestSigmoidWithOneY:
 
         full_result = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         oney_result = oney_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert full_result is not None
+        assert oney_result is not None
 
         # WithOneY should have fewer or equal constraints
         assert oney_result.shape[0] <= full_result.shape[0]
@@ -214,6 +224,8 @@ class TestTanhWithOneY:
 
         full_result = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         oney_result = oney_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert full_result is not None
+        assert oney_result is not None
 
         # WithOneY should have fewer or equal constraints
         assert oney_result.shape[0] <= full_result.shape[0]
@@ -225,6 +237,7 @@ class TestTanhWithOneY:
         ub = np.array([2.0, 2.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # Random sampling
         num_samples = 500
@@ -271,6 +284,8 @@ class TestMaxPoolWithOneY:
 
         full_result = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         oney_result = oney_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert full_result is not None
+        assert oney_result is not None
 
         # WithOneY should have fewer or equal constraints
         assert oney_result.shape[0] <= full_result.shape[0]
@@ -287,6 +302,8 @@ class TestWithOneYGeneralProperties:
 
         result1 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         result2 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result1 is not None
+        assert result2 is not None
 
         np.testing.assert_array_equal(result1, result2)
 
@@ -298,6 +315,8 @@ class TestWithOneYGeneralProperties:
 
         result1 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         result2 = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result1 is not None
+        assert result2 is not None
 
         np.testing.assert_array_equal(result1, result2)
 
@@ -308,6 +327,7 @@ class TestWithOneYGeneralProperties:
         ub = np.array([1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         assert np.all(np.isfinite(result))
 
@@ -321,6 +341,8 @@ class TestWithOneYGeneralProperties:
 
         full_result = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         oney_result = oney_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert full_result is not None
+        assert oney_result is not None
 
         # Full hull: [b | x1 | x2 | y1 | y2] = 5 columns
         # OneY hull: [b | x1 | x2 | y] = 4 columns (single output)
@@ -351,6 +373,7 @@ class TestWithOneYAdvancedFeatures:
         ub = np.array([1.0, 1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # For 3D input: 3 input dims + 1 bias + 1 output = 5 columns
         assert result.shape[1] == 5
@@ -363,6 +386,7 @@ class TestWithOneYAdvancedFeatures:
         ub = np.array([1.0, 1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # For 3D input: 3 input dims + 1 bias + 1 output = 5 columns
         assert result.shape[1] == 5
@@ -375,6 +399,7 @@ class TestWithOneYAdvancedFeatures:
         ub = np.array([2.0, 2.0, 2.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         assert result.shape[1] == 5  # 3 inputs + 1 bias + 1 output
         assert np.all(np.isfinite(result))
@@ -386,6 +411,7 @@ class TestWithOneYAdvancedFeatures:
         ub = np.array([1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # MaxPool: [b | x1 | x2 | y] = 4 columns (d+2 format doesn't apply to OneY single output)
         assert result.shape[1] == 4
@@ -398,6 +424,7 @@ class TestWithOneYAdvancedFeatures:
         ub = np.array([1.0, 1.0, 1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # For 4D input: 4 input dims + 1 bias + 1 output = 6 columns
         assert result.shape[1] == 6
@@ -410,6 +437,7 @@ class TestWithOneYAdvancedFeatures:
         ub = np.array([2.0, 2.0, 2.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         assert result.shape[1] == 5  # 3 inputs + 1 bias + 1 output
         assert np.all(np.isfinite(result))
@@ -425,6 +453,7 @@ class TestWithOneYAdvancedFeatures:
         ub = np.array([1.0, 1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # Random sampling
         num_samples = 500
@@ -454,6 +483,7 @@ class TestWithOneYAdvancedFeatures:
         ub = np.array([10.0, 10.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         assert np.all(np.isfinite(result))
 
@@ -468,6 +498,7 @@ class TestWithOneYAdvancedFeatures:
         ub = np.array([1.0, 1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # Random sampling
         num_samples = 500

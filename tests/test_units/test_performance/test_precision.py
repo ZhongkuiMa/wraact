@@ -113,10 +113,12 @@ class TestMethodComparison:
         # Full hull
         full_hull = relu_hull_class()
         full_result = full_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert full_result is not None
 
         # WithOneY
         oney_hull = ReLUHullWithOneY()
         oney_result = oney_hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert oney_result is not None
 
         # Measure satisfaction rate for each
         rng = np.random.default_rng(42)
@@ -128,6 +130,7 @@ class TestMethodComparison:
         for _ in range(num_samples):
             x = rng.uniform(lb, ub)
             y = relu_np(x)
+            assert isinstance(y, np.ndarray)
 
             # For full hull, use all outputs
             point_full = np.concatenate([x, y])

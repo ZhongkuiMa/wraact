@@ -13,8 +13,6 @@ from typing import Literal
 import numpy as np
 from numpy import ndarray
 
-import numpy as np
-
 from wraact._constants import TOLERANCE
 from wraact._enums import TopKSelector
 from wraact._exceptions import DegeneratedError

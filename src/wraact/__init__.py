@@ -12,8 +12,9 @@ Main classes:
 """
 
 __docformat__ = "restructuredtext"
-__version__ = "2026.5.1"
+__version__ = "2026.5.3"
 
+from wraact._enums import TopKSelector
 from wraact.acthull import (
     ActHull,
     ELUHull,
@@ -27,7 +28,6 @@ from wraact.acthull import (
     TanhHull,
     cal_mn_constrs_with_one_y_dlp,
 )
-from wraact._enums import TopKSelector
 from wraact.oney import (
     ActHullWithOneY,
     ELUHullWithOneY,

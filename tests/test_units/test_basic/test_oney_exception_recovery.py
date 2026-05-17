@@ -9,6 +9,8 @@ Tests for:
 
 __docformat__ = "restructuredtext"
 
+from typing import Literal
+
 import numpy as np
 
 from wraact.oney import (
@@ -90,6 +92,7 @@ class TestOneYDegenerateRecovery:
 
         for lb, ub in test_cases:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert constraints is not None
             assert np.all(np.isfinite(constraints))
 
     def test_oney_maxpool_degenerate_recovery(self):
@@ -124,7 +127,8 @@ class TestOneYDoubleOrders:
         lb = np.array([-2.0, -2.0])
         ub = np.array([2.0, 2.0])
 
-        for dtype_cdd in ["float", "fraction"]:
+        dtype_opts: list[Literal["fraction", "float"]] = ["float", "fraction"]
+        for dtype_cdd in dtype_opts:
             hull = SigmoidHullWithOneY(dtype_cdd=dtype_cdd)
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
@@ -163,6 +167,7 @@ class TestOneYConsistency:
 
         for hull in variants:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert constraints is not None
             # OneY uses topk selection so rows may vary, but columns are consistent
             assert constraints.shape[0] > 0, f"No constraints for {hull.__class__.__name__}"
             assert constraints.shape[1] == 4, f"Wrong columns for {hull.__class__.__name__}"
@@ -177,6 +182,7 @@ class TestOneYConsistency:
         for n_constrs in [1, 2, 3]:
             hull = ReLUHullWithOneY(n_output_constraints=n_constrs)
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert constraints is not None
             results.append(constraints.shape[0])
 
         # Should not decrease as we increase output constraints
@@ -189,9 +195,11 @@ class TestOneYConsistency:
 
         hull_float = LeakyReLUHullWithOneY(dtype_cdd="float")
         constraints_float = hull_float.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints_float is not None
 
         hull_fraction = LeakyReLUHullWithOneY(dtype_cdd="fraction")
         constraints_fraction = hull_fraction.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints_fraction is not None
 
         # Same shape
         assert constraints_float.shape == constraints_fraction.shape
@@ -213,6 +221,7 @@ class TestOneYEdgeCases:
 
         for hull, expected_cols in variants:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert constraints is not None
             assert constraints.shape[1] == expected_cols
 
     def test_oney_high_dimension_input(self):
@@ -223,6 +232,7 @@ class TestOneYEdgeCases:
 
         hull = ReLUHullWithOneY()
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert constraints is not None
 
         # OneY uses topk selection, so output columns = d + 2
         assert constraints.shape[1] == d + 2
@@ -236,6 +246,7 @@ class TestOneYEdgeCases:
 
             hull = TanhHullWithOneY()
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert constraints is not None
 
             assert np.all(np.isfinite(constraints))
 
@@ -263,7 +274,7 @@ class TestOneYParameterCombinations:
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        dtypes = ["float", "fraction"]
+        dtypes: list[Literal["fraction", "float"]] = ["float", "fraction"]
         output_constrs = [1, 2, 3]
         return_vertices = [True, False]
 
@@ -286,8 +297,9 @@ class TestOneYParameterCombinations:
         lb = np.array([-2.0, -2.0, -2.0])
         ub = np.array([2.0, 2.0, 2.0])
 
+        dtype_options: list[Literal["fraction", "float"]] = ["float", "fraction"]
         for n_out in [1, 2, 3]:
-            for dtype in ["float", "fraction"]:
+            for dtype in dtype_options:
                 hull = SigmoidHullWithOneY(
                     dtype_cdd=dtype,
                     n_output_constraints=n_out,
@@ -312,6 +324,7 @@ class TestOneYReproducibility:
         results = []
         for _ in range(3):
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert constraints is not None
             results.append(constraints)
 
         # All should be identical
@@ -328,6 +341,7 @@ class TestOneYReproducibility:
             results = []
             for _ in range(2):
                 constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+                assert constraints is not None
                 results.append(constraints)
 
             np.testing.assert_array_equal(results[0], results[1])
@@ -341,6 +355,7 @@ class TestOneYReproducibility:
         results = []
         for _ in range(3):
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert constraints is not None
             results.append(constraints)
 
         for i in range(1, len(results)):

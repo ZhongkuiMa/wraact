@@ -45,6 +45,7 @@ class TestDEBUGMode:
 
             hull = ReLUHull()
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert constraints is not None
 
             # Should execute lines 345-347, 384-385
             assert np.all(np.isfinite(constraints))
@@ -66,11 +67,13 @@ class TestDEBUGMode:
             # Test ELU
             hull_elu = ELUHull()
             c_elu = hull_elu.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert c_elu is not None
             assert np.all(np.isfinite(c_elu))
 
             # Test LeakyReLU
             hull_lrelu = LeakyReLUHull()
             c_lrelu = hull_lrelu.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert c_lrelu is not None
             assert np.all(np.isfinite(c_lrelu))
 
         finally:

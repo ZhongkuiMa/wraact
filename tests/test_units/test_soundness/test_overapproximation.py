@@ -30,6 +30,7 @@ class TestReLUSoundness:
         ub = np.array([1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # Sample many points and verify all satisfy constraints
         rng = np.random.default_rng(42)
@@ -68,6 +69,7 @@ class TestReLUSoundness:
             np.array([1.5, 1.5]),
         ]
 
+        assert result is not None
         for x in test_points:
             y = relu_np(x)
             point = np.concatenate([x, y])
@@ -93,6 +95,7 @@ class TestSigmoidSoundness:
         """Verify Sigmoid hull contains all sigmoid outputs on polytope."""
         hull = SigmoidHull()
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         rng = np.random.default_rng(42)
         violations = 0
@@ -125,6 +128,7 @@ class TestTanhSoundness:
         ub = np.array([2.0, 2.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         rng = np.random.default_rng(42)
         num_samples = 1000
@@ -156,6 +160,7 @@ class TestLeakyReLUSoundness:
         ub = np.array([1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         rng = np.random.default_rng(42)
         num_samples = 1000
@@ -187,6 +192,7 @@ class TestELUSoundness:
         ub = np.array([1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         rng = np.random.default_rng(42)
         num_samples = 1000
@@ -218,6 +224,7 @@ class TestMaxPoolSoundness:
         ub = np.array([1.0, 1.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         rng = np.random.default_rng(42)
         num_samples = 1000
@@ -252,6 +259,7 @@ class TestSoundnessConsistency:
         results = []
         for _ in range(3):
             result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+            assert result is not None
             results.append(result)
 
         # Verify all results are identical
@@ -288,6 +296,7 @@ class TestHullTightness:
         ub = np.array([2.0, 2.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # For ReLU with all positive inputs, output = input
         # Hull should reflect this identity relationship (tighter than loose bounds)
@@ -310,6 +319,7 @@ class TestHullTightness:
         ub = np.array([10.0, 10.0])
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         # All output values should be in [0, 1]
         # Test by checking extreme points

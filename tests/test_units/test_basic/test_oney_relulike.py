@@ -43,6 +43,7 @@ class TestReLULikeHullWithOneYOutputShape:
         ub = np.full(dim, 1.0)
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         assert result.shape[1] == dim + 2, f"Expected {dim + 2} cols, got {result.shape[1]}"
 
@@ -54,6 +55,7 @@ class TestReLULikeHullWithOneYOutputShape:
         ub = np.full(dim, 1.0)
 
         result = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        assert result is not None
 
         assert np.all(np.isfinite(result)), "Non-finite values in output"
 

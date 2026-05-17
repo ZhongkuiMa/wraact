@@ -161,9 +161,7 @@ def extract_metrics(output: str) -> dict:
     return metrics
 
 
-def check_regressions(  # noqa: C901
-    current: dict, baseline: dict, thresholds: dict
-) -> tuple[list, list, list]:
+def check_regressions(current: dict, baseline: dict, thresholds: dict) -> tuple[list, list, list]:
     """Compare current metrics against baseline and classify regressions."""
     red_flags = []
     yellow_flags = []

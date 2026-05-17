@@ -452,4 +452,3 @@ are the upper linear piece coefficients; `x1` is the breakpoint.
 | 15.3 | Degenerate inputs (fewer vertices than dimension) raise `DegeneratedError` before DLP construction | ☐ |
 | 15.4 | Multi-neuron constraints combine per-neuron DLPs with cross-neuron terms | ☐ |
 | 15.5 | `cal_sn_constrs` builds single-neuron constraints; `cal_mn_constrs` builds multi-neuron constraints | ☐ |
-
