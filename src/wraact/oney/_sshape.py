@@ -11,6 +11,7 @@ from numpy import ndarray
 
 from wraact._enums import TopKSelector
 from wraact.acthull import SShapeHull
+from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
 from wraact.oney._act import ActHullWithOneY
 
 
@@ -93,13 +94,13 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
 
         args = (d, xl, xu, yl, yu, kl, ku, klu, cc_s)
         dlp_line_l, dlp_line_u, dlp_point_l, dlp_point_u, cc_s = self._construct_dlp(
-            0, *args, self._add_sn_constrs
+            0, *args, self._if_cal_sn_constrs
         )
 
-        cc_ml, vl = self._cal_mn_constrs_with_one_y(
+        cc_ml, vl = cal_mn_constrs_with_one_y_dlp(
             0, cc_ml, vl, dlp_line_l, dlp_point_l, is_convex=False
         )
-        cc_mu, vu = self._cal_mn_constrs_with_one_y(
+        cc_mu, vu = cal_mn_constrs_with_one_y_dlp(
             0, cc_mu, vu, dlp_line_u, dlp_point_u, is_convex=True
         )
 
@@ -112,14 +113,18 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
         if cc_mu.shape[0] < n_output_constrs:
             cc_su = cc_s[cc_s[:, -1] > 0]
             n_fill = n_output_constrs - cc_mu.shape[0]
-            temp = np.tile(cc_su, (n_fill // cc_mu.shape[0], 1))
-            cc_mu = np.vstack((cc_mu, temp))
+            if cc_su.shape[0] > 0:
+                reps = max(1, n_fill // cc_su.shape[0])
+                temp = np.tile(cc_su, (reps, 1))
+                cc_mu = np.vstack((cc_mu, temp))
 
         if cc_ml.shape[0] < n_output_constrs:
             cc_sl = cc_s[cc_s[:, -1] < 0]
             n_fill = n_output_constrs - cc_ml.shape[0]
-            temp = np.tile(cc_sl, (n_fill // cc_ml.shape[0], 1))
-            cc_ml = np.vstack((cc_ml, temp))
+            if cc_sl.shape[0] > 0:
+                reps = max(1, n_fill // cc_sl.shape[0])
+                temp = np.tile(cc_sl, (reps, 1))
+                cc_ml = np.vstack((cc_ml, temp))
 
         cc = np.vstack((cc_mu, cc_ml))
 

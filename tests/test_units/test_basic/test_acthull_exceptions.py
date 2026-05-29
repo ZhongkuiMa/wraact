@@ -412,3 +412,32 @@ class TestActHullConsistency:
 
         # Combined should have at least as many constraints
         assert c_both.shape[0] >= c_single.shape[0]
+
+
+class TestActHullNaNInfValidation:
+    """Test NaN/Inf input validation (added Round 1)."""
+
+    def test_nan_bounds_raises_value_error(self, relu_hull_class):
+        """NaN in bounds raises ValueError."""
+        hull = relu_hull_class(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        lb = np.array([-1.0, float("nan")])
+        ub = np.array([1.0, 1.0])
+        with pytest.raises(ValueError, match="NaN"):
+            hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+
+    def test_inf_bounds_raises_value_error(self, sigmoid_hull_class):
+        """Inf in bounds raises ValueError."""
+        hull = sigmoid_hull_class()
+        lb = np.array([-float("inf"), -1.0])
+        ub = np.array([0.0, 1.0])
+        with pytest.raises(ValueError, match="Inf"):
+            hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+
+    def test_finite_bounds_pass_validation(self, relu_hull_class):
+        """Valid finite bounds pass validation."""
+        hull = relu_hull_class(if_cal_single_neuron_constrs=True, if_cal_multi_neuron_constrs=False)
+        constraints = hull.cal_hull(
+            input_lower_bounds=np.array([-1.0, -1.0]),
+            input_upper_bounds=np.array([1.0, 1.0]),
+        )
+        assert constraints is not None

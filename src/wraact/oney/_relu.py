@@ -62,9 +62,9 @@ class ReLUHullWithOneY(ReLULikeHullWithOneY, ReLUHull):
             temp = cv[:, xi_n] / v[1, xi_n]
             beta2[:, 0] = np.max(temp, axis=1)
 
-        # Eliminate tiny positive values
-        beta1[beta1 > 0] = 0.0
-        beta2[beta2 > 0] = 0.0
+        # Eliminate tiny positive values (in-place, no temp mask allocation)
+        np.minimum(beta1, 0.0, out=beta1)
+        np.minimum(beta2, 0.0, out=beta2)
 
         c = np.hstack((c, beta1 + beta2))
         c[:, [1]] -= beta2

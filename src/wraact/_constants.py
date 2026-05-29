@@ -12,6 +12,7 @@ __all__ = [
     "MIN_BOUNDS_RANGE_ACTHULL",
     "MIN_BOUNDS_RANGE_ONEY",
     "MIN_DLP_ANGLE",
+    "MIN_DLP_DENOM",
     "TOLERANCE",
 ]
 
@@ -33,6 +34,10 @@ MIN_BOUNDS_RANGE_ONEY: float = 0.04
 #: Minimum angle in radians between two DLP function pieces.
 #: Prevents degenerate DLP constructions.
 MIN_DLP_ANGLE: float = 0.1
+
+#: Minimum absolute denominator threshold for DLP beta computation.
+#: Values below this trigger a RuntimeError to prevent numerical blowup.
+MIN_DLP_DENOM: float = 1e-12
 
 #: Default negative slope coefficient for LeakyReLU activation.
 LEAKY_RELU_ALPHA: float = 0.01

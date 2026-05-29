@@ -12,6 +12,7 @@ from numpy import ndarray
 from wraact._constants import MIN_BOUNDS_RANGE_ONEY
 from wraact._enums import TopKSelector
 from wraact.acthull import ReLULikeHull
+from wraact.acthull._utils import cal_mn_constrs_with_one_y_dlp
 from wraact.oney._act import ActHullWithOneY
 
 
@@ -65,9 +66,11 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
             c_s = self.cal_sn_constrs(lb_arr, ub_arr)
             c_su = c_s[c_s[:, -1] < 0]
             n_fill = self._n_output_constrs - c_m.shape[0]
-            # Repeat c_s to fill the rest with the constraints
-            temp = np.tile(c_su, (n_fill // c_su.shape[0], 1))
-            c_m = np.vstack((c_m, temp))
+            # Repeat c_su to fill; guard against empty fallback set
+            if c_su.shape[0] > 0:
+                reps = max(1, n_fill // c_su.shape[0])
+                temp = np.tile(c_su, (reps, 1))
+                c_m = np.vstack((c_m, temp))
 
         return c_m, dtype_cdd
 
@@ -125,7 +128,7 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
         lb_arr: ndarray = lb  # type: ignore[assignment]
         ub_arr: ndarray = ub  # type: ignore[assignment]
         aux_lines, aux_point = cls._construct_dlp(0, d, lb_arr[0], ub_arr[0])
-        c, v = cls._cal_mn_constrs_with_one_y(0, c, v, aux_lines, aux_point, is_convex=True)
+        c, v = cal_mn_constrs_with_one_y_dlp(0, c, v, aux_lines, aux_point, is_convex=True)
         c = cls._get_topk_constrs(c, n_output_constrs, selector=topk_selector)
 
         return c

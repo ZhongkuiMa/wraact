@@ -197,13 +197,8 @@ class TestReLUHullWithOneYParametrized:
             (np.array([-0.05, -0.05]), np.array([0.05, 0.05]), {}),
             (np.array([-5.0, -1.0]), np.array([1.0, 5.0]), {}),
             (np.array([-1.0, -1.0]), np.array([1.0, 1.0]), {"dtype_cdd": "float"}),
-            (
-                np.array([-1.0, -1.0]),
-                np.array([1.0, 1.0]),
-                {"if_return_input_bounds_by_vertices": True},
-            ),
         ],
-        ids=["small_bounds", "asymmetric_2d", "dtype_float", "return_vertices"],
+        ids=["small_bounds", "asymmetric_2d", "dtype_float"],
     )
     def test_relu_oney_cal_hull(self, lb, ub, hull_kwargs):
         """Test ReLUHullWithOneY.cal_hull with varied configurations."""
@@ -221,13 +216,9 @@ class TestLeakyReLUHullWithOneYParametrized:
         [
             (np.array([-10.0, -0.5, -100.0]), np.array([0.5, 10.0, 5.0]), {}),
             (np.array([-1.0, -1.0]), np.array([1.0, 1.0]), {"dtype_cdd": "fraction"}),
-            (
-                np.array([-1.0, -1.0, -1.0]),
-                np.array([1.0, 1.0, 1.0]),
-                {"if_return_input_bounds_by_vertices": True},
-            ),
+            (np.array([-1.0, -1.0, -1.0]), np.array([1.0, 1.0, 1.0]), {}),
         ],
-        ids=["asymmetric_3d", "dtype_fraction", "return_vertices"],
+        ids=["asymmetric_3d", "dtype_fraction", "n_output_default_3d"],
     )
     def test_leakyrelu_oney_cal_hull(self, lb, ub, hull_kwargs):
         """Test LeakyReLUHullWithOneY.cal_hull with varied configurations."""

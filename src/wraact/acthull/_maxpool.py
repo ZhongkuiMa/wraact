@@ -10,6 +10,7 @@ import numpy as np
 from numpy import ndarray
 
 from wraact._constants import TOLERANCE
+from wraact._exceptions import DegeneratedError
 from wraact.acthull._relulike import ReLULikeHull
 
 
@@ -45,7 +46,9 @@ class MaxPoolHullDLP(ReLULikeHull):
         be the maximum can be removed when constructing the DLP function.
 
     .. seealso::
-        Refer to the paper ???
+        Refer to the paper
+        `Formal Verification of Piece-Wise Linear Feed-Forward Neural Networks
+        <https://arxiv.org/pdf/1705.01320>`__ :cite:`ehlers_formal_2017`
         for theoretical proof.
 
     """
@@ -75,11 +78,11 @@ class MaxPoolHullDLP(ReLULikeHull):
         ub = np.array(ub, dtype=np.float64)
         cc = np.empty((0, d + 2), dtype=np.float64)
 
-        if self._add_sn_constrs:
+        if self._if_cal_sn_constrs:
             c1 = self.cal_sn_constrs(lb, ub)
             cc = np.vstack((cc, c1))
 
-        if self._add_mn_constrs:
+        if self._if_cal_mn_constrs:
             c2 = self.cal_mn_constrs(c, v, lb, ub)
             cc = np.vstack((cc, c2))
 
@@ -126,6 +129,8 @@ class MaxPoolHullDLP(ReLULikeHull):
             # - x_i + y >= 0
             c_l[r_idx, c_idx] = -1.0
             c_l[r_idx, -1] = 1.0
+            c_l.flags.writeable = False
+            cls._lower_constraints[d] = c_l
 
         cc = np.vstack((c_u, c_l))
 
@@ -160,15 +165,17 @@ class MaxPoolHullDLP(ReLULikeHull):
 
         # ------------------------ Non-trivial case ------------------------
         nt_idxs = cls._find_nontrivial_idxs(v)
+        if len(nt_idxs) == 0:
+            raise DegeneratedError("All vertices tied — MaxPool has no non-trivial dimension.")
         # Other degenrate cases are handled in _construct_dlp.
         pieces = cls._construct_dlp(v, nt_idxs)
         # After constructing the DLP function, we still may meet trivial cases due to
         # the construction method.
         # We calculate the maximum value of each piece.
         pv = pieces[:, :-1] @ v.T
-        nt_idxs = sorted(set(np.argmax(pv, axis=0)))
+        nt_idxs = list(np.unique(np.argmax(pv, axis=0)))
         if len(nt_idxs) == 1:
-            idx = nt_idxs.pop()
+            idx = nt_idxs[0]
             cc = np.zeros((2, c.shape[1] + 1), dtype=c.dtype)
             # y >= the piece
             cc[0, :] = pieces[idx]
@@ -362,7 +369,9 @@ class MaxPoolHull(MaxPoolHullDLP):
         improve the efficiency.
 
     .. seealso::
-        Refer to the paper ???
+        Refer to the paper
+        `Formal Verification of Piece-Wise Linear Feed-Forward Neural Networks
+        <https://arxiv.org/pdf/1705.01320>`__ :cite:`ehlers_formal_2017`
         for theoretical proof.
     """
 
@@ -398,6 +407,8 @@ class MaxPoolHull(MaxPoolHullDLP):
 
         # ------------------------ Non-trivial case ------------------------
         nt_idxs = cls._find_nontrivial_idxs(v)
+        if len(nt_idxs) == 0:
+            raise DegeneratedError("All vertices tied — MaxPool has no non-trivial dimension.")
         # Other degenrate cases are handled in the following calculation.
         # Enumerate all vertices and calculate (Ax + b) / (y - x_i) for each vertex.
         # Calculate the Ax + b

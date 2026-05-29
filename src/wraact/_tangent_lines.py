@@ -21,15 +21,15 @@ from numpy import ndarray
 
 from wraact._exceptions import NotConvergedError
 
-_LOG_MIN = 1e-6
-_MAX_ITER = 100
-_CONVERGE_TOL = 1e-4
+_LOG_MIN: float = 1e-6
+_MAX_ITER: int = 100
+_CONVERGE_TOL: float = 1e-4
 
 # Disable the logging of Numba, which may be conflict with our logging.
 logging.getLogger("numba").setLevel(logging.CRITICAL)
 
 
-@njit
+@njit(cache=True)
 def get_parallel_tangent_line_sigmoid_np(
     k: ndarray, get_big: bool
 ) -> tuple[ndarray, ndarray, ndarray]:
@@ -55,7 +55,7 @@ def get_parallel_tangent_line_sigmoid_np(
     return b, k, x
 
 
-@njit
+@njit(cache=True)
 def get_parallel_tangent_line_tanh_np(
     k: ndarray, get_big: bool
 ) -> tuple[ndarray, ndarray, ndarray]:
@@ -78,27 +78,56 @@ def get_parallel_tangent_line_tanh_np(
     return b, k, x
 
 
-def _warmup_jit_functions() -> None:
-    """Compile Numba JIT functions on first call.
+@njit(cache=True)
+def _get_second_tangent_sigmoid_jit(
+    x1: ndarray, get_big: bool
+) -> tuple[ndarray, ndarray, ndarray, bool]:
+    """JIT convergence loop for sigmoid second tangent line (array-only).
 
-    This function triggers JIT compilation of tangent line functions
-    to reduce latency on first use. It is called automatically at module
-    import time to ensure functions are compiled before use.
-
-    This is necessary for Numba-compiled functions to achieve good
-    performance after initial compilation overhead.
+    :param x1: First tangent x-coordinates. Shape: ``n,``.
+    :param get_big: If True, upper tangent; else lower.
+    :return: (b, k, x2, converged).
     """
-    rng = np.random.Generator(np.random.PCG64())
-    k_np = rng.random(10) / 2
-    get_big_np = True
-    # Trigger JIT compilation for sigmoid tangent line
-    get_parallel_tangent_line_sigmoid_np(k_np, get_big_np)
-    # Trigger JIT compilation for tanh tangent line
-    get_parallel_tangent_line_tanh_np(k_np, get_big_np)
+    x2 = np.where(x1 == 0.0, 0.5, 0.0)
+    y1 = np.reciprocal(1.0 + np.exp(-x1))
+    b = np.zeros_like(x1)
+    k = np.zeros_like(x1)
+    x_new = np.zeros_like(x1)
+    for _ in range(_MAX_ITER):
+        y2 = np.reciprocal(1.0 + np.exp(-x2))
+        k = (y2 - y1) / (x2 - x1)
+        k = np.where(np.isnan(k), 0.1, k)
+        b, k, x_new = get_parallel_tangent_line_sigmoid_np(k, get_big)
+        if np.all(np.abs(x2 - x_new) < _CONVERGE_TOL):
+            return b, k, x_new, True
+        x2 = x_new
+    return b, k, x_new, False
 
 
-# Warm up JIT functions at module import time
-_warmup_jit_functions()
+@njit(cache=True)
+def _get_second_tangent_tanh_jit(
+    x1: ndarray, get_big: bool
+) -> tuple[ndarray, ndarray, ndarray, bool]:
+    """JIT convergence loop for tanh second tangent line (array-only).
+
+    :param x1: First tangent x-coordinates. Shape: ``n,``.
+    :param get_big: If True, upper tangent; else lower.
+    :return: (b, k, x2, converged).
+    """
+    x2 = np.where(x1 == 0.0, 0.5, 0.0)
+    y1 = np.tanh(x1)
+    b = np.zeros_like(x1)
+    k = np.zeros_like(x1)
+    x_new = np.zeros_like(x1)
+    for _ in range(_MAX_ITER):
+        y2 = np.tanh(x2)
+        k = (y2 - y1) / (x2 - x1)
+        k = np.where(np.isnan(k), 0.1, k)
+        b, k, x_new = get_parallel_tangent_line_tanh_np(k, get_big)
+        if np.all(np.abs(x2 - x_new) < _CONVERGE_TOL):
+            return b, k, x_new, True
+        x2 = x_new
+    return b, k, x_new, False
 
 
 def get_second_tangent_line_sigmoid_np(
@@ -115,23 +144,10 @@ def get_second_tangent_line_sigmoid_np(
         second tangent point. Each has shape (n,).
     :raises NotConvergedError: If iteration does not converge.
     """
-    x2 = np.where(x1 == 0.0, 0.5, 0.0)  # Initialize x2 away from x1 to avoid division by zero
-    y1 = np.reciprocal(1.0 + np.exp(-x1))
-
-    for _ in range(_MAX_ITER):
-        y2 = np.reciprocal(1.0 + np.exp(-x2))
-        with np.errstate(divide="ignore", invalid="ignore"):
-            k = (y2 - y1) / (x2 - x1)
-        # Handle any NaN values from division by zero
-        k = np.where(np.isnan(k), 0.1, k)
-        b, k, x_new = get_parallel_tangent_line_sigmoid_np(k, get_big)
-
-        if np.all(np.abs(x2 - x_new) < _CONVERGE_TOL):
-            return b, k, x_new
-
-        x2 = x_new
-
-    raise NotConvergedError
+    b, k, x_new, converged = _get_second_tangent_sigmoid_jit(x1, get_big)
+    if not converged:
+        raise NotConvergedError
+    return b, k, x_new
 
 
 def get_second_tangent_line_tanh_np(
@@ -148,27 +164,13 @@ def get_second_tangent_line_tanh_np(
         second tangent point. Each has shape (n,).
     :raises NotConvergedError: If iteration does not converge.
     """
-    # Initialize x2 away from x1 to avoid division by zero on first iteration
     if isinstance(x1, (int, float)):
-        x2 = 0.5 if x1 == 0.0 else 0.0
-    else:
-        x2 = np.where(x1 == 0.0, 0.5, 0.0)  # type: ignore[assignment]
-    y1 = np.tanh(x1)
-
-    for _ in range(_MAX_ITER):
-        y2 = np.tanh(x2)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            k = (y2 - y1) / (x2 - x1)
-        # Handle any NaN values from division by zero
-        if isinstance(k, (int, float)):
-            k = 0.1 if np.isnan(k) else k
-        else:
-            k = np.where(np.isnan(k), 0.1, k)
-        b, k, x_new = get_parallel_tangent_line_tanh_np(k, get_big)  # pyright: ignore[reportArgumentType]
-
-        if np.all(np.abs(x2 - x_new) < _CONVERGE_TOL):
-            return b, k, x_new
-
-        x2 = x_new
-
-    raise NotConvergedError
+        x1_arr = np.array([float(x1)], dtype=np.float64)
+        b, k, x_new, converged = _get_second_tangent_tanh_jit(x1_arr, get_big)
+        if not converged:
+            raise NotConvergedError
+        return float(b[0]), float(k[0]), float(x_new[0])  # type: ignore[return-value]
+    b, k, x_new, converged = _get_second_tangent_tanh_jit(x1, get_big)
+    if not converged:
+        raise NotConvergedError
+    return b, k, x_new

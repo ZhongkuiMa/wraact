@@ -74,6 +74,7 @@ class LeakyReLUHull(ReLULikeHull):
             cu2[idx_r, idx_y] = 1.0
 
             cu = np.vstack((cu1, cu2))
+            cu.flags.writeable = False
             cls._lower_constraints[d] = cu
         else:
             cu = cls._lower_constraints[d]

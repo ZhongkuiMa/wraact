@@ -49,11 +49,11 @@ class ReLULikeHull(ActHull, ABC):
         ub = np.array(ub, dtype=np.float64)
         cc = np.empty((0, 1 + 2 * d), dtype=np.float64)
 
-        if self._add_sn_constrs:
+        if self._if_cal_sn_constrs:
             c1 = self.cal_sn_constrs(lb, ub)
             cc = np.vstack((cc, c1))
 
-        if self._add_mn_constrs:
+        if self._if_cal_mn_constrs:
             c2 = self.cal_mn_constrs(c, v, lb, ub)
             cc = np.vstack((cc, c2))
 
@@ -85,31 +85,9 @@ class ReLULikeHull(ActHull, ABC):
 
         for i in range(d):
             lines, point = cls._construct_dlp(i, d, lb_arr[i], ub_arr[i])
-            c, v = cls._cal_mn_constrs_with_one_y(i, c, v, lines, point, is_convex=True)
+            c, v = cal_mn_constrs_with_one_y_dlp(i, c, v, lines, point, is_convex=True)
 
         return c
-
-    @classmethod
-    def _cal_mn_constrs_with_one_y(
-        cls,
-        idx: int,
-        c: ndarray,
-        v: ndarray,
-        dlp_lines: ndarray,
-        dlp_point: float,
-        is_convex: bool,
-    ) -> tuple[ndarray, ndarray]:
-        """Compute multi-neuron constraints for one output dimension.
-
-        :param idx: Index of the output dimension to process.
-        :param c: Current constraints. Shape: ``n, d``.
-        :param v: Current vertices. Shape: ``m, d``.
-        :param dlp_lines: DLP line parameters. Shape: ``2, d+1``.
-        :param dlp_point: DLP auxiliary point.
-        :param is_convex: True if activation is convex in this region.
-        :return: Tuple of (updated_constraints, updated_vertices).
-        """
-        return cal_mn_constrs_with_one_y_dlp(idx, c, v, dlp_lines, dlp_point, is_convex=is_convex)
 
     @classmethod
     @abstractmethod

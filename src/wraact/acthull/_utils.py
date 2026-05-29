@@ -6,6 +6,8 @@ __all__ = ["cal_mn_constrs_with_one_y_dlp"]
 import numpy as np
 from numpy import ndarray
 
+from wraact._constants import MIN_DLP_DENOM
+
 
 def cal_mn_constrs_with_one_y_dlp(
     idx: int,
@@ -71,21 +73,23 @@ def cal_mn_constrs_with_one_y_dlp(
     vl, vr = v[mask_vl], v[mask_vr]
     v[mask_vl, -1], v[mask_vr, -1] = np.matmul(vl, ll.T).T, np.matmul(vr, lr.T).T
     vl, vr = v[mask_vl], v[mask_vr]
-    d1, d2 = np.matmul(c, vr.T), np.matmul(c, vl.T)
-    h1, h2 = np.matmul(ll, vr.T), np.matmul(lr, vl.T)
+    constrs_at_vr, constrs_at_vl = np.matmul(c, vr.T), np.matmul(c, vl.T)
+    left_line_at_vr, right_line_at_vl = np.matmul(ll, vr.T), np.matmul(lr, vl.T)
 
-    if np.any(h1 == 0) or np.any(h2 == 0):
-        raise RuntimeError("Zero values will be in denominators.")
+    if np.any(np.abs(left_line_at_vr) < MIN_DLP_DENOM) or np.any(
+        np.abs(right_line_at_vl) < MIN_DLP_DENOM
+    ):
+        raise RuntimeError("Zero or near-zero values will be in denominators.")
 
-    d1 /= h1
-    d2 /= h2
+    constrs_at_vr /= left_line_at_vr
+    constrs_at_vl /= right_line_at_vl
 
     if is_convex:
-        beta1 = np.max(d1, axis=1, keepdims=True)
-        beta2 = np.max(d2, axis=1, keepdims=True)
+        beta1 = np.max(constrs_at_vr, axis=1, keepdims=True)
+        beta2 = np.max(constrs_at_vl, axis=1, keepdims=True)
     else:
-        beta1 = np.min(d1, axis=1, keepdims=True)
-        beta2 = np.min(d2, axis=1, keepdims=True)
+        beta1 = np.min(constrs_at_vr, axis=1, keepdims=True)
+        beta2 = np.min(constrs_at_vl, axis=1, keepdims=True)
 
     c -= beta1 * ll
     c -= beta2 * lr

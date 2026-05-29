@@ -62,20 +62,22 @@ class ELUHull(ReLULikeHull):
         cu[idx_r, idx_y] = lb - ub
 
         # For the lower faces.
-        # y >= f'(lb)(x-lb) + f(lb)
+        # y >= f'(lb)(x-lb) + f(lb)  <=>  (kl*lb - yl) + (-kl)*x + y >= 0
         kl = cls._df(lb)
-        cl1[:, 0] = -cls._f(lb) + kl * lb
-        cl2[idx_r, idx_y] = 1.0
-        cl1[idx_r, idx_x] = kl
+        yl = cls._f(lb)
+        cl1[:, 0] = kl * lb - yl
+        cl1[idx_r, idx_y] = 1.0
+        cl1[idx_r, idx_x] = -kl
         # y - x >= 0
         cl2[idx_r, idx_y] = 1.0
         cl2[idx_r, idx_x] = -1.0
-        # y >=f'(m)(x-m) + f(m)
+        # y >= f'(m)(x-m) + f(m)  <=>  (km*m - ym) + (-km)*x + y >= 0
         m = (lb + ub) / 2.0
         km = cls._df(m)
-        cl3[:, 0] = -cls._f(m) + km * m
+        ym = cls._f(m)
+        cl3[:, 0] = km * m - ym
         cl3[idx_r, idx_y] = 1.0
-        cl3[idx_r, idx_x] = km
+        cl3[idx_r, idx_x] = -km
 
         c = np.vstack((cu, cl1, cl2, cl3))
         return c

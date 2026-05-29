@@ -238,7 +238,6 @@ class TestOneYVariantFinalTests:
                 hull = ReLUHullWithOneY(
                     dtype_cdd=dtype_cdd,
                     n_output_constraints=n_out_constrs,
-                    if_return_input_bounds_by_vertices=False,
                 )
                 constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
                 assert isinstance(constraints, np.ndarray)

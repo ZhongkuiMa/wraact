@@ -15,10 +15,7 @@ from numpy import ndarray
 
 from wraact._constants import TOLERANCE
 from wraact._enums import TopKSelector
-from wraact._exceptions import DegeneratedError
 from wraact.acthull import ActHull
-
-_TOPK_RNG = np.random.default_rng(0)
 
 
 class ActHullWithOneY(ActHull, ABC):
@@ -31,7 +28,7 @@ class ActHullWithOneY(ActHull, ABC):
     :param n_output_constraints: The number of output constraints.
     """
 
-    __slots__ = [*ActHull.__slots__, "_n_output_constrs", "_topk_selector"]
+    __slots__ = ("_n_output_constrs", "_topk_selector")
     _n_output_constrs: int
     _topk_selector: TopKSelector
 
@@ -39,15 +36,12 @@ class ActHullWithOneY(ActHull, ABC):
         self,
         dtype_cdd: Literal["fraction", "float"] = "float",
         n_output_constraints: int = 1,
-        if_return_input_bounds_by_vertices: bool = False,
         topk_selector: TopKSelector = TopKSelector.BETA_MIN,
     ):
         """Initialize the single-output activation hull calculator.
 
         :param dtype_cdd: Data type for pycddlib. Default: "float".
         :param n_output_constraints: Number of output constraints to generate.
-        :param if_return_input_bounds_by_vertices: Whether to return tightened
-            input bounds derived from polytope vertices.
         :param topk_selector: Strategy for choosing ``n_output_constraints``
             constraints from the full hull output. See :class:`TopKSelector`.
         """
@@ -55,7 +49,6 @@ class ActHullWithOneY(ActHull, ABC):
             if_cal_single_neuron_constrs=True,
             if_cal_multi_neuron_constrs=True,
             if_use_double_orders=False,
-            if_return_input_bounds_by_vertices=if_return_input_bounds_by_vertices,
             dtype_cdd=dtype_cdd,
         )
 
@@ -82,61 +75,21 @@ class ActHullWithOneY(ActHull, ABC):
         if c is None:  # pragma: no cover - defensive check, validated by caller in cal_hull
             raise ValueError("The input constraints should be provided.")
 
-        try:
-            """
-            The bounds need update if we use update scalar bounds per layer of
-            DeepPoly. This will cause degenerated input polytope.
+        # Track whether explicit bounds rows were appended so we only update those rows.
+        had_bounds = lb is not None and ub is not None
 
-            There are two cases:
-            (1) One of the input dimension has the same lower and upper bounds, which
-            will throw a Degenerated exception.
-            (2) The number of vertices is fewer than the dimension, which will call
-            a Degenerated exception.
+        v, lb, ub, dtype_cdd = self._compute_vertices_and_update_bounds(c, lb, ub)
 
-            We will first recalculate the vertices with the fractional number if there
-            is an exception. If there is still an exception, we will accept the
-            degenerated input polytope.
-            """
-            v, dtype_cdd = self._cal_vertices_with_exception(c, lb, ub, self.dtype_cdd)
-            new_lb = np.min(v, axis=0)[1:]
-            new_ub = np.max(v, axis=0)[1:]
-            self._check_degenerated_input_polytope(v, new_lb, new_ub)
-            lb = new_lb
-            ub = new_ub
-        except DegeneratedError:
-            v, dtype_cdd = self.cal_vertices(c, "fraction")
-            lb = np.min(v, axis=0)[1:]
-            ub = np.max(v, axis=0)[1:]
-
-        # Update input bounds constraints
-        d = lb.shape[0]
-        c[-2 * d : -d, 0] = -lb
-        c[-d:, 0] = ub
+        # Update input bounds constraints only when bound rows were appended to c.
+        if had_bounds and lb is not None and ub is not None:
+            d = lb.shape[0]
+            c[-2 * d : -d, 0] = -lb
+            c[-d:, 0] = ub
 
         result = self._cal_constrs_with_exception(c, v, lb, ub, dtype_cdd)
-        if result is None:  # pragma: no cover - defensive check, method never returns None
+        if result is None:  # pragma: no cover
             raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
-        cc, dtype_cdd = result
-
-        if self._use_double_orders:  # pragma: no cover - always False in OneY (set in __init__)
-            # Here we reverse the order of input dimensions to calculate the function
-            # hull because our algorithm is a progressive algorithm that calculates the
-            # function hull of the output dimensions one by one.
-            # Computing with reversed input dimension order can improve precision.
-            o_r = self._get_reversed_order(
-                c.shape[1] - 1
-            )  # Use input constraint dimensions, not output
-            c_r = c.copy()  # Reversed constraints
-            c_r = c_r[:, o_r]
-            result_r = self._cal_constrs_with_exception(c_r, v, lb, ub, dtype_cdd)
-            if result_r is None:  # pragma: no cover - defensive check, method never returns None
-                raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
-            cc_r, dtype_cdd = result_r
-            # Reverse the output dimensions back to match original order
-            d_out = cc.shape[1] - 1
-            o_r_output = self._get_reversed_order(d_out)
-            cc_r = cc_r[:, o_r_output]
-            cc = np.vstack((cc, cc_r))
+        cc, _ = result
 
         return cc
 
@@ -206,6 +159,6 @@ class ActHullWithOneY(ActHull, ABC):
         if selector == TopKSelector.FIRST:
             return c[: min(topk, c.shape[0])]
         if selector == TopKSelector.RANDOM:
-            picked = _TOPK_RNG.permutation(c.shape[0])[:topk]
+            picked = np.random.default_rng().permutation(c.shape[0])[:topk]
             return c[picked]
         raise ValueError(f"unknown topk selector {selector}")

@@ -4,7 +4,7 @@ __docformat__ = "restructuredtext"
 __all__ = ["SShapeHull"]
 
 from abc import ABC, abstractmethod
-from typing import Literal, cast
+from typing import Literal
 
 import numpy as np
 from numpy import ndarray
@@ -64,11 +64,11 @@ class SShapeHull(ActHull, ABC):
         ub = np.array(ub, dtype=np.float64)
         cc = np.empty((0, 2 * d + 1), dtype=np.float64)
 
-        if self._add_sn_constrs and not self._add_mn_constrs:
+        if self._if_cal_sn_constrs and not self._if_cal_mn_constrs:
             c_s = self.cal_sn_constrs(lb, ub)
             cc = np.vstack((cc, c_s))
 
-        if self._add_mn_constrs:
+        if self._if_cal_mn_constrs:
             c_m = self.cal_mn_constrs(c, v, lb, ub)
             cc = np.vstack((cc, c_m))
 
@@ -100,7 +100,7 @@ class SShapeHull(ActHull, ABC):
 
         for i in range(d):
             args = (i, d, xl[i], xu[i], yl[i], yu[i], kl[i], ku[i], klu[i], cc)
-            _, _, _, _, cc = self._construct_dlp(*args, self._add_sn_constrs)
+            _, _, _, _, cc = self._construct_dlp(*args, self._if_cal_sn_constrs)
 
         return cc
 
@@ -148,43 +148,28 @@ class SShapeHull(ActHull, ABC):
         for i in range(d):
             args = (i, d, xl[i], xu[i], yl[i], yu[i], kl[i], ku[i], klu[i], cc_s)
             dlp_lines_l, dlp_lines_u, dlp_point_l, dlp_point_u, cc_s = self._construct_dlp(
-                *args, self._add_sn_constrs
+                *args, self._if_cal_sn_constrs
             )
 
-            if self._add_mn_constrs:
+            if self._if_cal_mn_constrs:
                 if dlp_lines_l is not None:
-                    cc_l, v_l = self._cal_mn_constrs_with_one_y(
+                    cc_l, v_l = cal_mn_constrs_with_one_y_dlp(
                         i, cc_l, v_l, dlp_lines_l, dlp_point_l, is_convex=False
                     )
                 if dlp_lines_u is not None:
-                    cc_u, v_u = self._cal_mn_constrs_with_one_y(
+                    cc_u, v_u = cal_mn_constrs_with_one_y_dlp(
                         i, cc_u, v_u, dlp_lines_u, dlp_point_u, is_convex=True
                     )
 
         cc = np.empty((0, 2 * d + 1), dtype=np.float64)
 
-        if self._add_sn_constrs:
+        if self._if_cal_sn_constrs:
             cc = np.vstack((cc, cc_s))
 
-        if self._add_mn_constrs:
+        if self._if_cal_mn_constrs:
             cc = np.vstack((cc, cc_l, cc_u))
 
         return cc
-
-    @classmethod
-    def _cal_mn_constrs_with_one_y(
-        cls,
-        idx: int,
-        c: ndarray,
-        v: ndarray,
-        dlp_lines: ndarray,
-        dlp_point: float | ndarray | None,
-        is_convex: bool,
-    ) -> tuple[ndarray, ndarray]:
-        return cast(
-            tuple[ndarray, ndarray],
-            cal_mn_constrs_with_one_y_dlp(idx, c, v, dlp_lines, dlp_point, is_convex=is_convex),
-        )
 
     @classmethod
     def _construct_dlp(

@@ -35,9 +35,10 @@ class TopKSelector(StrEnum):
         adalin secant when input coefs concentrate on one neuron.
     :cvar FIRST: No sort; take first k after the non-zero-beta filter.
         Control baseline.
-    :cvar RANDOM: Uniform random k after the filter. Seeded via
-        :func:`numpy.random.default_rng` -- non-deterministic across runs
-        unless the caller fixes the seed globally.
+    :cvar RANDOM: Uniform random k after the filter. Uses a fresh
+        :func:`numpy.random.default_rng` — non-deterministic across runs
+        unless the caller seeds the global generator via
+        :func:`numpy.random.seed`.
     """
 
     BETA_MIN = "beta_min"

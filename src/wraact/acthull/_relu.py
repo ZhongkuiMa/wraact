@@ -41,44 +41,56 @@ class ReLUHull(ReLULikeHull):
         :param ub: The upper bounds of the input variables.
         :return: The single-neuron constraints of the function hull.
         """
-        if np.any(lb >= 0) or np.any(ub <= 0):
-            raise ValueError(
-                "The lower bounds should be negative and the upper bounds should be "
-                "positive because we only handle the non-trivial cases for ReLU."
-            )
-
         d = lb.shape[0]
-        c = np.zeros((d, 2 * d + 1), dtype=np.float64)
+        cc = np.empty((0, 2 * d + 1), dtype=np.float64)
 
-        idx_r = np.arange(d)  # The index of the rows
-        idx_x = np.arange(1, d + 1)  # The index of the input variables
-        idx_y = np.arange(d + 1, 2 * d + 1)  # The index of the output variables
+        # Determine which dimensions are trivial (ReLU is linear).
+        # all-positive -> y = x; all-negative -> y = 0;
+        # crossing zero -> triangle relaxation.
+        fully_positive = lb >= 0
+        fully_negative = ub <= 0
+        crossing = ~(fully_positive | fully_negative)
 
-        # For the upper faces.
-        # The output constraints have the form of -ub*lb + ub*x - (ub-lb)*y >= 0.
-        c[:, 0] = -ub * lb
-        c[idx_r, idx_x] = ub
-        c[idx_r, idx_y] = -(ub - lb)
+        if not np.any(crossing):
+            # All dimensions are trivial: return identity / zero constraints.
+            for i in range(d):
+                row = np.zeros(2 * d + 1, dtype=np.float64)
+                if fully_positive[i]:
+                    row[1 + i] = -1.0  # -x_i + y >= 0
+                    row[1 + d + i] = 1.0
+                else:
+                    row[1 + d + i] = 1.0  # y >= 0
+                cc = np.vstack((cc, row))
+            return cc
 
-        # For the lower faces.
+        c = np.zeros((int(np.sum(crossing)), 2 * d + 1), dtype=np.float64)
+        cross_idxs = np.where(crossing)[0]
+
+        # For the upper faces across crossing dimensions.
+        c[:, 0] = -ub[cross_idxs] * lb[cross_idxs]
+        c[:, 1 + cross_idxs] = np.diag(ub[cross_idxs])
+        c[:, 1 + d + cross_idxs] = np.diag(-(ub[cross_idxs] - lb[cross_idxs]))
+
+        cc = np.vstack((cc, c))
+
+        # For the lower faces (shared across all dimensions).
         if cls._lower_constraints.get(d) is None:
-            # The output constraints have the form of y >= 0.
             c_l1 = np.zeros((d, 2 * d + 1), dtype=np.float64)
-            c_l1[idx_r, idx_y] = 1.0
+            c_l1[np.arange(d), 1 + d + np.arange(d)] = 1.0  # y >= 0
 
-            # The output constraints have the form of y >= x.
             c_l2 = np.zeros((d, 2 * d + 1), dtype=np.float64)
-            c_l2[idx_r, idx_x] = -1.0
-            c_l2[idx_r, idx_y] = 1.0
+            c_l2[np.arange(d), 1 + np.arange(d)] = -1.0  # y >= x
+            c_l2[np.arange(d), 1 + d + np.arange(d)] = 1.0
 
             cl = np.vstack((c_l1, c_l2))
+            cl.flags.writeable = False
             cls._lower_constraints[d] = cl
         else:
             cl = cls._lower_constraints[d]
 
-        c = np.vstack((c, cl))
+        cc = np.vstack((cc, cl))
 
-        return c
+        return cc
 
     @classmethod
     def cal_mn_constrs(
@@ -107,7 +119,8 @@ class ReLUHull(ReLULikeHull):
 
         :return: The multi-neuron constraints of the function hull.
         """
-        # TODO: Add the code for degenerated input polytope.
+        # TODO: Add the code for degenerated input polytope (all vertices lie in one
+        # orthant, making all v[i] same-sign -> WraLU iteration degenerates).
 
         dim = c.shape[1] - 1
 

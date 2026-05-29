@@ -13,7 +13,6 @@ import numpy as np
 import pytest
 
 from wraact._tangent_lines import (
-    _warmup_jit_functions,
     get_parallel_tangent_line_sigmoid_np,
     get_parallel_tangent_line_tanh_np,
     get_second_tangent_line_sigmoid_np,
@@ -289,37 +288,20 @@ class TestTangentLineConsistency:
         assert x_big.shape == x_small.shape
 
 
-class TestTangentLineWarmup:
-    """Test the JIT warmup function for tangent line functions."""
+class TestTangentLineJIT:
+    """Test that JIT-compiled tangent line functions are callable and correct."""
 
-    def test_warmup_function_executes(self):
-        """Test that the _warmup_jit_functions can be called successfully.
-
-        This tests the refactored JIT warmup code which was moved from
-        module-level side effects to an explicit function.
-        """
-        # Should execute without error
-        _warmup_jit_functions()
-
-        # Verify functions are callable after warmup
+    def test_parallel_tangent_functions_execute(self):
+        """Test that parallel tangent functions execute and return finite results."""
         k = np.array([0.15])
-        b, _, _ = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
-        assert np.all(np.isfinite(b))
+        b_sig, _, _ = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
+        assert np.all(np.isfinite(b_sig))
 
-    def test_tangent_functions_compiled_after_warmup(self):
-        """Test that tangent functions work correctly after warmup.
-
-        Verifies that JIT compilation completes successfully and functions
-        produce correct results.
-        """
-        # Execute warmup
-        _warmup_jit_functions()
-
-        # Test that functions work after warmup
+    def test_parallel_tangent_both_functions(self):
+        """Test both sigmoid and tanh parallel tangent functions produce finite results."""
         k = np.array([0.1, 0.2])
         b_sig, _, _ = get_parallel_tangent_line_sigmoid_np(k, get_big=True)
         b_tanh, _, _ = get_parallel_tangent_line_tanh_np(k, get_big=True)
 
-        # Results should be finite
         assert np.all(np.isfinite(b_sig))
         assert np.all(np.isfinite(b_tanh))

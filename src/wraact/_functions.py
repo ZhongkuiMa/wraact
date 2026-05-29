@@ -26,6 +26,14 @@ import numpy as np
 from numpy import ndarray
 
 
+@overload
+def relu_np(x: ndarray) -> ndarray: ...
+
+
+@overload
+def relu_np(x: float) -> float: ...  # type: ignore[misc]
+
+
 def relu_np(x: ndarray | float) -> ndarray | float:
     """Compute ReLU activation: max(0, x).
 
@@ -33,6 +41,14 @@ def relu_np(x: ndarray | float) -> ndarray | float:
     :return: Output with same shape as input.
     """
     return np.maximum(x, 0.0)
+
+
+@overload
+def drelu_np(x: ndarray) -> ndarray: ...
+
+
+@overload
+def drelu_np(x: float) -> float: ...  # type: ignore[misc]
 
 
 def drelu_np(x: ndarray | float) -> ndarray | float:
@@ -129,7 +145,16 @@ def ddtanh_np(x: ndarray | float) -> ndarray | float:
     :param x: Input array or scalar.
     :return: Output with same shape as input.
     """
-    return -2.0 * np.tanh(x) * (1.0 - np.tanh(x) ** 2)
+    t = np.tanh(x)
+    return -2.0 * t * (1.0 - t * t)
+
+
+@overload
+def elu_np(x: ndarray) -> ndarray: ...
+
+
+@overload
+def elu_np(x: float) -> float: ...  # type: ignore[misc]
 
 
 def elu_np(x: ndarray | float) -> ndarray | float:
@@ -148,6 +173,14 @@ def elu_np(x: ndarray | float) -> ndarray | float:
     return result
 
 
+@overload
+def delu_np(x: ndarray) -> ndarray: ...
+
+
+@overload
+def delu_np(x: float) -> float: ...  # type: ignore[misc]
+
+
 def delu_np(x: ndarray | float) -> ndarray | float:
     """Compute derivative of ELU: 1 if x > 0, else exp(x).
 
@@ -164,6 +197,14 @@ def delu_np(x: ndarray | float) -> ndarray | float:
     return result
 
 
+@overload
+def leakyrelu_np(x: ndarray, negative_slope: ndarray | float = 0.01) -> ndarray: ...
+
+
+@overload
+def leakyrelu_np(x: float, negative_slope: ndarray | float = 0.01) -> float: ...  # type: ignore[misc]
+
+
 def leakyrelu_np(x: ndarray | float, negative_slope: ndarray | float = 0.01) -> ndarray | float:
     """Compute Leaky ReLU: x if x > 0, else negative_slope * x.
 
@@ -172,6 +213,14 @@ def leakyrelu_np(x: ndarray | float, negative_slope: ndarray | float = 0.01) -> 
     :return: Output with same shape as input.
     """
     return np.where(x > 0, x, negative_slope * x)
+
+
+@overload
+def dleakyrelu_np(x: ndarray, negative_slope: ndarray | float = 0.01) -> ndarray: ...
+
+
+@overload
+def dleakyrelu_np(x: float, negative_slope: ndarray | float = 0.01) -> float: ...  # type: ignore[misc]
 
 
 def dleakyrelu_np(x: ndarray | float, negative_slope: ndarray | float = 0.01) -> ndarray | float:

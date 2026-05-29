@@ -135,17 +135,16 @@ class TestOneYDoubleOrders:
             assert isinstance(constraints, np.ndarray)
             assert np.all(np.isfinite(constraints))
 
-    def test_oney_tanh_return_vertices_parameter(self):
-        """Test OneY Tanh with if_return_input_bounds_by_vertices parameter."""
+    def test_oney_tanh_default_init(self):
+        """Test OneY Tanh with default constructor parameters."""
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
-        for return_vertices in [True, False]:
-            hull = TanhHullWithOneY(if_return_input_bounds_by_vertices=return_vertices)
-            constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+        hull = TanhHullWithOneY()
+        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-            assert isinstance(constraints, np.ndarray)
-            assert np.all(np.isfinite(constraints))
+        assert isinstance(constraints, np.ndarray)
+        assert np.all(np.isfinite(constraints))
 
 
 class TestOneYConsistency:
@@ -276,21 +275,18 @@ class TestOneYParameterCombinations:
 
         dtypes: list[Literal["fraction", "float"]] = ["float", "fraction"]
         output_constrs = [1, 2, 3]
-        return_vertices = [True, False]
 
         for dtype in dtypes:
             for n_out in output_constrs:
-                for ret_vert in return_vertices:
-                    hull = ReLUHullWithOneY(
-                        dtype_cdd=dtype,
-                        n_output_constraints=n_out,
-                        if_return_input_bounds_by_vertices=ret_vert,
-                    )
+                hull = ReLUHullWithOneY(
+                    dtype_cdd=dtype,
+                    n_output_constraints=n_out,
+                )
 
-                    constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+                constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-                    assert isinstance(constraints, np.ndarray)
-                    assert np.all(np.isfinite(constraints))
+                assert isinstance(constraints, np.ndarray)
+                assert np.all(np.isfinite(constraints))
 
     def test_oney_sigmoid_parameter_combinations(self):
         """Test Sigmoid OneY with various parameter combinations."""

@@ -3,8 +3,10 @@
 __docformat__ = "restructuredtext"
 __all__ = ["ActHull"]
 
+import tempfile
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from pathlib import Path
 from typing import ClassVar, Literal, NoReturn
 
@@ -13,7 +15,16 @@ import numpy as np
 from numpy import ndarray
 
 from wraact._constants import DEBUG, MIN_BOUNDS_RANGE_ACTHULL
-from wraact._exceptions import DegeneratedError
+from wraact._exceptions import DegeneratedError, NotConvergedError
+
+_CDD_ERRORS = (
+    cdd.Error,
+    RuntimeError,
+    ArithmeticError,
+    AttributeError,
+    ValueError,
+    NotConvergedError,
+)
 
 
 class ActHull(ABC):
@@ -37,17 +48,6 @@ class ActHull(ABC):
         There is an improvement for ReLU functions but not very useful for other
         activation functions.
 
-    :param if_return_input_bounds_by_vertices: Whether to return the lower and
-        upper bounds of the input variables by the vertices of the input polytope.
-        This means that the input constraints and given lower and upper bounds can
-        create a more tight input constraints and result in new lower and upper bounds
-        of the input variables.
-
-    .. tip::
-        This is introduced for the multi-variable maxpool activation function
-        because the maxpool function is always followed by an activation function and
-        this results in some very different behaviors.
-
     :param dtype_cdd: The data type used in pycddlib library.
 
     .. tip::
@@ -62,15 +62,15 @@ class ActHull(ABC):
     dimension of the input space and the value is the reversed order of the input
     variable indices."""
 
-    __slots__ = [
-        "_add_mn_constrs",
-        "_add_sn_constrs",
+    __slots__ = (
         "_dtype_cdd",
+        "_if_cal_mn_constrs",
+        "_if_cal_sn_constrs",
         "_use_double_orders",
-    ]
+    )
 
-    _add_sn_constrs: bool
-    _add_mn_constrs: bool
+    _if_cal_sn_constrs: bool
+    _if_cal_mn_constrs: bool
     _use_double_orders: bool
     _dtype_cdd: Literal["float", "fraction"]
 
@@ -80,7 +80,6 @@ class ActHull(ABC):
         if_cal_multi_neuron_constrs: bool = True,
         if_use_double_orders: bool = False,
         dtype_cdd: Literal["float", "fraction"] = "float",
-        if_return_input_bounds_by_vertices: bool = False,
     ):
         """Initialize the activation hull calculator.
 
@@ -91,8 +90,6 @@ class ActHull(ABC):
         :param if_use_double_orders: Whether to use reversed input dimension
             order for improved precision.
         :param dtype_cdd: Data type for pycddlib library.
-        :param if_return_input_bounds_by_vertices: Whether to return tightened
-            input bounds derived from polytope vertices.
         :raises ValueError: If parameter combination is invalid.
         """
         if if_use_double_orders and not if_cal_multi_neuron_constrs:
@@ -107,8 +104,8 @@ class ActHull(ABC):
                 "if_cal_multi_neuron_constrs should be True."
             )
 
-        self._add_sn_constrs = if_cal_single_neuron_constrs
-        self._add_mn_constrs = if_cal_multi_neuron_constrs
+        self._if_cal_sn_constrs = if_cal_single_neuron_constrs
+        self._if_cal_mn_constrs = if_cal_multi_neuron_constrs
         self._use_double_orders = if_use_double_orders
 
         self._dtype_cdd = dtype_cdd
@@ -148,7 +145,7 @@ class ActHull(ABC):
                     [1,  -1,  0],   # 1 - 1*x1 + 0*x2 >= 0  =>  x1 <= 1
                     [0,   0,  1],   # 0 + 0*x1 + 1*x2 >= 0  =>  x2 >= 0
                     [1,   0, -1],   # 1 + 0*x1 - 1*x2 >= 0  =>  x2 <= 1
-                ])
+                ], dtype=np.float64)
 
         :param input_lower_bounds: Lower bounds for each input variable.
             Shape: ``(d,)`` where ``d`` = input dimension.
@@ -175,8 +172,8 @@ class ActHull(ABC):
             import numpy as np
 
             hull = ReLUHull()
-            lb = np.array([-1.0, -1.0])
-            ub = np.array([1.0, 1.0])
+            lb = np.array([-1.0, -1.0], dtype=np.float64)
+            ub = np.array([1.0, 1.0], dtype=np.float64)
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             # constraints.shape = (num_constraints, 5)  # [b, x1, x2, y1, y2]
         """
@@ -213,26 +210,24 @@ class ActHull(ABC):
             c = np.vstack((c, c_l))
         if c_u is not None:
             c = np.vstack((c, c_u))
-        c = np.ascontiguousarray(c)
-
-        if self._add_mn_constrs:
+        if self._if_cal_mn_constrs:
             return self._cal_hull_with_mn_constrs(c, lb, ub)
         return self._cal_hull_with_sn_constrs(lb, ub)
 
     @staticmethod
-    def _build_input_bounds_constraints(s: ndarray, is_lower: bool = True) -> ndarray:
+    def _build_input_bounds_constraints(bounds: ndarray, is_lower: bool = True) -> ndarray:
         """
         Build the constraints based on the lower or upper bounds of the input variables.
 
-        :param s: The lower or upper bounds of the input variables.
+        :param bounds: The lower or upper bounds of the input variables.
 
         :return: The constraints based on the lower or upper bounds of the input
             variables.
         """
-        n = s.size
+        n = bounds.size
 
-        c = np.zeros((n, n + 1), dtype=s.dtype)
-        c[:, 0] = -s if is_lower else s
+        c = np.zeros((n, n + 1), dtype=bounds.dtype)
+        c[:, 0] = -bounds if is_lower else bounds
         idx_row = np.arange(n)
         idx_col = np.arange(1, n + 1)
         c[idx_row, idx_col] = 1.0 if is_lower else -1.0
@@ -293,6 +288,35 @@ class ActHull(ABC):
 
         return self.cal_sn_constrs(lb, ub)
 
+    def _compute_vertices_and_update_bounds(
+        self,
+        c: ndarray,
+        lb: ndarray | None,
+        ub: ndarray | None,
+    ) -> tuple[ndarray, ndarray | None, ndarray | None, Literal["float", "fraction"]]:
+        """Compute polytope vertices and update bounds from them.
+
+        Shared logic extracted from ``_cal_hull_with_mn_constrs`` to avoid
+        duplication between ``ActHull`` and ``ActHullWithOneY``.
+
+        :param c: Input constraints. Shape: ``n, d``.
+        :param lb: Lower bounds per dimension.
+        :param ub: Upper bounds per dimension.
+        :return: Tuple of (vertices, updated_lb, updated_ub, dtype_cdd_used).
+        """
+        try:
+            v, dtype_cdd = self._cal_vertices_with_exception(c, lb, ub, self.dtype_cdd)
+            new_lb = np.min(v, axis=0)[1:]
+            new_ub = np.max(v, axis=0)[1:]
+            self._check_degenerated_input_polytope(v, new_lb, new_ub)
+            lb = new_lb
+            ub = new_ub
+        except DegeneratedError:
+            v, dtype_cdd = self.cal_vertices(c, "fraction")
+            lb = np.min(v, axis=0)[1:]
+            ub = np.max(v, axis=0)[1:]
+        return v, lb, ub, dtype_cdd
+
     def _cal_hull_with_mn_constrs(
         self,
         c: ndarray,
@@ -315,66 +339,40 @@ class ActHull(ABC):
         if c is None:  # pragma: no cover - defensive check, validated by caller in cal_hull
             raise ValueError("The input constraints should be provided.")
 
-        try:
-            """
-            The bounds need update if we use update scalar bounds per layer of
-            DeepPoly. This will cause degenrated input polytope.
+        # Track whether explicit bounds rows were appended so we only update those rows.
+        had_bounds = lb is not None and ub is not None
 
-            There are two cases:
-            (1) One of the input dimension has the same lower and upper bounds, which
-            will throw a Degenerated exception.
-            (2) The number of vertices is fewer than the dimension, which will call
-            a Degenerated exception.
+        v, lb, ub, dtype_cdd = self._compute_vertices_and_update_bounds(c, lb, ub)
 
-            We will first recalculate the vertices with the fractional number if there
-            is an exception. If there is still an exception, we will accept the
-            degenerated input polytope.
-            """
-            v, dtype_cdd = self._cal_vertices_with_exception(c, lb, ub, self.dtype_cdd)
-            new_lb = np.min(v, axis=0)[1:]
-            new_ub = np.max(v, axis=0)[1:]
-            self._check_degenerated_input_polytope(v, new_lb, new_ub)
-            lb = new_lb
-            ub = new_ub
-        except DegeneratedError:
-            v, dtype_cdd = self.cal_vertices(c, "fraction")
-            lb = np.min(v, axis=0)[1:]
-            ub = np.max(v, axis=0)[1:]
+        if lb is None or ub is None:
+            raise ValueError("Bounds became None after vertex computation.")
 
-        if np.min(np.abs(ub - lb)) < MIN_BOUNDS_RANGE_ACTHULL and len(v) > 2:
-            # We don't want to remove trivial cases for the maxpool function (one vertex
-            # and one piece).
-            min_range = np.min(np.abs(ub - lb))
+        min_range = np.min(np.abs(ub - lb))
+        if min_range < MIN_BOUNDS_RANGE_ACTHULL and len(v) > 2:
             raise ValueError(
                 f"Polytope too small: minimum range {min_range:.6f} < "
                 f"threshold {MIN_BOUNDS_RANGE_ACTHULL}. Cannot compute reliable constraints."
             )
 
-        # Update input bounds constraints
-        d = lb.shape[0]
-        c[-2 * d : -d, 0] = -lb
-        c[-d:, 0] = ub
+        # Update input bounds constraints only when bound rows were appended to c.
+        if had_bounds and lb is not None and ub is not None:
+            d = lb.shape[0]
+            c[-2 * d : -d, 0] = -lb
+            c[-d:, 0] = ub
 
         result = self._cal_constrs_with_exception(c, v, lb, ub, dtype_cdd)
-        if result is None:  # pragma: no cover - defensive check, method never returns None
+        if result is None:
             raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
         cc, dtype_cdd = result
 
         if self._use_double_orders:
-            # Here we reverse the order of input dimensions to calculate the function
-            # hull because our algorithm is a progressive algorithm that calculates the
-            # function hull of the output dimensions one by one.
-            # Computing with reversed input dimension order can improve precision.
-            o_r = ActHull._get_reversed_order(
-                c.shape[1] - 1
-            )  # Use input constraint dimensions, not output
-            c_r = c.copy()  # Reversed constraints
+            o_r = ActHull._get_reversed_order(c.shape[1] - 1)
+            c_r = c.copy()
             c_r = c_r[:, o_r]
             result_r = self._cal_constrs_with_exception(c_r, v, lb, ub, dtype_cdd)
-            if result_r is None:  # pragma: no cover - defensive check, method never returns None
+            if result_r is None:
                 raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
             cc_r, dtype_cdd = result_r
-            # Reverse the output dimensions back to match original order
             d_out = cc.shape[1] - 1
             o_r_output = ActHull._get_reversed_order(d_out)
             cc_r = cc_r[:, o_r_output]
@@ -389,6 +387,35 @@ class ActHull(ABC):
         if ActHull._reversed_orders.get(d) is None:
             ActHull._reversed_orders[d] = [0, *list(range(d, 0, -1))]
         return ActHull._reversed_orders[d]
+
+    @staticmethod
+    def _cdd_retry(
+        fn: Callable[..., tuple[ndarray, Literal["float", "fraction"]]],
+        fallback_args: tuple,
+        fallback_kwargs: dict,
+        error_ctx: dict,
+    ) -> tuple[ndarray, Literal["float", "fraction"]]:
+        """Try CDD operation with float; fall back to fraction on error.
+
+        :param fn: CDD operation (cal_vertices or cal_constrs).
+        :param fallback_args: Positional args for fn (excluding dtype_cdd).
+        :param fallback_kwargs: Keyword args for fn.
+        :param error_ctx: Context dict for _record_and_raise_exception.
+        :return: (result, dtype_cdd_used).
+        :raises RuntimeError: If both float and fraction fail.
+        """
+        if DEBUG:
+            result, dtype_cdd = fn(*fallback_args, **fallback_kwargs)
+            return result, dtype_cdd
+
+        try:
+            result, dtype_cdd = fn(*fallback_args, **fallback_kwargs)
+        except _CDD_ERRORS:
+            try:
+                result, dtype_cdd = fn(*fallback_args, dtype_cdd="fraction", **fallback_kwargs)
+            except _CDD_ERRORS as e:
+                ActHull._record_and_raise_exception(e, **error_ctx)
+        return result, dtype_cdd
 
     def _cal_vertices_with_exception(
         self,
@@ -407,31 +434,24 @@ class ActHull(ABC):
         :raises RuntimeError: If vertex computation fails with both float
             and fractional arithmetic.
         """
-        v: ndarray | None = None
+
+        def _run_and_check(dtype: str) -> tuple[ndarray, str]:
+            v, _ = self.cal_vertices(c, dtype)  # type: ignore[arg-type]
+            self._check_vertices(v)
+            return v, dtype
+
         if DEBUG:
-            # When debugging, we directly calculate the vertices and check the
-            # correctness without exception handling to see the error message.
-            v, dtype_cdd = self.cal_vertices(c, dtype_cdd)
-            self._check_vertices(v)
-            return v, dtype_cdd
+            return _run_and_check(dtype_cdd)  # type: ignore[return-value]
+
         try:
-            # Maybe a bug caused by float number and the fractional number will be used.
-            v, dtype_cdd = self.cal_vertices(c, dtype_cdd)
-            self._check_vertices(v)
-
-        except (cdd.Error, RuntimeError, ArithmeticError, ValueError):
+            return _run_and_check(dtype_cdd)  # type: ignore[return-value]
+        except _CDD_ERRORS:
             try:
-                # Change to use the fractional number to calculate the vertices.
-                dtype_cdd = "fraction"
-                v, dtype_cdd = self.cal_vertices(c, dtype_cdd)
-                self._check_vertices(v)
-
-            except (cdd.Error, RuntimeError, ArithmeticError, ValueError) as e:
-                # This happens when there is an unexpected error.
-                self._record_and_raise_exception(e, c, v, lb, ub)
-
-        assert v is not None
-        return v, dtype_cdd
+                return _run_and_check("fraction")  # type: ignore[return-value]
+            except _CDD_ERRORS as e:
+                self._record_and_raise_exception(e, c, None, lb, ub)
+        # unreachable
+        raise RuntimeError("Vertex computation failed.")  # pragma: no cover
 
     def _cal_constrs_with_exception(
         self,
@@ -458,25 +478,12 @@ class ActHull(ABC):
         :raises RuntimeError: If constraint computation fails with both float
             and fractional arithmetic.
         """
-        if DEBUG:
-            # When debugging, we directly calculate the constraints and check the
-            # correctness without exception handling to see the error message.
-            output_constrs, dtype_cdd = self.cal_constrs(c, v, lb, ub, dtype_cdd)
-            return output_constrs, dtype_cdd
-
-        try:
-            # Maybe a bug caused by float number and the fractional number will be used.
-            output_constrs, dtype_cdd = self.cal_constrs(c, v, lb, ub, dtype_cdd)
-
-        except (cdd.Error, RuntimeError, ArithmeticError, ValueError):
-            try:
-                output_constrs, dtype_cdd = self.cal_constrs(c, v, lb, ub, "fraction")
-
-            except (cdd.Error, RuntimeError, ArithmeticError, ValueError) as e:
-                # Normally, there should not be any error.
-                # For debugging, we check and record the error.
-                self._record_and_raise_exception(e, c, v, lb, ub)
-
+        output_constrs, dtype_cdd = ActHull._cdd_retry(
+            self.cal_constrs,
+            (c, v, lb, ub),
+            {"dtype_cdd": dtype_cdd},
+            {"c": c, "v": v, "l": lb, "u": ub},
+        )
         return output_constrs, dtype_cdd
 
     @abstractmethod
@@ -550,25 +557,21 @@ class ActHull(ABC):
         :return: The constraints defining the function hull.
         """
 
-    @classmethod
-    @abstractmethod
-    def _cal_mn_constrs_with_one_y(cls, *args, **kwargs):
-        """Calculate the multi-neuron constraint with extending one output dimension."""
-
-    @classmethod
-    @abstractmethod
-    def _construct_dlp(cls, *args, **kwargs):
-        """Construct a double-linear-piece (DLP) function as the lower or upper bound of the activation function."""
-
     @staticmethod
-    @abstractmethod
     def _f(x: ndarray | float) -> ndarray | float:
         """Compute the activation function."""
+        raise NotImplementedError(
+            "This ActHull subclass does not implement _f. "
+            "Only differentiable activation hulls need this method."
+        )
 
     @staticmethod
-    @abstractmethod
     def _df(x: ndarray | float) -> ndarray | float:
         """Compute the derivative of the activation function."""
+        raise NotImplementedError(
+            "This ActHull subclass does not implement _df. "
+            "Only differentiable activation hulls need this method."
+        )
 
     @staticmethod
     def _check_inputs(c: ndarray | None, lb: ndarray | None, ub: ndarray | None):
@@ -612,6 +615,12 @@ class ActHull(ABC):
                     f"same size but {l.size} and "
                     f"{u.size} are provided."
                 )
+
+            if np.any(np.isnan(l)) or np.any(np.isnan(u)):
+                raise ValueError("The lower and upper bounds contain NaN values.")
+            if np.any(np.isinf(l)) or np.any(np.isinf(u)):
+                raise ValueError("The lower and upper bounds contain Inf values.")
+
             if not np.all(l <= u):
                 raise ValueError(
                     "The lower bounds should be less than the upper bounds but "
@@ -646,8 +655,9 @@ class ActHull(ABC):
                 "has the same lower and upper bounds."
             )
 
+    @classmethod
     def _record_and_raise_exception(
-        self, e: Exception, c: ndarray, v: ndarray | None, l: ndarray | None, u: ndarray | None
+        cls, e: Exception, c: ndarray, v: ndarray | None, l: ndarray | None, u: ndarray | None
     ) -> NoReturn:
         """Log error details to a file and re-raise as RuntimeError.
 
@@ -659,10 +669,14 @@ class ActHull(ABC):
         :raises RuntimeError: Always raised with path to the error log file.
         """
         current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
-        Path(".temp").mkdir(parents=True, exist_ok=True)
-        error_log = f".temp/acthull_{current_time}.log"
+        log_dir = Path(tempfile.gettempdir()) / "wraact_errors"
+        try:
+            log_dir.mkdir(parents=True, exist_ok=True)
+            error_log = str(log_dir / f"acthull_{current_time}.log")
+        except OSError:
+            raise RuntimeError(f"Error: {e}") from e
         with Path(error_log).open("w") as f:
-            f.write(f"{self.__class__.__name__}\n")
+            f.write(f"{cls.__name__}\n")
             f.write(f"Exception: {e}\n")
             f.write(f"Created time: {current_time}\n")
             if c is not None:
