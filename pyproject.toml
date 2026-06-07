@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wraact"
-version = "2026.5.4"
+version = "2026.6.0"
 description = "Precise Activation Function Over-Approximation for Neural Network Verification"
 readme = "README.md"
 requires-python = ">=3.11"

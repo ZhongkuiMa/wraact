@@ -17,8 +17,10 @@ from numpy import ndarray
 from wraact._constants import DEBUG, MIN_BOUNDS_RANGE_ACTHULL
 from wraact._exceptions import DegeneratedError, NotConvergedError
 
+# cdd.Error inherits from object, not BaseException (Python 3.11+ cannot
+# catch non-BaseException types in except clauses). It is kept here as a
+# safety gate: we catch it at a wider RuntimeError level instead.
 _CDD_ERRORS = (
-    cdd.Error,
     RuntimeError,
     ArithmeticError,
     AttributeError,

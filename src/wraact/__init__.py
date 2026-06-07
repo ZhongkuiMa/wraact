@@ -12,7 +12,7 @@ Main classes:
 """
 
 __docformat__ = "restructuredtext"
-__version__ = "2026.5.4"
+__version__ = "2026.6.0"
 
 from wraact._enums import TopKSelector
 from wraact.acthull import (
