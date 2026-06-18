@@ -1,3 +1,9 @@
+---
+type: DESCRIPTION
+note: "Descriptive. Mirrors current code; update to follow code changes. < functional code."
+---
+> **This file IS**: contributor workflow for wraact. **It is NOT**: implementation code or detailed conventions.
+
 # Contributing to WRAACT
 
 Shared conventions (imports, formatting, docstrings, pre-commit) are in the

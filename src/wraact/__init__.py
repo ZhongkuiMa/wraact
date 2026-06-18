@@ -9,10 +9,12 @@ Main classes:
     - ReLUHull, SigmoidHull, TanhHull, ELUHull, LeakyReLUHull: Standard hulls
     - MaxPoolHull, MaxPoolHullDLP: Max pooling hulls
     - *WithOneY variants: Optimized single-output versions
+
+.. seealso:: ``wraact/CONVENTIONS.md`` for code conventions.
 """
 
 __docformat__ = "restructuredtext"
-__version__ = "2026.6.0"
+__version__ = "2026.6.1"
 
 from wraact._enums import TopKSelector
 from wraact.acthull import (

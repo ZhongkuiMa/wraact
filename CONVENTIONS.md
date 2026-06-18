@@ -1,3 +1,9 @@
+---
+type: LAW
+note: "Normative. Code obeys this; change only via deliberate revision. Greater authority than functional code."
+---
+> **Law**. Rules/conventions for wraact. Code obeys this. Change via deliberate revision.
+
 # Wraact Conventions
 
 ## Docstrings

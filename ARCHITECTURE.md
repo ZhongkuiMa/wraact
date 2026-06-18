@@ -1,3 +1,9 @@
+---
+type: DESCRIPTION
+note: "Descriptive. Mirrors current code; update to follow code changes. < functional code."
+---
+> **This file IS**: architecture overview of wraact. **It is NOT**: implementation code or detailed conventions.
+
 # WRAACT Architecture
 
 Convex hull computation for neural network activation functions using pycddlib (double description method) with NumPy/Numba.

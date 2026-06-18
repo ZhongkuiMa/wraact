@@ -228,8 +228,13 @@ class MaxPoolHullDLP(ReLULikeHull):
 
     @staticmethod
     def _handle_case_of_one_vertex(v: np.ndarray) -> np.ndarray | None:
-        # If there is only one vertex, the MaxPool function is a constant function.
-        # For example, all input variables are zeros.
+        """Handle the trivial case where the input polytope has only one vertex.
+
+        When there is a single input vertex, the MaxPool output is constant
+        (the max of the non-constant coordinates). Returns an equality
+        constraint ``y == const``, or ``None`` if the polytope has more
+        than one vertex.
+        """
         if len(v) != 1:
             return None
         cc = np.zeros((2, v.shape[1] + 1), dtype=v.dtype)
@@ -244,14 +249,14 @@ class MaxPoolHullDLP(ReLULikeHull):
 
     @staticmethod
     def _handle_case_of_one_piece(v: np.ndarray) -> np.ndarray | None:
-        # If there is only one non-trivial index, the MaxPool function is a linear
-        # function, which including the case of only two vertices.
+        """Handle the trivial case where one dimension always dominates.
 
-        # The following code find a dimension is always the maximum.
-        # The code consider the equivalent case of some dimension.
-        # For example, [[0,0], [0,1]] should have the result of 1, but the first row may
-        # tell you the maximum is the first dimension, where the second dimension has
-        # the same value.
+        Checks whether a single input coordinate is always the maximum
+        across every vertex (including equivalent ties). If so, the
+        MaxPool degenerates to a linear identity on that coordinate.
+        Returns ``y == x_idx``, or ``None`` if no single coordinate
+        dominates.
+        """
         row_max = np.max(v[:, 1:], axis=1, keepdims=True)
         # Mask all values that equal to the maximum value.
         mask_max = np.isclose(v[:, 1:], row_max)
@@ -272,7 +277,14 @@ class MaxPoolHullDLP(ReLULikeHull):
 
     @staticmethod
     def _find_nontrivial_idxs(v: np.ndarray) -> list[int]:
-        # Find the maximum value of each vertex.
+        """Find input coordinates that are uniquely the maximum at any vertex.
+
+        For each vertex, identifies which coordinate achieves the
+        maximum value. A vertex where multiple coordinates tie for
+        maximum is considered trivial (the MaxPool output does not
+        distinguish among the tied coordinates there). Returns the
+        column indices of non-trivial maximum coordinates.
+        """
         row_max = np.max(v[:, 1:], axis=1, keepdims=True)
         # Mask all values that equal to the maximum value.
         mask_max = np.isclose(v[:, 1:], row_max)
@@ -303,9 +315,18 @@ class MaxPoolHullDLP(ReLULikeHull):
         v: ndarray,
         nt_idxs: list[int],
     ) -> ndarray:
-        # When constructing the DLP function as the upper bound of the MaxPool
-        # function, we only need to consider the nontrivial coordinates.
+        """Construct DLP (Difference of Linear Pieces) upper bound for MaxPool.
 
+        Groups the non-trivial indices into odd and even positions by
+        descending range width, building two complementary linear
+        constraints ``y >= sum(x_odd)`` and ``y >= sum(x_even)``.
+        The envelope of these two lines forms a DLP upper bound.
+
+        :param v: Vertices of the input polytope. Shape: ``m, d+1``.
+        :param nt_idxs: Non-trivial dimension indices (col offsets of ``v[:,1:]``).
+        :return: DLP line matrix. Shape: ``(2, 2+d)``. Row 0 = odd-group
+            lower envelope; row 1 = even-group lower envelope.
+        """
         d = v.shape[1] - 1
 
         # Get the lower and upper bounds of the non-trivial indices based on vertices.
@@ -336,10 +357,12 @@ class MaxPoolHullDLP(ReLULikeHull):
 
     @staticmethod
     def _f(x: ndarray | float) -> ndarray | float:
+        """MaxPool does not define a scalar activation; always raises RuntimeError."""
         raise RuntimeError("This method should not be called.")
 
     @staticmethod
     def _df(x: ndarray | float) -> ndarray | float:
+        """MaxPool does not define a scalar derivative; always raises RuntimeError."""
         raise RuntimeError("This method should not be called.")
 
 
@@ -459,6 +482,7 @@ class MaxPoolHull(MaxPoolHullDLP):
         v: ndarray,
         nt_idxs: list[int],
     ) -> ndarray:
+        """MaxPool (non-DLP variant) does not use DLP construction; always raises RuntimeError."""
         raise RuntimeError("This method should not be called.")
 
     @classmethod
@@ -471,4 +495,5 @@ class MaxPoolHull(MaxPoolHullDLP):
         dlp_point: float,
         is_convex: bool,
     ) -> tuple[ndarray, ndarray]:
+        """MaxPool (non-DLP variant) does not use one-y optimisation; always raises RuntimeError."""
         raise RuntimeError("This method should not be called.")

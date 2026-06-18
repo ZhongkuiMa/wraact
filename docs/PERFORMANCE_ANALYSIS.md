@@ -1,3 +1,9 @@
+---
+type: REFERENCE
+note: "Frozen dated artifact. Do not edit; supersede with a new dated file."
+---
+> **Frozen**. Performance analysis guide for wraact. Do not edit.
+
 # Performance Analysis Guide
 
 ## Overview

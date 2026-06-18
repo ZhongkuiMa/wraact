@@ -414,7 +414,9 @@ class ActHull(ABC):
             result, dtype_cdd = fn(*fallback_args, **fallback_kwargs)
         except _CDD_ERRORS:
             try:
-                result, dtype_cdd = fn(*fallback_args, dtype_cdd="fraction", **fallback_kwargs)
+                result, dtype_cdd = fn(
+                    *fallback_args, **{**fallback_kwargs, "dtype_cdd": "fraction"}
+                )
             except _CDD_ERRORS as e:
                 ActHull._record_and_raise_exception(e, **error_ctx)
         return result, dtype_cdd

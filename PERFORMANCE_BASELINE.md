@@ -1,13 +1,16 @@
+---
+type: REFERENCE
+note: "Frozen dated artifact. Do not edit; supersede with a new dated file."
+---
+> **Frozen**. Performance regression baseline for wraact. Do not edit.
+
 # Performance Regression Baseline
 
-**Created**: 2025-12-28
-**Last Updated**: 2025-12-28
-**Git Commit**: Latest main branch
 **Test Environment**: Python 3.11.6, PyTest 9.0.2
 
 ## Key Updates
 
-**2025-12-28**: Unified constraint model across all activation functions
+Unified constraint model across all activation functions
 - Switched from mixed formulas (2·d, 6·d, etc.) to universal **3^d constraint model**
 - Applied to all 14 activation functions: ReLU, LeakyReLU, ELU, Sigmoid, Tanh, MaxPool, MaxPoolDLP, and WithOneY variants
 - Enables consistent performance tracking and regression detection across all activation types

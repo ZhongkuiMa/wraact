@@ -1,4 +1,21 @@
-"""Regression tests from fuzzing-discovered edge cases."""
+"""Robustness regression tests from fuzzing-discovered edge cases.
+
+Each JSON under ``tests/fuzzing/edge_cases/`` records a degenerate
+``(hull, lb, ub)`` input that the fuzzer found. The library must DEGRADE
+CLEANLY on every such input: either it returns constraints, or it raises one
+of the *sanctioned* exceptions (input-validation / degeneracy / non-convergence).
+A raw interpreter crash (``KeyError``, ``ZeroDivisionError``, ``TypeError``,
+``AttributeError``, ``IndexError``, ...) is a real bug and fails the test.
+
+The stale ``exception``/``message`` fields in the JSON are intentionally
+ignored: they recorded a since-fixed bug (the ``except cdd.Error``
+non-``BaseException`` defect that surfaced as
+``TypeError: catching classes that do not inherit from BaseException``).
+Only the input vectors are still meaningful, as a degenerate-input corpus.
+
+Soundness of the *success* cases is out of scope here -- this file guards
+crash-freedom, not hull tightness.
+"""
 
 __docformat__ = "restructuredtext"
 
@@ -17,6 +34,22 @@ from wraact.acthull import (
     SigmoidHull,
     TanhHull,
 )
+
+# Exceptions the library is ALLOWED to raise on a degenerate input. Anything
+# else escaping cal_hull is a raw crash and a real bug.
+SANCTIONED_EXCEPTIONS = (ValueError, RuntimeError, DegeneratedError, NotConvergedError)
+
+HULL_MAP: dict[
+    str,
+    type[ReLUHull | SigmoidHull | TanhHull | ELUHull | LeakyReLUHull | MaxPoolHullDLP],
+] = {
+    "ReLUHull": ReLUHull,
+    "SigmoidHull": SigmoidHull,
+    "TanhHull": TanhHull,
+    "ELUHull": ELUHull,
+    "LeakyReLUHull": LeakyReLUHull,
+    "MaxPoolHullDLP": MaxPoolHullDLP,
+}
 
 # Load all edge cases from fuzzing
 EDGE_CASES_DIR = Path(__file__).parent.parent.parent / "fuzzing" / "edge_cases"
@@ -47,60 +80,28 @@ EDGE_CASES = load_edge_cases()
     ("name", "edge_case"), list(EDGE_CASES.items()), ids=list(EDGE_CASES.keys())
 )
 def test_fuzzing_edge_case_regression(name, edge_case):
-    """Test edge case discovered by fuzzing.
+    """A degenerate fuzzing input degrades cleanly (no raw interpreter crash).
 
-    This test verifies that:
-    1. Exception paths are triggered (coverage!)
-    2. Error messages are informative
+    cal_hull must either return constraints or raise a sanctioned exception
+    (``ValueError`` / ``RuntimeError`` / ``DegeneratedError`` /
+    ``NotConvergedError``). Any other escaping exception is a bug.
     """
-    hull_map: dict[
-        str,
-        type[ReLUHull | SigmoidHull | TanhHull | ELUHull | LeakyReLUHull | MaxPoolHullDLP],
-    ] = {
-        "ReLUHull": ReLUHull,
-        "SigmoidHull": SigmoidHull,
-        "TanhHull": TanhHull,
-        "ELUHull": ELUHull,
-        "LeakyReLUHull": LeakyReLUHull,
-        "MaxPoolHullDLP": MaxPoolHullDLP,
-    }
-
     hull_name = edge_case.get("hull")
-    if hull_name not in hull_map:
+    if hull_name not in HULL_MAP:
         pytest.skip(f"Unknown hull type: {hull_name}")
-    assert hull_name is not None
 
-    hull_class = hull_map[hull_name]
+    hull = HULL_MAP[hull_name]()
     lb = np.array(edge_case["lb"], dtype=np.float64)
     ub = np.array(edge_case["ub"], dtype=np.float64)
-    expected_exception = edge_case.get("exception", "Unknown")
 
-    hull = hull_class()
-
-    # Test that the expected exception is raised
-    if expected_exception == "RuntimeError":
-        with pytest.raises(RuntimeError, match=r".+"):
-            hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-    elif expected_exception == "DegeneratedError":
-        with pytest.raises(DegeneratedError, match=r"degenerated"):
-            hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-    elif expected_exception == "NotConvergedError":
-        with pytest.raises(NotConvergedError, match=r"converged"):
-            hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-    elif expected_exception == "TypeError":
-        # These are expected - the code has a bug with catching cdd.Error
-        # This test documents the issue
-        with pytest.raises(TypeError, match=r".+"):
-            hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-    elif expected_exception == "ValueError":
-        # Input validation errors - also acceptable
-        with pytest.raises(ValueError, match=r"invalid|bound|shape"):
-            hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
-
-    else:
-        # Unexpected exception type - let it fail
+    try:
         hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+    except SANCTIONED_EXCEPTIONS:
+        # Clean degradation on a degenerate input -- the contract holds.
+        pass
+    except Exception as exc:  # noqa: BLE001 -- the whole point is to catch raw crashes
+        pytest.fail(
+            f"{hull_name} cal_hull raised a non-sanctioned {type(exc).__name__} "
+            f"on a degenerate input: {exc!r}. Sanctioned types: "
+            f"{tuple(t.__name__ for t in SANCTIONED_EXCEPTIONS)}."
+        )
