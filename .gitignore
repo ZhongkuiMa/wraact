@@ -12,7 +12,7 @@ ENV/
 .eggs/
 
 # === Distribution / packaging ===
-build/
+
 dist/
 *.egg
 *.whl

@@ -95,4 +95,4 @@ ActHull (ABC)
 
 - [README.md](README.md) — usage examples, API reference
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development setup, adding hulls
-- [Root ARCHITECTURE.md](../ARCHITECTURE.md) — rover project structure (wraact is Layer 1 submodule)
+- [Root ARCHITECTURE.md](../ARCHITECTURE.md) — project structure (wraact is a Layer 1 submodule)
