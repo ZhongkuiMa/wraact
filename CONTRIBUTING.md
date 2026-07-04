@@ -11,6 +11,16 @@ Shared conventions (imports, formatting, docstrings, pre-commit) are in the
 
 ## Setup
 
+Install system libraries (pycddlib 3.x depends on cddlib + GMP):
+
+- **macOS:**
+  ```bash
+  brew install cddlib gmp
+  export CPATH="$(brew --prefix)/include"
+  export LIBRARY_PATH="$(brew --prefix)/lib"
+  ```
+- **Ubuntu:** `sudo apt-get install libcdd-dev libgmp-dev`
+
 ```bash
 cd wraact
 pip install -e ".[dev]"

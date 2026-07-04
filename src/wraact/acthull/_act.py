@@ -262,13 +262,22 @@ class ActHull(ABC):
 
         :return: The vertices of the polytope.
         """
-        h_repr = cdd.Matrix(c, number_type=dtype_cdd)
-        h_repr.rep_type = cdd.RepType.INEQUALITY
+        if dtype_cdd == "float":
+            h_repr = cdd.matrix_from_array(c.tolist(), rep_type=cdd.RepType.INEQUALITY)
+            p = cdd.polyhedron_from_matrix(h_repr)
+            v_repr = cdd.copy_generators(p)
+            v = np.array(v_repr.array, dtype=np.float64)
+            return v, dtype_cdd
 
-        p = cdd.Polyhedron(h_repr)
-        v_repr = p.get_generators()
-        v = np.asarray(v_repr, dtype=np.float64)
+        from fractions import Fraction
 
+        import cdd.gmp as _cdd  # type: ignore[import-untyped]
+
+        c_frac = [[Fraction(x) for x in row] for row in c.tolist()]
+        h_repr = _cdd.matrix_from_array(c_frac, rep_type=cdd.RepType.INEQUALITY)  # type: ignore  # noqa: PGH003
+        p = _cdd.polyhedron_from_matrix(h_repr)  # type: ignore  # noqa: PGH003
+        v_repr = _cdd.copy_generators(p)  # type: ignore  # noqa: PGH003
+        v = np.array(v_repr.array, dtype=np.float64)
         return v, dtype_cdd
 
     def _cal_hull_with_sn_constrs(

@@ -58,11 +58,10 @@ class TestHRepToVRep:
     )
     def test_h_rep_to_v_rep(self, h_rep, expected_vertices, description):
         """Test converting H-rep to V-rep for a given polytope."""
-        mat = cdd.Matrix(h_rep, number_type="float")
-        mat.rep_type = cdd.RepType.INEQUALITY
-
-        vert_mat = cdd.Polyhedron(mat).get_generators()
-        vert_array = np.array(vert_mat)
+        mat = cdd.matrix_from_array(h_rep, rep_type=cdd.RepType.INEQUALITY)
+        poly = cdd.polyhedron_from_matrix(mat)
+        vert_mat = cdd.copy_generators(poly)
+        vert_array = np.array(vert_mat.array)
         vertices = [list(vert_array[i, 1:]) for i in range(vert_array.shape[0])]
 
         assert len(vertices) == expected_vertices, (
@@ -83,14 +82,14 @@ class TestVRepToHRep:
             [1, 0, 1],  # (0, 1)
         ]
 
-        mat = cdd.Matrix(vertices, number_type="float")
-        mat.rep_type = cdd.RepType.GENERATOR
+        mat = cdd.matrix_from_array(vertices, rep_type=cdd.RepType.GENERATOR)
 
         # Convert to H-rep
-        h_mat = cdd.Polyhedron(mat).get_inequalities()
+        poly = cdd.polyhedron_from_matrix(mat)
+        h_mat = cdd.copy_inequalities(poly)
 
         # Should get 4 constraints (the sides of the square)
-        constraints = np.array(h_mat)
+        constraints = np.array(h_mat.array)
         assert constraints.shape[0] == 4, f"Expected 4 constraints, got {constraints.shape[0]}"
 
 
@@ -128,14 +127,13 @@ class TestRoundtripConversion:
     ):
         """Test H→V→H roundtrip preserves polytope structure."""
         # H → V
-        mat1 = cdd.Matrix(h_rep_orig, number_type="float")
-        mat1.rep_type = cdd.RepType.INEQUALITY
-        vert_mat = cdd.Polyhedron(mat1).get_generators()
+        mat1 = cdd.matrix_from_array(h_rep_orig, rep_type=cdd.RepType.INEQUALITY)
+        poly1 = cdd.polyhedron_from_matrix(mat1)
+        vert_mat = cdd.copy_generators(poly1)
 
-        # V → H
-        mat2 = cdd.Matrix(vert_mat, number_type="float")
-        mat2.rep_type = cdd.RepType.GENERATOR
-        h_rep_final = np.array(cdd.Polyhedron(mat2).get_inequalities())
+        # V → H (vert_mat from copy_generators already has GENERATOR rep_type)
+        poly2 = cdd.polyhedron_from_matrix(vert_mat)
+        h_rep_final = np.array(cdd.copy_inequalities(poly2).array)
 
         # Should have at least min_constraints (allowing for redundancy removal)
         assert h_rep_final.shape[0] >= min_constraints, "Roundtrip lost constraints"
@@ -154,11 +152,9 @@ class TestDegeneratePolytopes:
             [1, 1, 0],
         ]
 
-        mat = cdd.Matrix(vertices, number_type="float")
-        mat.rep_type = cdd.RepType.GENERATOR
-
-        # Should be able to convert to H-rep
-        h_rep = np.array(cdd.Polyhedron(mat).get_inequalities())
+        mat = cdd.matrix_from_array(vertices, rep_type=cdd.RepType.GENERATOR)
+        poly = cdd.polyhedron_from_matrix(mat)
+        h_rep = np.array(cdd.copy_inequalities(poly).array)
 
         assert h_rep.shape[0] > 0, "No constraints generated for line segment"
 
@@ -169,11 +165,11 @@ class TestDegeneratePolytopes:
             [1, 0, 0],
         ]
 
-        mat = cdd.Matrix(vertices, number_type="float")
-        mat.rep_type = cdd.RepType.GENERATOR
+        mat = cdd.matrix_from_array(vertices, rep_type=cdd.RepType.GENERATOR)
 
         try:
-            h_rep = cdd.Polyhedron(mat).get_inequalities()
+            poly = cdd.polyhedron_from_matrix(mat)
+            h_rep = cdd.copy_inequalities(poly).array
             # Single point should generate constraints
             assert len(h_rep) > 0, "Single point handled"
         except (ValueError, RuntimeError):
@@ -198,13 +194,12 @@ class TestHigherDimensions:
             [1, 0, 1, 1],
         ]
 
-        mat = cdd.Matrix(vertices, number_type="float")
-        mat.rep_type = cdd.RepType.GENERATOR
-
-        h_rep = cdd.Polyhedron(mat).get_inequalities()
+        mat = cdd.matrix_from_array(vertices, rep_type=cdd.RepType.GENERATOR)
+        poly = cdd.polyhedron_from_matrix(mat)
+        h_rep = cdd.copy_inequalities(poly)
 
         # 3D cube should have 6 constraints (6 faces)
-        assert len(h_rep) >= 6, "3D unit cube missing constraints"
+        assert len(h_rep.array) >= 6, "3D unit cube missing constraints"
 
 
 class TestConstraintNormalization:
@@ -221,13 +216,12 @@ class TestConstraintNormalization:
             [0.5, 0.5, 0.5],  # Redundant: inside unit cube
         ]
 
-        mat = cdd.Matrix(h_rep, number_type="float")
-        mat.rep_type = cdd.RepType.INEQUALITY
+        mat = cdd.matrix_from_array(h_rep, rep_type=cdd.RepType.INEQUALITY)
 
         # Get irredundant representation
-        poly = cdd.Polyhedron(mat)
-        irred_rep = poly.get_inequalities()
+        poly = cdd.polyhedron_from_matrix(mat)
+        irred_rep = cdd.copy_inequalities(poly)
 
         # Irredundant form should have fewer constraints
         # (though cdd might not remove all redundancy)
-        assert len(irred_rep) <= len(h_rep), "Redundancy not addressed"
+        assert len(irred_rep.array) <= len(h_rep), "Redundancy not addressed"

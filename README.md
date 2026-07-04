@@ -12,6 +12,21 @@ Supported activations: ReLU, Sigmoid, Tanh, ELU, LeakyReLU, MaxPool.
 
 ## Installation
 
+### System Dependencies
+
+pycddlib 3.x depends on system-level cddlib + GMP libraries:
+
+- **macOS:**
+  ```bash
+  brew install cddlib gmp
+  export CPATH="$(brew --prefix)/include"
+  export LIBRARY_PATH="$(brew --prefix)/lib"
+  ```
+- **Ubuntu/Debian:** `sudo apt-get install libcdd-dev libgmp-dev`
+- **Fedora:** `sudo dnf install cddlib-devel gmp-devel`
+
+### Python Package
+
 ```bash
 git clone https://github.com/ZhongkuiMa/wraact.git
 cd wraact
