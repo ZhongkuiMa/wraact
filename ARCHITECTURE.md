@@ -50,6 +50,9 @@ src/wraact/
 | Tune numerical precision | `_constants.py` | None | Hull class logic | Soundness tests must pass (enforced) | `pytest tests/test_soundness` failures |
 | Fix convergence issue | `_tangent_lines.py` | None | `_functions.py` | numba `@njit` compatible (enforced) | `NotConvergedError` at runtime |
 
+`DegeneratedError` is the public signal for a well-formed polytope that cannot
+produce a reliable hull. `ValueError` is reserved for malformed caller input.
+
 ## Dependency Rules
 
 | Rule | Source | Failure |

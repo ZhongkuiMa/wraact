@@ -64,6 +64,8 @@ Mathematical single-letter names (`c`, `v`, `l`, `u`, `k`) permitted in `src/wra
 
 - Two-tier fallback: try `"float"` first; on error retry with `"fraction"`.
 - Custom exceptions: `DegeneratedError`, `NotConvergedError` (extend `Exception`).
+- A valid but numerically unusable polytope raises `DegeneratedError`; malformed
+  arrays and invalid API combinations raise `ValueError`.
 - `_record_and_raise_exception`: writes to `.temp/acthull_{timestamp}.log` then raises `RuntimeError`.
 - Validate early: `_check_inputs`, `_check_input_bounds`, `_check_input_constrs`.
 - `DEBUG=True` skips catch logic, surfaces raw errors.

@@ -17,6 +17,7 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
+from wraact import DegeneratedError
 from wraact._functions import elu_np, leakyrelu_np, relu_np, sigmoid_np, tanh_np
 from wraact.oney import ReLUHullWithOneY
 
@@ -423,14 +424,13 @@ class TestNumericalStability:
     def test_very_small_constraint_margins(self, relu_hull_class):
         """Test precision when constraint margins are very small.
 
-        Polytope with range 0.002 < MIN_BOUNDS_RANGE (0.05) triggers ValueError.
+        Polytope with range 0.002 < MIN_BOUNDS_RANGE (0.05) is degenerate.
         """
         hull = relu_hull_class()
         lb = np.array([-1e-3, -1e-3])
         ub = np.array([1e-3, 1e-3])
 
-        # Algorithm raises ValueError for polytopes with range < MIN_BOUNDS_RANGE
-        with pytest.raises(ValueError, match="Polytope too small"):
+        with pytest.raises(DegeneratedError, match="Polytope too small"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     def test_very_large_constraint_bounds(self, relu_hull_class):

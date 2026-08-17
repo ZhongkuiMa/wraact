@@ -136,20 +136,19 @@ class TestVerySmallBounds:
     """Test with very small input ranges."""
 
     def test_relu_tiny_range(self, relu_hull_class, tiny_polytope_2d):
-        """Test ReLU raises ValueError for tiny polytope (range < 0.05)."""
+        """Test ReLU reports a degenerate tiny polytope (range < 0.05)."""
         hull = relu_hull_class()
         lb, ub = tiny_polytope_2d
 
-        # Algorithm should raise ValueError for polytopes with range < MIN_BOUNDS_RANGE
-        with pytest.raises(ValueError, match=r"Polytope too small.*range.*< threshold"):
+        with pytest.raises(DegeneratedError, match=r"Polytope too small.*range.*< threshold"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     def test_sigmoid_tiny_range(self, sigmoid_hull_class, tiny_polytope_2d):
-        """Test Sigmoid raises ValueError for tiny polytope."""
+        """Test Sigmoid reports a degenerate tiny polytope."""
         hull = sigmoid_hull_class()
         lb, ub = tiny_polytope_2d
 
-        with pytest.raises(ValueError, match="Polytope too small"):
+        with pytest.raises(DegeneratedError, match="Polytope too small"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
 
@@ -157,31 +156,31 @@ class TestMixedScaleBounds:
     """Test with bounds on very different scales."""
 
     def test_relu_mixed_scale(self, relu_hull_class, extreme_scale_polytope_2d):
-        """Test ReLU raises ValueError for extreme scale difference (500,000x).
+        """Test ReLU reports degeneracy for extreme scale difference (500,000x).
 
         Dimension 0: range = 0.002 (very small)
         Dimension 1: range = 999 (very large)
-        Minimum dimension triggers ValueError.
+        The narrow dimension makes the polytope degenerate.
         """
         hull = relu_hull_class()
         lb, ub = extreme_scale_polytope_2d
 
         # Minimum dimension (dim 0) has range 0.002 < 0.05
-        with pytest.raises(ValueError, match="Polytope too small"):
+        with pytest.raises(DegeneratedError, match="Polytope too small"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     def test_sigmoid_mixed_scale(self, sigmoid_hull_class):
-        """Test Sigmoid raises ValueError for mixed scale (2000x difference).
+        """Test Sigmoid reports degeneracy for mixed scale (2000x difference).
 
         Dimension 0: range = 0.002
         Dimension 1: range = 4.0
-        Minimum dimension triggers ValueError.
+        The narrow dimension makes the polytope degenerate.
         """
         hull = sigmoid_hull_class()
         lb = np.array([-1e-3, -2.0], dtype=np.float64)
         ub = np.array([1e-3, 2.0], dtype=np.float64)
 
-        with pytest.raises(ValueError, match="Polytope too small"):
+        with pytest.raises(DegeneratedError, match="Polytope too small"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
 

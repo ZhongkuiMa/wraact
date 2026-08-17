@@ -13,6 +13,7 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
+from wraact import DegeneratedError
 from wraact._tangent_lines import (
     get_parallel_tangent_line_sigmoid_np,
     get_parallel_tangent_line_tanh_np,
@@ -159,7 +160,7 @@ class TestActHullRemainingCoverage:
         ub = np.array([0.001, 0.001])  # Too small
 
         # Should trigger bounds range validation
-        with pytest.raises(ValueError, match="minimum range"):
+        with pytest.raises(DegeneratedError, match="minimum range"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     def test_acthull_compute_with_input_constraints(self):

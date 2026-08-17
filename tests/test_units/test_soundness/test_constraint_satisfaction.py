@@ -15,6 +15,7 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
+from wraact import DegeneratedError
 from wraact._functions import elu_np, leakyrelu_np, relu_np, sigmoid_np
 
 
@@ -119,12 +120,12 @@ class TestNumericalStability:
         assert np.all(np.isfinite(result)), "Large bounds produced inf/nan"
 
     def test_very_small_bounds(self, relu_hull_class, tiny_polytope_2d):
-        """Test ReLU raises ValueError for very small bounds."""
+        """Test ReLU reports degeneracy for very small bounds."""
         hull = relu_hull_class()
         lb, ub = tiny_polytope_2d
 
         # Algorithm should raise ValueError for bounds with range < MIN_BOUNDS_RANGE (0.05)
-        with pytest.raises(ValueError, match="Polytope too small"):
+        with pytest.raises(DegeneratedError, match="Polytope too small"):
             hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
     def test_mixed_scale_bounds(self, relu_hull_class):

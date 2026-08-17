@@ -14,9 +14,10 @@ Main classes:
 """
 
 __docformat__ = "restructuredtext"
-__version__ = "2026.7.2"
+__version__ = "2026.8.0"
 
 from wraact._enums import TopKSelector
+from wraact._exceptions import DegeneratedError, NotConvergedError
 from wraact.acthull import (
     ActHull,
     ELUHull,
@@ -46,6 +47,7 @@ from wraact.oney import (
 __all__ = [
     "ActHull",
     "ActHullWithOneY",
+    "DegeneratedError",
     "ELUHull",
     "ELUHullWithOneY",
     "LeakyReLUHull",
@@ -54,6 +56,7 @@ __all__ = [
     "MaxPoolHullDLP",
     "MaxPoolHullDLPWithOneY",
     "MaxPoolHullWithOneY",
+    "NotConvergedError",
     "ReLUHull",
     "ReLUHullWithOneY",
     "ReLULikeHull",

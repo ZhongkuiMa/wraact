@@ -360,7 +360,7 @@ class ActHull(ABC):
 
         min_range = np.min(np.abs(ub - lb))
         if min_range < MIN_BOUNDS_RANGE_ACTHULL and len(v) > 2:
-            raise ValueError(
+            raise DegeneratedError(
                 f"Polytope too small: minimum range {min_range:.6f} < "
                 f"threshold {MIN_BOUNDS_RANGE_ACTHULL}. Cannot compute reliable constraints."
             )

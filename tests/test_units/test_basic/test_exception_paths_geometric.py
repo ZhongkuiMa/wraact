@@ -240,7 +240,7 @@ class TestMaxPoolEdgeCases:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             # If it succeeds, verify validity
             assert isinstance(constraints, np.ndarray)
-        except ValueError:
+        except DegeneratedError:
             # May fail due to MIN_BOUNDS_RANGE check - acceptable
             pass
 

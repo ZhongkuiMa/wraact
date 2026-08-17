@@ -12,6 +12,7 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
+from wraact import DegeneratedError
 from wraact.acthull import MaxPoolHullDLP
 
 
@@ -85,7 +86,7 @@ class TestMaxPoolDLPTrivialCases:
         try:
             constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
             assert isinstance(constraints, np.ndarray)
-        except ValueError:
+        except DegeneratedError:
             # May raise due to minimum range threshold
             pass
 

@@ -13,6 +13,7 @@ from typing import cast
 import numpy as np
 import pytest
 
+from wraact import DegeneratedError
 from wraact.acthull import ELUHull, MaxPoolHull, MaxPoolHullDLP, ReLUHull, SigmoidHull, TanhHull
 
 
@@ -240,7 +241,7 @@ class TestMaxPoolCacheAndDegenerate:
             # If no error, constraints should be valid
             assert constraints is not None
             assert np.all(np.isfinite(constraints))
-        except ValueError:
+        except DegeneratedError:
             # MIN_BOUNDS_RANGE validation may catch this first - acceptable
             pass
 
@@ -460,7 +461,7 @@ class TestMaxPoolDegenerateEdgeCases:
             # If it succeeds, constraints should be valid
             assert isinstance(constraints, np.ndarray)
             assert np.all(np.isfinite(constraints))
-        except ValueError as e:
+        except DegeneratedError as e:
             # May fail due to MIN_BOUNDS_RANGE check - acceptable
             if "minimum range" not in str(e).lower():
                 raise
