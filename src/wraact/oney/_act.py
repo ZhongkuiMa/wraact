@@ -45,6 +45,12 @@ class ActHullWithOneY(ActHull, ABC):
         :param topk_selector: Strategy for choosing ``n_output_constraints``
             constraints from the full hull output. See :class:`TopKSelector`.
         """
+        if (
+            isinstance(n_output_constraints, bool)
+            or not isinstance(n_output_constraints, int)
+            or n_output_constraints <= 0
+        ):
+            raise ValueError("n_output_constraints must be a positive integer.")
         super().__init__(
             if_cal_single_neuron_constrs=True,
             if_cal_multi_neuron_constrs=True,

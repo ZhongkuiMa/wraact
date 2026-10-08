@@ -63,23 +63,23 @@ Investigation: Check git diff for changes to constraint generation logic
 
 ---
 
-### 1.3 Precision (Coverage %)
+### 1.3 Sampled Graph Containment
 
 **What it measures**: % of sample points inside computed hull (soundness)
 
-**Typical values**:
-- ReLU: 95-100% (tight, because it's piecewise linear)
-- Sigmoid/Tanh: 85-98% (looser, because curves are smooth)
+**Required value**: 100% of sampled concrete graph points must satisfy every
+returned constraint, modulo the explicit numerical tolerance.
 
 **Why it matters**:
-- Must stay >85% to guarantee soundness
-- Lower % means hull doesn't fully contain function values
+- Any reproducible violation is a soundness failure; percentages below 100%
+  cannot guarantee soundness.
+- This sampled check is a regression oracle, not a proof of soundness.
 
 **Example interpretation**:
 ```
-Baseline: Sigmoid 2D = 92%
-Current:  Sigmoid 2D = 78%
-Change:   -14 points → 🔴 RED FLAG
+Baseline: Sigmoid 2D = 100%
+Current:  Sigmoid 2D = 99.9%
+Change:   one or more concrete violations → 🔴 RED FLAG
 
 Critical: Hull is no longer sound! Must fix immediately.
 ```

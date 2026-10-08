@@ -16,6 +16,9 @@ class TanhHull(SShapeHull):
     Please refer to the :class:`SShapeHull` for more details.
     """
 
+    _OUTPUT_LOWER_BOUND = -1.0
+    _OUTPUT_UPPER_BOUND = 1.0
+
     @staticmethod
     def _get_second_tangent_line(
         x1: float | ndarray, get_big: bool | ndarray

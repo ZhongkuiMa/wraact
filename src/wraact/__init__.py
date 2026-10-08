@@ -14,7 +14,7 @@ Main classes:
 """
 
 __docformat__ = "restructuredtext"
-__version__ = "2026.8.0"
+__version__ = "2026.10.0"
 
 from wraact._enums import TopKSelector
 from wraact._exceptions import DegeneratedError, NotConvergedError

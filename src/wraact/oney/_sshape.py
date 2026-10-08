@@ -4,6 +4,7 @@ __docformat__ = "restructuredtext"
 __all__ = ["SShapeHullWithOneY"]
 
 from abc import ABC
+from math import ceil
 from typing import Literal
 
 import numpy as np
@@ -45,7 +46,29 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
             c, v, lb, ub, self._n_output_constrs, topk_selector=self._topk_selector
         )
 
+        if not np.all(np.isfinite(c_mn)):
+            c_mn = self._get_one_y_output_range_constrs(c.shape[1] - 1)
+
         return c_mn, dtype_cdd
+
+    @classmethod
+    def _get_one_y_output_range_constrs(cls, dim: int) -> ndarray:
+        """Return conservative single-output constraints from the activation codomain."""
+        constraints = np.zeros((2, dim + 2), dtype=np.float64)
+        constraints[0, 0] = -cls._OUTPUT_LOWER_BOUND
+        constraints[0, -1] = 1.0
+        constraints[1, 0] = cls._OUTPUT_UPPER_BOUND
+        constraints[1, -1] = -1.0
+        return constraints
+
+    @classmethod
+    def _get_one_y_interval_constrs(cls, dim: int, lb: ndarray, ub: ndarray) -> ndarray:
+        """Return conservative interval constraints for the first output."""
+        full = cls._get_interval_output_constrs(lb[:1], ub[:1])
+        constraints = np.zeros((2, dim + 2), dtype=np.float64)
+        constraints[:, 0] = full[:, 0]
+        constraints[:, -1] = full[:, -1]
+        return constraints
 
     def cal_mn_constrs(  # type: ignore[override]
         self,
@@ -93,9 +116,10 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
             klu = (yu - yl) / (xu - xl)
 
         args = (d, xl, xu, yl, yu, kl, ku, klu, cc_s)
-        dlp_line_l, dlp_line_u, dlp_point_l, dlp_point_u, cc_s = self._construct_dlp(
-            0, *args, self._if_cal_sn_constrs
+        dlp_line_l, dlp_line_u, dlp_point_l, dlp_point_u, _ = self._construct_dlp(
+            0, *args, return_single_neuron_constrs=False
         )
+        cc_s = self._get_one_y_interval_constrs(d, lb_arr, ub_arr)
 
         cc_ml, vl = cal_mn_constrs_with_one_y_dlp(
             0, cc_ml, vl, dlp_line_l, dlp_point_l, is_convex=False
@@ -114,18 +138,21 @@ class SShapeHullWithOneY(ActHullWithOneY, SShapeHull, ABC):
             cc_su = cc_s[cc_s[:, -1] > 0]
             n_fill = n_output_constrs - cc_mu.shape[0]
             if cc_su.shape[0] > 0:
-                reps = max(1, n_fill // cc_su.shape[0])
-                temp = np.tile(cc_su, (reps, 1))
+                reps = ceil(n_fill / cc_su.shape[0])
+                temp = np.tile(cc_su, (reps, 1))[:n_fill]
                 cc_mu = np.vstack((cc_mu, temp))
 
         if cc_ml.shape[0] < n_output_constrs:
             cc_sl = cc_s[cc_s[:, -1] < 0]
             n_fill = n_output_constrs - cc_ml.shape[0]
             if cc_sl.shape[0] > 0:
-                reps = max(1, n_fill // cc_sl.shape[0])
-                temp = np.tile(cc_sl, (reps, 1))
+                reps = ceil(n_fill / cc_sl.shape[0])
+                temp = np.tile(cc_sl, (reps, 1))[:n_fill]
                 cc_ml = np.vstack((cc_ml, temp))
 
         cc = np.vstack((cc_mu, cc_ml))
+
+        if not np.all(np.isfinite(cc)):
+            cc = self._get_one_y_output_range_constrs(d)
 
         return cc

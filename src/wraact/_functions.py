@@ -74,7 +74,21 @@ def sigmoid_np(x: ndarray | float) -> ndarray | float:
     :param x: Input array or scalar.
     :return: Output with same shape as input, values in (0, 1).
     """
-    return cast(ndarray | float, np.reciprocal(1.0 + np.exp(-x)))
+    if isinstance(x, float):
+        value = x
+        if value >= 0:
+            return float(np.reciprocal(1.0 + np.exp(-value)))
+        exp_value = np.exp(value)
+        return float(exp_value / (1.0 + exp_value))
+
+    values = np.asarray(x)
+    result_dtype = values.dtype if np.issubdtype(values.dtype, np.floating) else np.float64
+    result = np.empty_like(values, dtype=result_dtype)
+    nonnegative = values >= 0
+    result[nonnegative] = np.reciprocal(1.0 + np.exp(-values[nonnegative]))
+    exp_values = np.exp(values[~nonnegative])
+    result[~nonnegative] = exp_values / (1.0 + exp_values)
+    return cast(ndarray, result)
 
 
 @overload

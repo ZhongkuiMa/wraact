@@ -101,13 +101,19 @@ class ELUHull(ReLULikeHull):
         # too close to the upper bound.
         m = min((lb + ub) / 2.0, ELU_MAX_AUX_POINT)
 
-        kp1 = (yu - cls._df(m)) / (ub - m)
-        bp1 = yu - kp1 * ub
-        kp2 = (yl - cls._df(m)) / (lb - m)
-        bp2 = yl - kp2 * lb
+        # ELU is convex, so each chord lies above the graph on its own
+        # interval.  The two chords must meet at the graph point ``(m, f(m))``
+        # and be returned in left-to-right order: the DLP lifting helper uses
+        # the first line for vertices left of ``m`` and the second for vertices
+        # right of it.
+        ym = cls._f(m)
+        k_left = (ym - yl) / (m - lb)
+        b_left = yl - k_left * lb
+        k_right = (yu - ym) / (ub - m)
+        b_right = yu - k_right * ub
 
         # Estimate the angle of the two linear pieces to avoid large coefficients.
-        if abs((kp1 - kp2) / (1 - kp1 * kp2)) < MIN_DLP_ANGLE:
+        if abs((k_right - k_left) / (1 - k_right * k_left)) < MIN_DLP_ANGLE:
             k = (yu - yl) / (ub - lb)
             b = yu - k * ub
             aux_lines = np.asarray([[b, *temp1, k, *temp2, -1.0]], dtype=np.float64)
@@ -115,8 +121,8 @@ class ELUHull(ReLULikeHull):
 
         aux_lines = np.asarray(
             [
-                [bp1, *temp1, kp1, *temp2, -1.0],
-                [bp2, *temp1, kp2, *temp2, -1.0],
+                [b_left, *temp1, k_left, *temp2, -1.0],
+                [b_right, *temp1, k_right, *temp2, -1.0],
             ],
             dtype=np.float64,
         )

@@ -71,6 +71,11 @@ class TestActHullInputValidation:
         with pytest.raises(ValueError, match=r"At least.*constraints.*or.*bounds"):
             hull.cal_hull(input_constrs=None, input_lower_bounds=None, input_upper_bounds=None)
 
+    def test_invalid_dtype_rejected_at_construction(self, relu_hull_class):
+        """Test unsupported cdd modes fail before any geometry is attempted."""
+        with pytest.raises(ValueError, match="dtype_cdd must be"):
+            relu_hull_class(dtype_cdd="banana")
+
 
 class TestActHullBoundValidation:
     """Test bounds validation in ActHull."""
@@ -148,6 +153,19 @@ class TestActHullConstraintValidation:
         # This should work for single dimension
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         assert constraints.shape[1] == 3  # 1D: 2*1+1
+
+    @pytest.mark.parametrize(
+        "constraints",
+        [
+            pytest.param(np.array([1.0, 1.0, 0.0]), id="one-dimensional"),
+            pytest.param(np.array([[np.nan, 1.0], [1.0, -1.0]]), id="nan"),
+            pytest.param(np.array([[np.inf, 1.0], [1.0, -1.0]]), id="inf"),
+        ],
+    )
+    def test_malformed_constraint_matrix_rejected(self, relu_hull_class, constraints):
+        """Test malformed constraints fail validation rather than inside cdd."""
+        with pytest.raises(ValueError, match="input constraints"):
+            relu_hull_class().cal_hull(input_constrs=constraints)
 
 
 class TestActHullDoubleOrders:

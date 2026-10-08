@@ -13,7 +13,8 @@ import numpy as np
 import pytest
 
 from wraact import DegeneratedError
-from wraact.acthull import MaxPoolHullDLP
+from wraact.acthull import MaxPoolHull, MaxPoolHullDLP
+from wraact.oney import MaxPoolHullDLPWithOneY
 
 
 class TestMaxPoolDLPLowerConstraintCache:
@@ -250,6 +251,44 @@ class TestMaxPoolDLPVariousInputs:
 
 class TestMaxPoolDLPConstraintProperties:
     """Test properties of MaxPool DLP constraints."""
+
+    @pytest.mark.parametrize("hull_class", [MaxPoolHullDLP, MaxPoolHullDLPWithOneY])
+    @pytest.mark.parametrize(
+        ("lb", "ub"),
+        [
+            pytest.param(np.array([-1.0, -1.0]), np.array([1.0, 1.0]), id="crossing"),
+            pytest.param(np.array([-4.0, -3.0]), np.array([-2.0, -1.0]), id="negative"),
+            pytest.param(np.array([0.2, 0.5]), np.array([2.0, 3.0]), id="positive"),
+        ],
+    )
+    def test_maxpool_dlp_contains_asymmetric_graph(self, hull_class, lb, ub):
+        """Verify the compatibility DLP surface never excludes MaxPool points."""
+        constraints = hull_class().cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+
+        rng = np.random.default_rng(0)
+        x = rng.uniform(lb, ub, size=(10_000, lb.size))
+        x = np.vstack((x, lb, ub))
+        points = np.hstack((x, np.max(x, axis=1, keepdims=True)))
+        margins = constraints[:, :1] + constraints[:, 1:] @ points.T
+
+        assert np.min(margins) >= -1e-8
+
+    def test_exact_maxpool_does_not_collapse_near_ties(self):
+        """Verify approximate equality cannot change MaxPool semantics."""
+        input_constraints = np.array(
+            [
+                [-1000.0, 1.0, 0.0],
+                [1000.1, -1.0, 0.0],
+                [0.005, -1.0, 1.0],
+                [0.005, 1.0, -1.0],
+            ]
+        )
+        constraints = MaxPoolHull().cal_hull(input_constrs=input_constraints)
+        x = np.array([1000.0, 1000.005])
+        point = np.append(x, np.max(x))
+        margins = constraints[:, 0] + constraints[:, 1:] @ point
+
+        assert np.min(margins) >= -1e-8
 
     def test_maxpool_dlp_constraints_finite_2d(self, maxpool_hull_class):
         """Test MaxPool constraints are always finite."""

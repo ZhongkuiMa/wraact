@@ -13,8 +13,6 @@ __all__ = [
 ]
 
 
-import logging
-
 import numpy as np
 from numba import njit
 from numpy import ndarray
@@ -24,9 +22,6 @@ from wraact._exceptions import NotConvergedError
 _LOG_MIN: float = 1e-6
 _MAX_ITER: int = 100
 _CONVERGE_TOL: float = 1e-4
-
-# Disable the logging of Numba, which may be conflict with our logging.
-logging.getLogger("numba").setLevel(logging.CRITICAL)
 
 
 @njit(cache=True)

@@ -4,6 +4,7 @@ __docformat__ = "restructuredtext"
 __all__ = ["ReLULikeHullWithOneY"]
 
 from abc import ABC
+from math import ceil
 from typing import Literal
 
 import numpy as np
@@ -68,8 +69,8 @@ class ReLULikeHullWithOneY(ActHullWithOneY, ReLULikeHull, ABC):
             n_fill = self._n_output_constrs - c_m.shape[0]
             # Repeat c_su to fill; guard against empty fallback set
             if c_su.shape[0] > 0:
-                reps = max(1, n_fill // c_su.shape[0])
-                temp = np.tile(c_su, (reps, 1))
+                reps = ceil(n_fill / c_su.shape[0])
+                temp = np.tile(c_su, (reps, 1))[:n_fill]
                 c_m = np.vstack((c_m, temp))
 
         return c_m, dtype_cdd

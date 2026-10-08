@@ -25,6 +25,7 @@ import numpy as np
 import pytest
 
 from wraact.acthull import SigmoidHull, TanhHull
+from wraact.oney import SigmoidHullWithOneY, TanhHullWithOneY
 
 
 def sigmoid_np(x):
@@ -355,6 +356,53 @@ class TestSShapeEdgeCases:
         assert isinstance(constraints, np.ndarray)
         assert np.all(np.isfinite(constraints))
 
+    @pytest.mark.parametrize(
+        ("hull_class", "activation", "lower", "upper"),
+        [
+            pytest.param(SigmoidHull, sigmoid_np, 0.2, 2.0, id="sigmoid-positive"),
+            pytest.param(SigmoidHull, sigmoid_np, -10.0, -2.0, id="sigmoid-negative"),
+            pytest.param(TanhHull, tanh_np, -10.0, -2.0, id="tanh-negative"),
+        ],
+    )
+    def test_multi_neuron_fallback_contains_asymmetric_graph(
+        self, hull_class, activation, lower, upper
+    ):
+        """Verify nearly parallel DLP fallback lines remain conservative."""
+        lb = np.array([lower])
+        ub = np.array([upper])
+        constraints = hull_class().cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+
+        x = np.linspace(lower, upper, 10_001)[:, None]
+        points = np.hstack((x, activation(x)))
+        margins = constraints[:, :1] + constraints[:, 1:] @ points.T
+
+        assert np.min(margins) >= -1e-8
+
+    @pytest.mark.parametrize(
+        ("hull_class", "activation", "lower", "upper"),
+        [
+            pytest.param(SigmoidHull, sigmoid_np, 90.0, 100.0, id="sigmoid-positive"),
+            pytest.param(SigmoidHull, sigmoid_np, -100.0, -90.0, id="sigmoid-negative"),
+            pytest.param(SigmoidHullWithOneY, sigmoid_np, 900.0, 1000.0, id="sigmoid-oney"),
+            pytest.param(TanhHull, tanh_np, 90.0, 100.0, id="tanh-positive"),
+            pytest.param(TanhHullWithOneY, tanh_np, -100.0, -90.0, id="tanh-oney"),
+        ],
+    )
+    def test_saturated_interval_uses_finite_output_range(
+        self, hull_class, activation, lower, upper
+    ):
+        """Verify saturated derivatives degrade to finite codomain bounds."""
+        lb = np.array([lower])
+        ub = np.array([upper])
+        constraints = hull_class().cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+
+        x = np.linspace(lower, upper, 1001)[:, None]
+        points = np.hstack((x, activation(x)))
+        margins = constraints[:, :1] + constraints[:, 1:] @ points.T
+
+        assert np.all(np.isfinite(constraints))
+        assert np.min(margins) >= -1e-8
+
 
 class TestSShapeMultiDimensional:
     """Test S-shaped activations with various dimensions."""
@@ -440,3 +488,54 @@ class TestSShapeConstraintModes:
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
         assert constraints is not None
         assert constraints.shape[0] > 0
+
+    @pytest.mark.parametrize(
+        ("hull_class", "activation", "lower", "upper"),
+        [
+            pytest.param(SigmoidHull, sigmoid_np, 0.2, 2.0, id="sigmoid-positive"),
+            pytest.param(TanhHull, tanh_np, 0.2, 2.0, id="tanh-positive"),
+            pytest.param(SigmoidHull, sigmoid_np, -0.1, 0.1, id="sigmoid-crossing"),
+            pytest.param(TanhHull, tanh_np, -0.1, 0.1, id="tanh-crossing"),
+        ],
+    )
+    def test_single_neuron_constraints_contain_graph(self, hull_class, activation, lower, upper):
+        """Verify single-neuron inequalities have the correct orientation."""
+        hull = hull_class(
+            if_cal_single_neuron_constrs=True,
+            if_cal_multi_neuron_constrs=False,
+        )
+        constraints = hull.cal_hull(
+            input_lower_bounds=np.array([lower]),
+            input_upper_bounds=np.array([upper]),
+        )
+
+        x = np.linspace(lower, upper, 10_001)[:, None]
+        points = np.hstack((x, activation(x)))
+        margins = constraints[:, :1] + constraints[:, 1:] @ points.T
+
+        assert np.min(margins) >= -1e-8
+
+    @pytest.mark.parametrize(
+        ("hull_class", "activation"),
+        [
+            pytest.param(SigmoidHull, sigmoid_np, id="sigmoid"),
+            pytest.param(TanhHull, tanh_np, id="tanh"),
+        ],
+    )
+    def test_single_neuron_equal_bounds_emit_equality(self, hull_class, activation):
+        """Verify a fixed input still produces constraints for its fixed output."""
+        bound = np.array([0.5])
+        hull = hull_class(
+            if_cal_single_neuron_constrs=True,
+            if_cal_multi_neuron_constrs=False,
+        )
+        constraints = hull.cal_hull(
+            input_lower_bounds=bound,
+            input_upper_bounds=bound,
+        )
+
+        point = np.array([bound[0], activation(bound)[0]])
+        margins = constraints[:, 0] + constraints[:, 1:] @ point
+
+        assert constraints.shape == (2, 3)
+        np.testing.assert_allclose(margins, 0.0, atol=1e-8)

@@ -1,18 +1,15 @@
-# === INFERRED IMPORT CONTRACTS (review before committing) ===
+# === IMPORT CONTRACTS ===
 #
 # Layers (highest rank -> lowest):
-#   acthull (2) -> oney (1), root (_functions, _tangent_lines, _constants, _exceptions) (0)
+#   oney (2) -> acthull (1) -> root utilities (0)
 #
-# ALLOWED (not tested):
-#   acthull -> oney, acthull -> root, oney -> root
+# ALLOWED:
+#   oney -> acthull, oney -> root, acthull -> root
 #
-# FORBIDDEN (each becomes one test method below):
-#   oney -x-> acthull  [test_oney_does_not_import_acthull]
+# FORBIDDEN:
+#   acthull -x-> oney  [test_acthull_does_not_import_oney]
 #   root -x-> acthull  [test_root_does_not_import_acthull]
 #   root -x-> oney     [test_root_does_not_import_oney]
-#
-# [REVIEW] Approve contracts before treating ARC3 as resolved.
-#   Run /python-optimize-tests apply @wraact/ to fill full boundaries.
 # ================================================================
 """Import architecture tests for wraact."""
 
@@ -22,15 +19,13 @@ import ast
 import importlib
 from pathlib import Path
 
-import pytest
-
 import wraact
 
 _SRC = Path(__file__).parent.parent.parent / "src" / "wraact"
 
 
 def _get_imports(path: Path) -> set[str]:
-    """Return top-level module names imported by path."""
+    """Return fully qualified module names imported by path."""
     try:
         tree = ast.parse(path.read_text())
     except SyntaxError:
@@ -39,10 +34,15 @@ def _get_imports(path: Path) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                names.add(alias.name.split(".")[0])
+                names.add(alias.name)
         elif isinstance(node, ast.ImportFrom) and node.module:
-            names.add(node.module.split(".")[0])
+            names.add(node.module)
     return names
+
+
+def _imports_module(path: Path, module: str) -> bool:
+    """Return whether path imports module or one of its children."""
+    return any(name == module or name.startswith(f"{module}.") for name in _get_imports(path))
 
 
 class TestImportSmoke:
@@ -66,27 +66,23 @@ class TestImportSmoke:
 
 
 class TestLayerBoundaries:
-    """Inferred layer boundary tests — see contract header above."""
+    """Enforce the package layer boundaries documented above."""
 
-    def test_oney_does_not_import_acthull(self):
-        """Oney layer must not import from acthull layer."""
+    def test_acthull_does_not_import_oney(self):
+        """The base acthull layer must not depend on its oney specialization."""
         violations: list[str] = [
             str(f.relative_to(_SRC))
-            for f in (_SRC / "oney").rglob("*.py")
-            if "acthull" in _get_imports(f)
+            for f in (_SRC / "acthull").rglob("*.py")
+            if _imports_module(f, "wraact.oney")
         ]
-        assert not violations, f"oney imports acthull in: {violations}"
+        assert not violations, f"acthull imports oney in: {violations}"
 
-    @pytest.mark.parametrize(
-        "module_name",
-        [
-            pytest.param("acthull", id="acthull"),
-            pytest.param("oney", id="oney"),
-        ],
-    )
-    def test_root_does_not_import_module(self, module_name):
+    def test_root_utilities_do_not_import_higher_layers(self):
         """Root wraact modules must not import from higher-layer modules."""
         violations: list[str] = [
-            str(f.relative_to(_SRC)) for f in _SRC.glob("*.py") if module_name in _get_imports(f)
+            str(f.relative_to(_SRC))
+            for f in _SRC.glob("*.py")
+            if f.name != "__init__.py"
+            and (_imports_module(f, "wraact.acthull") or _imports_module(f, "wraact.oney"))
         ]
-        assert not violations, f"root imports {module_name} in: {violations}"
+        assert not violations, f"root utilities import higher layers in: {violations}"

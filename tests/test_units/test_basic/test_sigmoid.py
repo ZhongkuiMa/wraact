@@ -63,21 +63,8 @@ class TestSigmoidSoundness(BaseSoundnessTest):
     - test_deterministic_computation
     - test_soundness_preserved_after_multiple_calls
 
-    KNOWN ISSUE: SOUNDNESS VIOLATIONS
-    ==================================
-    These soundness tests FAIL due to a bug in the DLP constraint generation
-    for the sigmoid hull. The issue is in _construct_dlp_case3 where the parallel
-    tangent line intercept is computed incorrectly, resulting in overly tight
-    constraints that cut off valid sigmoid points.
-
-    Root Cause:
-    - The tangent line computation returns correct intercept (~0.4929)
-    - But the constraint matrix stores intercept (~0.5), which is incorrect
-    - This causes all random points to violate the constraint by ~0.007
-    - The difference is (yl + yu) / 2 vs actual tangent line intercept
-
-    The fix requires correcting how the intercept is propagated through the
-    DLP constraint construction in wraact/acthull/_sshape.py _construct_dlp_case3.
+    Public full, single-neuron, double-order, and WithOneY surfaces also run
+    through the strict asymmetric containment gate.
     """
 
     @pytest.fixture

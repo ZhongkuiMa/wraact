@@ -75,9 +75,14 @@ Each activation has a full hull class and a `WithOneY` variant that extends one 
 | `ELUHull` | `ELUHullWithOneY` | ELU |
 | `LeakyReLUHull` | `LeakyReLUHullWithOneY` | LeakyReLU |
 | `MaxPoolHull` | `MaxPoolHullWithOneY` | max pooling |
-| `MaxPoolHullDLP` | `MaxPoolHullDLPWithOneY` | max pooling (DLP) |
+| `MaxPoolHullDLP` | `MaxPoolHullDLPWithOneY` | compatibility API; currently uses the exact MaxPool hull |
 
 Base classes `ActHull` and `ActHullWithOneY` support subclassing for custom activations. Intermediate bases `ReLULikeHull`, `SShapeHull` (and their `WithOneY` counterparts) handle piecewise-linear and S-shaped families. Use `cal_mn_constrs_with_one_y_dlp` for direct multi-neuron constraint computation with the DLP method.
+
+The historical MaxPool group-sum DLP construction is quarantined because it
+was not sound for arbitrary signed inputs. The DLP-named compatibility classes
+delegate to `MaxPoolHull` until a replacement has both a proof and strict graph-
+containment tests. See [docs/SOUNDNESS.md](docs/SOUNDNESS.md).
 
 ### Two Usage Modes
 

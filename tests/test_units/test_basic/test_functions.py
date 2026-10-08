@@ -147,6 +147,32 @@ class TestSigmoidFunction:
         assert y_very_neg < 1e-10
         assert y_very_pos > 1.0 - 1e-10
 
+    def test_sigmoid_extreme_inputs_do_not_overflow(self):
+        """Extreme finite inputs should saturate without evaluating an unsafe exponential."""
+        x = np.array([-2000.0, -1000.0, 0.0, 1000.0, 2000.0])
+
+        with np.errstate(over="raise", invalid="raise"):
+            y = sigmoid_np(x)
+            dy = dsigmoid_np(x)
+            ddy = ddsigmoid_np(x)
+            scalar_lower = sigmoid_np(-2000.0)
+            scalar_upper = sigmoid_np(2000.0)
+
+        np.testing.assert_array_equal(y, np.array([0.0, 0.0, 0.5, 1.0, 1.0]))
+        assert np.all(np.isfinite(dy))
+        assert np.all(np.isfinite(ddy))
+        assert scalar_lower == 0.0
+        assert scalar_upper == 1.0
+
+    @pytest.mark.parametrize("dtype", [np.float32, np.float64])
+    def test_sigmoid_preserves_floating_array_dtype(self, dtype):
+        """Stable evaluation should preserve an existing floating array dtype."""
+        x = np.array([-2.0, 0.0, 2.0], dtype=dtype)
+
+        y = sigmoid_np(x)
+
+        assert y.dtype == dtype
+
 
 class TestTanhFunction:
     """Tests for Tanh activation function."""

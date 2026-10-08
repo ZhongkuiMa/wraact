@@ -64,10 +64,8 @@ class TestTanhSoundness(BaseSoundnessTest):
     - test_deterministic_computation
     - test_soundness_preserved_after_multiple_calls
 
-    NOTE: DIAGNOSTIC FAILURES
-    ========================
-    Like Sigmoid, Tanh soundness tests may reveal constraint violations.
-    These are expected and will be investigated/discussed with the team.
+    Public full, single-neuron, double-order, and WithOneY surfaces also run
+    through the strict asymmetric containment gate.
     """
 
     @pytest.fixture

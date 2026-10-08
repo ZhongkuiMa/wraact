@@ -43,9 +43,8 @@ def soundness_satisfaction_threshold():
     """Minimum acceptable constraint satisfaction rate (percentage).
 
     A sound hull must satisfy ALL constraints for valid input points.
-    Allow <0.1% numerical precision violations.
     """
-    return 99.9  # percent
+    return 100.0
 
 
 # ============================================================================
@@ -60,18 +59,18 @@ def simple_2d_box_constraints():
     H-representation: 4 halfspace constraints:
 
     - x >= 0      : [0, 1, 0]
-    - x <= 1      : [-1, 1, 0]
+    - x <= 1      : [1, -1, 0]
     - y >= 0      : [0, 0, 1]
-    - y <= 1      : [-1, 0, 1]
+    - y <= 1      : [1, 0, -1]
 
     :return: H-representation constraints. Shape: ``(4, 3)``.
     """
     return np.array(
         [
             [0, 1, 0],  # x >= 0
-            [-1, 1, 0],  # x <= 1
+            [1, -1, 0],  # x <= 1
             [0, 0, 1],  # y >= 0
-            [-1, 0, 1],  # y <= 1
+            [1, 0, -1],  # y <= 1
         ],
         dtype=np.float64,
     )

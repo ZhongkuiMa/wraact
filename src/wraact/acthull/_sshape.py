@@ -4,7 +4,7 @@ __docformat__ = "restructuredtext"
 __all__ = ["SShapeHull"]
 
 from abc import ABC, abstractmethod
-from typing import Literal
+from typing import ClassVar, Literal
 
 import numpy as np
 from numpy import ndarray
@@ -41,6 +41,9 @@ class SShapeHull(ActHull, ABC):
         for numerically calculating the tangent lines of Sigmoid and Tanh functions.
     """
 
+    _OUTPUT_LOWER_BOUND: ClassVar[float]
+    _OUTPUT_UPPER_BOUND: ClassVar[float]
+
     def cal_constrs(
         self,
         c: ndarray,
@@ -72,6 +75,9 @@ class SShapeHull(ActHull, ABC):
             c_m = self.cal_mn_constrs(c, v, lb, ub)
             cc = np.vstack((cc, c_m))
 
+        if not np.all(np.isfinite(cc)):
+            cc = self._get_output_range_constrs(d)
+
         return cc, dtype_cdd
 
     def cal_sn_constrs(  # type: ignore[override]
@@ -79,30 +85,53 @@ class SShapeHull(ActHull, ABC):
         lb: ndarray,
         ub: ndarray,
     ) -> ndarray:
-        """Compute single-neuron constraints for S-shaped activation via DLP construction.
+        """Compute conservative single-neuron interval constraints.
 
         :param lb: Lower bounds per input dimension. Shape: ``d,``.
         :param ub: Upper bounds per input dimension. Shape: ``d,``.
         :return: Single-neuron constraints. Shape: ``_, 1+2*d``.
         """
-        d = lb.shape[0]
-        cc = np.empty((0, 1 + d), dtype=np.float64)
+        return self._get_interval_output_constrs(lb, ub)
 
-        f, df = self._f, self._df
-        xl, xu = lb, ub
-        yl: ndarray
-        yu: ndarray
-        kl: ndarray
-        ku: ndarray
-        yl, yu, kl, ku = f(xl), f(xu), df(xl), df(xu)  # type: ignore[assignment]
-        with np.errstate(divide="ignore", invalid="ignore"):
-            klu = (yu - yl) / (xu - xl)
+    @classmethod
+    def _get_interval_output_constrs(cls, lb: ndarray, ub: ndarray) -> ndarray:
+        """Return monotonic interval bounds with codomain fallback at saturation."""
+        lower = np.asarray(cls._f(lb), dtype=np.float64)
+        upper = np.asarray(cls._f(ub), dtype=np.float64)
+        fixed = lb == ub
+        saturated = ~np.isfinite(lower) | ~np.isfinite(upper) | ((upper <= lower) & ~fixed)
+        lower = np.where(
+            saturated,
+            cls._OUTPUT_LOWER_BOUND,
+            np.nextafter(lower, -np.inf),
+        )
+        upper = np.where(
+            saturated,
+            cls._OUTPUT_UPPER_BOUND,
+            np.nextafter(upper, np.inf),
+        )
 
-        for i in range(d):
-            args = (i, d, xl[i], xu[i], yl[i], yu[i], kl[i], ku[i], klu[i], cc)
-            _, _, _, _, cc = self._construct_dlp(*args, self._if_cal_sn_constrs)
+        dim = lb.size
+        constraints = np.zeros((2 * dim, 2 * dim + 1), dtype=np.float64)
+        row = np.arange(dim)
+        output = np.arange(dim + 1, 2 * dim + 1)
+        constraints[row, 0] = -lower
+        constraints[row, output] = 1.0
+        constraints[dim + row, 0] = upper
+        constraints[dim + row, output] = -1.0
+        return constraints
 
-        return cc
+    @classmethod
+    def _get_output_range_constrs(cls, dim: int) -> ndarray:
+        """Return conservative elementwise constraints from the activation codomain."""
+        constraints = np.zeros((2 * dim, 2 * dim + 1), dtype=np.float64)
+        row = np.arange(dim)
+        output = np.arange(dim + 1, 2 * dim + 1)
+        constraints[row, 0] = -cls._OUTPUT_LOWER_BOUND
+        constraints[row, output] = 1.0
+        constraints[dim + row, 0] = cls._OUTPUT_UPPER_BOUND
+        constraints[dim + row, output] = -1.0
+        return constraints
 
     def cal_mn_constrs(  # type: ignore[override]
         self,
@@ -147,8 +176,8 @@ class SShapeHull(ActHull, ABC):
 
         for i in range(d):
             args = (i, d, xl[i], xu[i], yl[i], yu[i], kl[i], ku[i], klu[i], cc_s)
-            dlp_lines_l, dlp_lines_u, dlp_point_l, dlp_point_u, cc_s = self._construct_dlp(
-                *args, self._if_cal_sn_constrs
+            dlp_lines_l, dlp_lines_u, dlp_point_l, dlp_point_u, _ = self._construct_dlp(
+                *args, return_single_neuron_constrs=False
             )
 
             if self._if_cal_mn_constrs:
@@ -164,7 +193,7 @@ class SShapeHull(ActHull, ABC):
         cc = np.empty((0, 2 * d + 1), dtype=np.float64)
 
         if self._if_cal_sn_constrs:
-            cc = np.vstack((cc, cc_s))
+            cc = np.vstack((cc, self._get_interval_output_constrs(lb, ub)))
 
         if self._if_cal_mn_constrs:
             cc = np.vstack((cc, cc_l, cc_u))
@@ -225,7 +254,13 @@ class SShapeHull(ActHull, ABC):
             c2[:, idx + 1] = [kui]
             c2[:, -1] = -1.0
             c = np.hstack((c, np.zeros((c.shape[0], 1))))
+            if return_single_neuron_constrs:
+                c = np.vstack((c, -c1, c2))
             return c1, c2, None, None, c
+
+        values = np.asarray([yli, yui, kli, kui, klui], dtype=np.float64)
+        if not np.all(np.isfinite(values)) or abs(float(klui)) <= np.finfo(np.float64).eps:
+            return cls._construct_output_range_dlp(idx, dim, c, return_single_neuron_constrs)
         if kui > klui:
             resolve_case = cls._construct_dlp_case1  # type: ignore[assignment]
         elif kli > klui:
@@ -236,6 +271,27 @@ class SShapeHull(ActHull, ABC):
         c = np.hstack((c, np.zeros((c.shape[0], 1))))
         args = (idx, dim, xli, xui, yli, yui, kli, kui, klui, c)
         return resolve_case(*args, return_single_neuron_constrs)
+
+    @classmethod
+    def _construct_output_range_dlp(
+        cls,
+        idx: int,
+        dim: int,
+        c: ndarray,
+        return_single_neuron_constrs: bool,
+    ) -> tuple[ndarray, ndarray, None, None, ndarray]:
+        """Use the activation codomain when tangent geometry is numerically singular."""
+        lower = np.zeros((1, idx + dim + 2), dtype=np.float64)
+        upper = np.zeros_like(lower)
+        lower[:, 0] = cls._OUTPUT_LOWER_BOUND
+        upper[:, 0] = cls._OUTPUT_UPPER_BOUND
+        lower[:, -1] = -1.0
+        upper[:, -1] = -1.0
+
+        c = np.hstack((c, np.zeros((c.shape[0], 1))))
+        if return_single_neuron_constrs:
+            c = np.vstack((c, -lower, upper))
+        return lower, upper, None, None, c
 
     @classmethod
     def _construct_dlp_case1(
@@ -299,7 +355,7 @@ class SShapeHull(ActHull, ABC):
         aux_point_l = None
 
         aux_lines_u, aux_point_u = cls._construct_upper_aux_lines_and_points(  # type: ignore[arg-type]
-            dim, idx, xli, yli, klui, su, kp1, kp2, bp1, bp2, blu2
+            dim, idx, yui, su, kp1, kp2, bp1, bp2
         )
 
         if return_single_neuron_constrs:
@@ -367,7 +423,7 @@ class SShapeHull(ActHull, ABC):
             bp2, blui, bli = yli - kp2 * xli, yui - klui * xui, yli - kli * xli
 
         aux_lines_l, aux_point_l = cls._construct_lower_aux_lines_and_points(  # type: ignore[arg-type]
-            dim, idx, xui, yui, klui, sl, kp1, kp2, bp1, bp2, blu2
+            dim, idx, yli, sl, kp1, kp2, bp1, bp2
         )
 
         aux_lines_u = np.zeros((1, idx + dim + 2), dtype=np.float64)
@@ -378,8 +434,8 @@ class SShapeHull(ActHull, ABC):
 
         if return_single_neuron_constrs:
             temp = np.zeros((4, idx + dim + 2), dtype=np.float64)
-            temp[:, 0] = [blui, -bli, -bui, -blu2]
-            temp[:, idx + 1] = [klui, -kli, -kui, -klu2]
+            temp[:, 0] = [-blui, bli, bui, blu2]
+            temp[:, idx + 1] = [-klui, kli, kui, klu2]
             temp[:, -1] = [1.0, -1.0, -1.0, -1.0]
             c = np.vstack((c, temp))
 
@@ -443,17 +499,17 @@ class SShapeHull(ActHull, ABC):
         bp1u, bp1l = yli - kp1u * xli, yui - kp1l * xui
 
         aux_lines_l, aux_point_l = cls._construct_lower_aux_lines_and_points(  # type: ignore[arg-type]
-            dim, idx, xui, yui, klui, sl, kp1l, kp2l, bp1l, bp2l, blul
+            dim, idx, yli, sl, kp1l, kp2l, bp1l, bp2l
         )
         aux_lines_u, aux_point_u = cls._construct_upper_aux_lines_and_points(  # type: ignore[arg-type]
-            dim, idx, xli, yli, klui, su, kp1u, kp2u, bp1u, bp2u, bluu
+            dim, idx, yui, su, kp1u, kp2u, bp1u, bp2u
         )
 
         if return_single_neuron_constrs:
             bli, bui = yli - kli * xli, yui - kui * xui
             temp = np.zeros((6, idx + dim + 2), dtype=np.float64)
-            temp[:, 0] = [bui, btu, bluu, bli, btl, blul]
-            temp[:, idx + 1] = [kui, ktu, kluu, kli, ktl, klul]
+            temp[:, 0] = [bui, btu, bluu, -bli, -btl, -blul]
+            temp[:, idx + 1] = [kui, ktu, kluu, -kli, -ktl, -klul]
             temp[:, -1] = [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0]
             c = np.vstack((c, temp))
 
@@ -463,20 +519,18 @@ class SShapeHull(ActHull, ABC):
     def _construct_lower_aux_lines_and_points(
         dim: int,
         idx: int,
-        xui: float | ndarray,
-        yui: float | ndarray,
-        klui: float | ndarray,
+        yli: float | ndarray,
         sl: float | ndarray,
         kp1l: float | ndarray,
         kp2l: float | ndarray,
         bp1l: float | ndarray,
         bp2l: float | ndarray,
-        bluu: float | ndarray,
     ) -> tuple[ndarray, float | ndarray | None]:
         if abs((kp1l - kp2l) / (1 - kp1l * kp2l)) < MIN_DLP_ANGLE:
             aux_lines_l = np.zeros((1, idx + dim + 2), dtype=np.float64)
-            aux_lines_l[:, 0] = [bluu]
-            aux_lines_l[:, idx + 1] = [klui]
+            # Nearly parallel pieces are numerically unsafe to intersect. The
+            # monotonic activation bound is looser but guaranteed to stay below f.
+            aux_lines_l[:, 0] = [yli]
             aux_lines_l[:, -1] = -1.0
             aux_point_l = None
         else:
@@ -492,20 +546,18 @@ class SShapeHull(ActHull, ABC):
     def _construct_upper_aux_lines_and_points(
         dim: int,
         idx: int,
-        xli: float | ndarray,
-        yli: float | ndarray,
-        klui: float | ndarray,
+        yui: float | ndarray,
         su: float | ndarray,
         kp1u: float | ndarray,
         kp2u: float | ndarray,
         bp1u: float | ndarray,
         bp2u: float | ndarray,
-        blul: float | ndarray,
     ) -> tuple[ndarray, float | ndarray | None]:
         if abs((kp1u - kp2u) / (1 - kp1u * kp2u)) < MIN_DLP_ANGLE:
             aux_lines_u = np.zeros((1, idx + dim + 2), dtype=np.float64)
-            aux_lines_u[:, 0] = [blul]
-            aux_lines_u[:, idx + 1] = [klui]
+            # Nearly parallel pieces are numerically unsafe to intersect. The
+            # monotonic activation bound is looser but guaranteed to stay above f.
+            aux_lines_u[:, 0] = [yui]
             aux_lines_u[:, -1] = -1.0
             aux_point_u = None
         else:

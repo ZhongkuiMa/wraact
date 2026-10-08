@@ -8,7 +8,7 @@ from typing import ClassVar
 import numpy as np
 from numpy import ndarray
 
-from wraact._constants import LEAKY_RELU_ALPHA, MIN_BOUNDS_RANGE_ACTHULL
+from wraact._constants import LEAKY_RELU_ALPHA
 from wraact._functions import dleakyrelu_np, leakyrelu_np
 from wraact.acthull._relulike import ReLULikeHull
 
@@ -55,10 +55,11 @@ class LeakyReLUHull(ReLULikeHull):
 
         # For the upper faces.
         # The output constraints have the form of
-        # alpha * lb - (ub + alpha * lb) * lb + (ub + alpha * lb) * x - (ub - lb) * y >= 0.
+        # (alpha - 1) * lb * ub + (ub - alpha * lb) * x
+        # - (ub - lb) * y >= 0.
 
-        c[:, 0] = LEAKY_RELU_ALPHA * lb - (ub + LEAKY_RELU_ALPHA * lb) * lb
-        c[idx_r, idx_x] = ub + LEAKY_RELU_ALPHA * lb
+        c[:, 0] = (LEAKY_RELU_ALPHA - 1.0) * lb * ub
+        c[idx_r, idx_x] = ub - LEAKY_RELU_ALPHA * lb
         c[idx_r, idx_y] = -(ub - lb)
 
         # For the lower faces.
@@ -97,12 +98,6 @@ class LeakyReLUHull(ReLULikeHull):
             aux_lines = np.asarray(
                 [[0.0, *temp1, LEAKY_RELU_ALPHA, *temp2, -1.0]], dtype=np.float64
             )
-            return aux_lines, None
-
-        if ub - lb < MIN_BOUNDS_RANGE_ACTHULL:
-            k = (ub - lb) / (ub - lb)
-            b = ub - k * ub
-            aux_lines = np.asarray([[b, *temp1, k, *temp2, -1.0]], dtype=np.float64)
             return aux_lines, None
 
         kp1 = LEAKY_RELU_ALPHA

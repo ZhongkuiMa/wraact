@@ -144,10 +144,11 @@ class MaxPoolHullDLP(ReLULikeHull):
         lb: ndarray | None,
         ub: ndarray | None,
     ) -> ndarray:
-        """Compute multi-neuron constraints for MaxPool using DLP construction.
+        """Compute sound multi-neuron constraints for MaxPool.
 
-        Handles trivial cases (single vertex, single piece) directly,
-        then constructs a DLP upper bound for the non-trivial case.
+        The historical group-sum DLP construction is not a valid upper envelope
+        for arbitrary signed inputs. Until a replacement has a complete proof and
+        containment gate, the DLP API deliberately delegates to the exact method.
 
         :param c: Input constraints in H-representation. Shape: ``n, d``.
         :param v: Vertices of input polytope. Shape: ``m, d``.
@@ -155,76 +156,7 @@ class MaxPoolHullDLP(ReLULikeHull):
         :param ub: Upper bounds per dimension.
         :return: Multi-neuron constraints. Shape: ``_, d+2``.
         """
-        # ------------------------ Trivial case ------------------------
-        cc = cls._handle_case_of_one_vertex(v)
-        if cc is not None:
-            return cc
-        cc = cls._handle_case_of_one_piece(v)
-        if cc is not None:
-            return cc
-
-        # ------------------------ Non-trivial case ------------------------
-        nt_idxs = cls._find_nontrivial_idxs(v)
-        if len(nt_idxs) == 0:
-            raise DegeneratedError("All vertices tied — MaxPool has no non-trivial dimension.")
-        # Other degenrate cases are handled in _construct_dlp.
-        pieces = cls._construct_dlp(v, nt_idxs)
-        # After constructing the DLP function, we still may meet trivial cases due to
-        # the construction method.
-        # We calculate the maximum value of each piece.
-        pv = pieces[:, :-1] @ v.T
-        nt_idxs = list(np.unique(np.argmax(pv, axis=0)))
-        if len(nt_idxs) == 1:
-            idx = nt_idxs[0]
-            cc = np.zeros((2, c.shape[1] + 1), dtype=c.dtype)
-            # y >= the piece
-            cc[0, :] = pieces[idx]
-            # y <= the piece
-            cc[1, :] = -pieces[idx]
-            return cc
-
-        # Enumerate all vertices and calculate (Ax + b) / (y - x_i) for each vertex.
-        # Calculate the Ax + b
-        Axb = c @ v.T
-        Axb = np.expand_dims(Axb, 1)
-        if not np.all(Axb >= -TOLERANCE):
-            raise RuntimeError(f"Negative beta.\nAxb={Axb}.")
-
-        # Calculate y - each piece
-        v_y = np.max(pv, 0, keepdims=True)
-        yx = v_y - pv
-        yx = np.expand_dims(yx, 0)
-        # Calculate (Ax + b) / (y - \sum x_i)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            beta = np.where(yx != 0, Axb / yx, np.inf)
-        if not np.all(beta >= -TOLERANCE):
-            raise RuntimeError(f"Negative beta.\nbeta={beta}.")
-
-        # Find the minimum value of beta for all vertices to maintain the soundness of
-        # the function hull.
-        beta = np.min(beta, 2)
-
-        if np.isinf(np.max(beta)):
-            raise RuntimeError(f"Inf beta.\nbeta={beta}.")
-
-        # Filter the useless constraints.
-        # Set the non-largest value to zero
-        # Theoretically, there is at most one non-zero beta value, so the following is
-        # redundant. But we still do this for numerical stability.
-        # That means we only accept one non-zero beta value.
-        beta_max = np.max(beta, 1, keepdims=True)
-        beta = np.where(beta < beta_max, 0.0, beta)
-
-        # \beta * (y - \sum x_i).
-        c2 = np.matmul(beta, pieces)
-
-        # The final constraints are Ax + b - \beta * (y - \sum x_i) >= 0.
-        # Add -\beta * (y - \sum x_i).
-        cc = -c2
-        # Add Ax + b
-        cc[:, :-1] += c
-
-        return cc
+        return MaxPoolHull.cal_mn_constrs(c, v, lb, ub)
 
     @staticmethod
     def _handle_case_of_one_vertex(v: np.ndarray) -> np.ndarray | None:
@@ -259,7 +191,7 @@ class MaxPoolHullDLP(ReLULikeHull):
         """
         row_max = np.max(v[:, 1:], axis=1, keepdims=True)
         # Mask all values that equal to the maximum value.
-        mask_max = np.isclose(v[:, 1:], row_max)
+        mask_max = v[:, 1:] == row_max
         # Check if there is a dimension is always the maximum.
         is_trivial = np.all(mask_max, axis=0)
         if not np.any(is_trivial):
@@ -287,7 +219,7 @@ class MaxPoolHullDLP(ReLULikeHull):
         """
         row_max = np.max(v[:, 1:], axis=1, keepdims=True)
         # Mask all values that equal to the maximum value.
-        mask_max = np.isclose(v[:, 1:], row_max)
+        mask_max = v[:, 1:] == row_max
         # If one row has multiple maximum values, the row is a trivial case.
         # Find the row that has only one maximum value.
         # Actually, theoretically, there must at least one vertex with only one maximum
@@ -469,7 +401,7 @@ class MaxPoolHull(MaxPoolHullDLP):
 
         # The final constraints are Ax + b - \beta * (y - x_i) >= 0.
         # Add Ax + b
-        cc = c
+        cc = c.copy()
         # Add - \beta * (y - x_i)
         cc[:, 1:][:, nt_idxs] += beta
         cc = np.hstack((cc, -beta_max))

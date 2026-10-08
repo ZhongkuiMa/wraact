@@ -124,6 +124,29 @@ class TestActHullWithOneYOutputConstraintSelection:
             assert isinstance(constraints, np.ndarray)
             assert np.all(np.isfinite(constraints))
 
+    @pytest.mark.parametrize("value", [0, -1, 1.5, True])
+    def test_n_output_constraints_must_be_positive_integer(self, value):
+        """Reject invalid output counts before hull computation."""
+        with pytest.raises(ValueError, match="positive integer"):
+            ReLUHullWithOneY(n_output_constraints=value)
+
+    @pytest.mark.parametrize(
+        ("hull_class", "expected_rows"),
+        [
+            pytest.param(ReLUHullWithOneY, 3, id="relu"),
+            pytest.param(SigmoidHullWithOneY, 6, id="sigmoid-two-sided"),
+        ],
+    )
+    def test_fallback_fill_respects_requested_count(self, hull_class, expected_rows):
+        """Fill fallback rows exactly, without floor-division underfill or overshoot."""
+        hull = hull_class(n_output_constraints=3)
+        constraints = hull.cal_hull(
+            input_lower_bounds=np.array([-1.0]),
+            input_upper_bounds=np.array([1.0]),
+        )
+
+        assert constraints.shape[0] == expected_rows
+
 
 class TestActHullWithOneYTopkConstraintSelection:
     """Test topk constraint selection in ActHullWithOneY."""

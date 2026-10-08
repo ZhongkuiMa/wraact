@@ -26,6 +26,7 @@ from tests.test_units.test_templates import BaseSoundnessTest
 
 # Import the actual hull class
 from wraact.acthull import LeakyReLUHull
+from wraact.oney import LeakyReLUHullWithOneY
 
 
 def leakyrelu_np(x, negative_slope=0.01):
@@ -213,7 +214,7 @@ class TestLeakyReLUSingleNeuronMode:
         assert np.all(np.isfinite(constraints))
 
     def test_cal_hull_single_neuron_soundness(self, leakyrelu_hull_class):
-        """Verify soundness of single-neuron constraints with Monte Carlo."""
+        """Verify every sampled graph point satisfies single-neuron constraints."""
         lb = np.array([-1.0, -1.0])
         ub = np.array([1.0, 1.0])
 
@@ -223,25 +224,26 @@ class TestLeakyReLUSingleNeuronMode:
 
         constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-        # Monte Carlo sampling to verify soundness
         rng = np.random.default_rng(42)
         samples = rng.uniform(lb, ub, (1000, 2))
+        samples = np.vstack((samples, lb, ub, np.zeros_like(lb)))
+        points = np.hstack((samples, leakyrelu_np(samples)))
+        margins = constraints[:, :1] + constraints[:, 1:] @ points.T
 
-        violations = 0
-        for x in samples:
-            y = leakyrelu_np(x, negative_slope=0.01)
-            point = np.concatenate([x, y])
+        assert np.min(margins) >= -1e-8
 
-            b = constraints[:, 0]
-            A = constraints[:, 1:]
-            constraint_values = b + A @ point
+    @pytest.mark.parametrize("hull_class", [LeakyReLUHull, LeakyReLUHullWithOneY])
+    def test_narrow_crossing_interval_preserves_leaky_branch(self, hull_class):
+        """Verify narrow crossing intervals are not approximated as identity."""
+        lb = np.array([-0.02])
+        ub = np.array([0.02])
+        constraints = hull_class().cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
 
-            if not np.all(constraint_values >= -1e-6):
-                violations += 1
+        x = np.linspace(lb[0], ub[0], 1001)[:, None]
+        points = np.hstack((x, leakyrelu_np(x)))
+        margins = constraints[:, :1] + constraints[:, 1:] @ points.T
 
-        satisfaction_rate = 100.0 * (1000 - violations) / 1000
-        # Single-neuron constraints may be less tight, but should still be sound
-        assert satisfaction_rate >= 95.0
+        assert np.min(margins) >= -1e-8
 
     def test_cal_hull_single_neuron_cache_behavior(self, leakyrelu_hull_class):
         """Test that LeakyReLU caches lower constraints."""

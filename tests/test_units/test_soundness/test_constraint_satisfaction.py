@@ -15,7 +15,7 @@ __docformat__ = "restructuredtext"
 import numpy as np
 import pytest
 
-from wraact import DegeneratedError
+from wraact import DegeneratedError, ReLUHull
 from wraact._functions import elu_np, leakyrelu_np, relu_np, sigmoid_np
 
 
@@ -69,6 +69,20 @@ class TestReLUConstraintSatisfaction:
         point_ub = np.concatenate([x_ub, y_ub])
         constraints_ub = b + a @ point_ub
         assert np.all(constraints_ub >= -1e-8), "Sigmoid constraints violated at upper bound"
+
+    def test_double_orders_preserve_asymmetric_relu_graph(self):
+        """Verify reversed-order constraints map back to the original variables."""
+        lb = np.array([-2.0, -0.5, -0.1])
+        ub = np.array([0.3, 1.5, 2.0])
+        hull = ReLUHull(if_cal_multi_neuron_constrs=True, if_use_double_orders=True)
+        constraints = hull.cal_hull(input_lower_bounds=lb, input_upper_bounds=ub)
+
+        rng = np.random.default_rng(0)
+        x = rng.uniform(lb, ub, size=(10_000, lb.size))
+        points = np.hstack((x, relu_np(x)))
+        margins = constraints[:, :1] + constraints[:, 1:] @ points.T
+
+        assert np.min(margins) >= -1e-8
 
 
 class TestBoundsConsistency:

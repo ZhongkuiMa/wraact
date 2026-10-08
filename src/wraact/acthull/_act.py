@@ -105,6 +105,8 @@ class ActHull(ABC):
                 "At least one of if_cal_single_neuron_constrs and "
                 "if_cal_multi_neuron_constrs should be True."
             )
+        if dtype_cdd not in ("float", "fraction"):
+            raise ValueError(f"dtype_cdd must be 'float' or 'fraction', got {dtype_cdd!r}.")
 
         self._if_cal_sn_constrs = if_cal_single_neuron_constrs
         self._if_cal_mn_constrs = if_cal_multi_neuron_constrs
@@ -377,16 +379,30 @@ class ActHull(ABC):
         cc, dtype_cdd = result
 
         if self._use_double_orders:
-            o_r = ActHull._get_reversed_order(c.shape[1] - 1)
-            c_r = c.copy()
-            c_r = c_r[:, o_r]
-            result_r = self._cal_constrs_with_exception(c_r, v, lb, ub, dtype_cdd)
+            d = c.shape[1] - 1
+            input_order = ActHull._get_reversed_order(d)
+            c_r = c[:, input_order].copy()
+            v_r = v[:, input_order].copy()
+            lb_r = lb[::-1].copy()
+            ub_r = ub[::-1].copy()
+            result_r = self._cal_constrs_with_exception(c_r, v_r, lb_r, ub_r, dtype_cdd)
             if result_r is None:
                 raise RuntimeError("Expected non-None result from _cal_constrs_with_exception")
             cc_r, dtype_cdd = result_r
-            d_out = cc.shape[1] - 1
-            o_r_output = ActHull._get_reversed_order(d_out)
-            cc_r = cc_r[:, o_r_output]
+
+            output_dim = cc_r.shape[1] - 1 - d
+            if output_dim == d:
+                # Elementwise activations store coefficients as [b | A_x | A_y].
+                output_order = [0, *range(d, 0, -1), *range(2 * d, d, -1)]
+            elif output_dim == 1:
+                # Aggregate activations such as MaxPool have one permutation-invariant y.
+                output_order = [0, *range(d, 0, -1), d + 1]
+            else:  # pragma: no cover - guards future activation output layouts
+                raise RuntimeError(
+                    "Double-order mapping requires either one output or one output "
+                    f"per input dimension, got {output_dim} outputs for {d} inputs."
+                )
+            cc_r = cc_r[:, output_order]
             cc = np.vstack((cc, cc_r))
 
         return cc
@@ -589,10 +605,11 @@ class ActHull(ABC):
     @staticmethod
     def _check_inputs(c: ndarray | None, lb: ndarray | None, ub: ndarray | None):
         if c is not None and lb is not None and ub is not None:
-            if not c.shape[1] - 1 == lb.size == ub.size:
+            c_arr = np.asarray(c)
+            if not c_arr.shape[1] - 1 == lb.size == ub.size:
                 raise ValueError(
                     "The dimensions of the input constraints, lower bounds, and upper "
-                    f"bounds should be the same but {c.shape[1] - 1}, {lb.size}, and "
+                    f"bounds should be the same but {c_arr.shape[1] - 1}, {lb.size}, and "
                     f"{ub.size} are provided."
                 )
         elif c is None and lb is None and ub is None:
@@ -604,16 +621,32 @@ class ActHull(ABC):
     @staticmethod
     def _check_input_constrs(c: ndarray | None):
         if c is not None:
-            d = c.shape[1] - 1
-            if c.shape[0] < d + 1:
+            try:
+                c_arr = np.asarray(c, dtype=np.float64)
+            except (TypeError, ValueError) as error:
+                raise ValueError("The input constraints must be a numeric matrix.") from error
+            if c_arr.ndim != 2:
+                raise ValueError(
+                    "The input constraints should be a 2-dimensional matrix but "
+                    f"an array with {c_arr.ndim} dimensions was provided."
+                )
+            if c_arr.shape[1] < 2:
+                raise ValueError("The input constraints must include bias and variable columns.")
+            if not np.all(np.isfinite(c_arr)):
+                raise ValueError("The input constraints contain NaN or Inf values.")
+
+            d = c_arr.shape[1] - 1
+            if c_arr.shape[0] < d + 1:
                 raise ValueError(
                     "The number of input constraints should be at least the dimension "
                     "of the input space plus one. Otherwise, the polytope is unbounded."
-                    f"The shape of the input constraints is {c.shape}."
+                    f"The shape of the input constraints is {c_arr.shape}."
                 )
 
     @staticmethod
     def _check_input_bounds(l: ndarray | None, u: ndarray | None):
+        if (l is None) != (u is None):
+            raise ValueError("The lower and upper bounds must be provided together.")
         if l is not None and u is not None:
             if not l.ndim == u.ndim == 1:
                 raise ValueError(

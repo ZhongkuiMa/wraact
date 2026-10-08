@@ -76,6 +76,16 @@ def load_edge_cases():
 EDGE_CASES = load_edge_cases()
 
 
+def test_fuzz_corpus_is_minimized_by_hull_and_dimension():
+    """Keep one representative for each historical hull/dimension failure class."""
+    keys = [(case["hull"], case["dim"], case["strategy"]) for case in EDGE_CASES.values()]
+
+    assert len(keys) == len(set(keys)) == 30
+    assert {key[0] for key in keys} == set(HULL_MAP)
+    assert {key[1] for key in keys} == {2, 3, 4, 5, 6}
+    assert {key[2] for key in keys} == {"extreme"}
+
+
 @pytest.mark.parametrize(
     ("name", "edge_case"), list(EDGE_CASES.items()), ids=list(EDGE_CASES.keys())
 )
